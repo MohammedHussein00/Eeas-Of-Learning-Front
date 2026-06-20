@@ -1,0 +1,969 @@
+<ng-container *transloco="let t; scope: 'teacherAddEditCourse'">
+
+  <!-- ══════════════════════════════════════════════════════════
+       PROFILE / PLAN GUARDS
+  ══════════════════════════════════════════════════════════ -->
+  @if (profileStatus() === 'loading') {
+    <div class="tae-center-screen">
+      <nz-spin nzSize="large"></nz-spin>
+    </div>
+  }
+
+  @else if (profileStatus() === 'no-profile') {
+    <div class="tae-center-screen tae-guard">
+      <div class="tae-guard-ico" style="
+        width:80px; height:80px; border-radius:24px;
+        background:linear-gradient(135deg,#e0e7ff,#ede9fe);
+        display:flex; align-items:center; justify-content:center;
+        margin:0 auto 24px; font-size:36px">👨‍🏫</div>
+      <h2 class="tae-guard-title">{{ t('teacherAddEditCourse.noProfileTitle') }}</h2>
+      <p  class="tae-guard-desc">{{ t('teacherAddEditCourse.noProfileDesc') }}</p>
+      <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap">
+        <button class="tae-btn-primary" (click)="router.navigate(['/teacher/profile/edit'])">
+          {{ t('teacherAddEditCourse.setupProfile') }}
+        </button>
+        <button class="tae-btn-ghost" (click)="goBack()">
+          {{ t('teacherAddEditCourse.back') }}
+        </button>
+      </div>
+    </div>
+  }
+
+  @else if (profileStatus() === 'not-verified') {
+    <div class="tae-center-screen tae-guard">
+      <div class="tae-guard-ico" style="
+        width:80px; height:80px; border-radius:24px;
+        background:linear-gradient(135deg,#fff7e0,#fef3c7);
+        display:flex; align-items:center; justify-content:center;
+        margin:0 auto 24px; font-size:36px">🔒</div>
+      <h2 class="tae-guard-title">{{ t('teacherAddEditCourse.notVerifiedTitle') }}</h2>
+      <p  class="tae-guard-desc">{{ t('teacherAddEditCourse.notVerifiedDesc') }}</p>
+      <p style="color:#d97706; font-size:13px; background:#fffbeb;
+                padding:10px 16px; border-radius:10px; border:1px solid #fde68a; margin-bottom:28px">
+        {{ t('teacherAddEditCourse.pendingVerification') }}
+      </p>
+      <button class="tae-btn-primary" (click)="router.navigate(['/teacher/profile/edit'])">
+        {{ t('teacherAddEditCourse.goToProfile') }}
+      </button>
+    </div>
+  }
+
+  @else if (networkError()) {
+    <div class="tae-center-screen tae-guard">
+      <div class="tae-guard-ico">⚠️</div>
+      <h2 class="tae-guard-title">{{ t('teacherAddEditCourse.networkError') }}</h2>
+      <p  class="tae-guard-desc">{{ t('teacherAddEditCourse.networkErrorDesc') }}</p>
+      <div style="display:flex; gap:10px; margin-top:8px">
+        <button class="tae-btn-primary" (click)="networkError.set(false); ngOnInit()">
+          {{ t('teacherAddEditCourse.retry') }}
+        </button>
+        <button class="tae-btn-ghost" (click)="goBack()">
+          {{ t('teacherAddEditCourse.back') }}
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Plan access gate — mirrors React PlanAccessGate -->
+  @else if (!isEditMode && planAccessLoaded() && planAccess() && !planAccess()!.hasAccess) {
+    <div class="tae-center-screen" style="padding:20px 16px">
+      <div style="text-align:center; max-width:520px; width:100%">
+        <div style="
+          width:88px; height:88px; border-radius:24px;
+          background:linear-gradient(135deg,#f3e8ff,#ede9fe);
+          display:flex; align-items:center; justify-content:center;
+          margin:0 auto 24px; font-size:40px">
+          {{ planIsUnlimited ? '✨' : planLimitReached ? '⏳' : planSlotFull ? '📚' : '🔒' }}
+        </div>
+        <h2 style="font-size:22px; font-weight:800; color:#1a2342; margin-bottom:12px">
+          @if (planIsUnlimited) { Unlimited Access! }
+          @else if (planLimitReached) { {{ t('teacherAddEditCourse.limitReachedTitle') }} }
+          @else if (planSlotFull)    { {{ t('teacherAddEditCourse.slotFullTitle') }} }
+          @else                      { {{ t('teacherAddEditCourse.planRequiredTitle') }} }
+        </h2>
+        <p style="color:#8a94b2; font-size:14px; margin-bottom:20px; line-height:1.7">
+          {{ planIsUnlimited ? 'You have unlimited access to create courses!' : (planAccess()!.reason || t('teacherAddEditCourse.planRequiredDesc')) }}
+        </p>
+
+        @if (!planIsUnlimited && (planAccess()!.monthlyCreateLimit ?? 0) > 0) {
+          <div style="
+            background:#fdf8ff; border:1.5px solid #ddd6fe; border-radius:12px;
+            padding:16px 20px; margin-bottom:20px; text-align:left">
+            <div style="font-weight:700; font-size:12px; color:#7c3aed; text-transform:uppercase; letter-spacing:.8px; margin-bottom:12px">
+              {{ planAccess()!.subscriptionPlanName || t('teacherAddEditCourse.currentPlanLabel') }}
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:8px">
+              <span style="color:#64748b">{{ t('teacherAddEditCourse.monthlyCreationsLabel') }}</span>
+              <strong>{{ planAccess()!.createdThisMonth }}/{{ planAccess()!.monthlyCreateLimit }}</strong>
+            </div>
+            <nz-progress
+              [nzPercent]="planQuotaPercent()"
+              nzStrokeColor="#7c3aed"
+              nzTrailColor="#ede9fe"
+              nzSize="small"
+              [nzShowInfo]="false">
+            </nz-progress>
+            @if (planAccess()!.quotaResetDate) {
+              <div style="font-size:12px; color:#8a94b2; margin-top:8px">
+                {{ t('teacherAddEditCourse.resetsLabel') }}
+                {{ planAccess()!.quotaResetDate | date:'mediumDate' }}
+              </div>
+            }
+          </div>
+        }
+
+        <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap">
+          @if (!planIsUnlimited) {
+            <button class="tae-btn-primary tae-btn-purple"
+              (click)="router.navigate(['/teacher/plans'])">
+              🛒 {{ t('teacherAddEditCourse.viewPlansBtn') }}
+            </button>
+          }
+          <button class="tae-btn-ghost" (click)="goBack()">
+            {{ t('teacherAddEditCourse.backToCoursesBtn') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @else if (!isEditMode && !planAccessLoaded()) {
+    <div class="tae-center-screen" style="flex-direction:column; gap:16px">
+      <nz-spin nzSize="large"></nz-spin>
+      <p style="color:#8a94b2; font-size:13px">{{ t('teacherAddEditCourse.checkingPlan') }}</p>
+    </div>
+  }
+
+  @else if (loading()) {
+    <div class="tae-center-screen" style="flex-direction:column; gap:16px">
+      <nz-spin nzSize="large"></nz-spin>
+      <p style="color:var(--brand); font-weight:500">{{ t('teacherAddEditCourse.loadingCourse') }}</p>
+    </div>
+  }
+
+  @else {
+  <!-- ════════════════════════════════════════════════════════
+       MAIN LAYOUT
+  ════════════════════════════════════════════════════════ -->
+  <div class="tae">
+
+    <!-- ══ Header ══ -->
+    <div class="tae-hd">
+      <div class="tae-hd-row">
+
+        <div class="tae-hd-left">
+          <button class="tae-back-btn" (click)="goBack()">
+            <lucide-icon [img]="backArrowIcon" [size]="16"></lucide-icon>
+            <span class="tae-back-label">{{ t('teacherAddEditCourse.backToCourses') }}</span>
+          </button>
+          <div class="tae-hd-divider"></div>
+          <div class="tae-hd-ico">
+            <lucide-icon [img]="BookOpenIcon" [size]="20" style="color:#fff"></lucide-icon>
+          </div>
+          <div>
+            <div class="tae-title">
+              {{ isEditMode ? t('teacherAddEditCourse.editTitle') : t('teacherAddEditCourse.createTitle') }}
+            </div>
+            <div class="tae-sub">
+              {{ isEditMode ? t('teacherAddEditCourse.editSubtitle') : t('teacherAddEditCourse.createSubtitle') }}
+            </div>
+          </div>
+        </div>
+
+        <div class="tae-hd-right">
+          @if (isEditMode && courseData()) {
+            <div class="tae-hd-tags">
+              @if (courseData()!.isPublished) {
+                <nz-tag nzColor="success">
+                  <lucide-icon [img]="CheckCircleIcon" [size]="12"></lucide-icon>
+                  &nbsp;{{ t('teacherAddEditCourse.statusPublished') }}
+                </nz-tag>
+              } @else {
+                <nz-tag [nzColor]="publishStatusMeta(latestPublishRequest?.status ?? '').color">
+                  {{ t('teacherAddEditCourse.' + publishStatusMeta(latestPublishRequest?.status ?? '').labelKey) }}
+                </nz-tag>
+              }
+              @if ((courseData()!.studentCount ?? 0) > 0) {
+                <nz-tag nzColor="blue">
+                  <lucide-icon [img]="UsersIcon" [size]="12"></lucide-icon>
+                  &nbsp;{{ courseData()!.studentCount }}
+                </nz-tag>
+              }
+            </div>
+          }
+          <button class="tae-sidebar-toggle" (click)="sidebarDrawerOpen.set(true)">
+            <lucide-icon [img]="DashboardIcon" [size]="14"></lucide-icon>
+            <span>{{ t('teacherAddEditCourse.infoBtn') }}</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Plan quota badge (add mode only) -->
+      @if (!isEditMode && planAccessLoaded() && planAccess()?.hasAccess && !planAccess()?.isAdmin) {
+        <div class="tae-quota">
+          <div class="tae-quota-icon">
+            {{ planIsUnlimited ? '👑' : '🛒' }}
+          </div>
+          <div style="flex:1; min-width:120px">
+            <div style="font-weight:700; font-size:13px; color:#1a2342; margin-bottom:4px">
+              {{ planAccess()!.subscriptionPlanName }}
+              @if (planIsUnlimited) {
+                <nz-tag nzColor="gold" style="margin-left:8px; font-size:10px">Unlimited</nz-tag>
+              }
+            </div>
+            @if (!planIsUnlimited && (planAccess()!.monthlyCreateLimit ?? 0) > 0) {
+              <nz-progress
+                [nzPercent]="planQuotaPercent()"
+                nzStrokeColor="#7c3aed"
+                nzTrailColor="#ede9fe"
+                nzSize="small"
+                [nzShowInfo]="false">
+              </nz-progress>
+            }
+          </div>
+          @if (!planIsUnlimited) {
+            <div style="text-align:right; flex-shrink:0">
+              <div style="font-weight:800; font-size:16px; color:#7c3aed">
+                {{ planAccess()!.remainingCreations }}
+                <span style="font-size:12px; color:#8a94b2; font-weight:500">/{{ planAccess()!.monthlyCreateLimit }}</span>
+              </div>
+              <div style="font-size:11px; color:#8a94b2">{{ t('teacherAddEditCourse.remainingLabel') }}</div>
+            </div>
+          } @else {
+            <div style="text-align:right; flex-shrink:0">
+              <div style="font-weight:800; font-size:16px; color:#10b981">∞</div>
+              <div style="font-size:11px; color:#8a94b2">Unlimited</div>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Steps bar -->
+      <div class="tae-steps">
+        @for (step of steps; track step.key; let i = $index) {
+          <button
+            class="tae-step"
+            [class.tae-step-active]="currentStep() === i"
+            [class.tae-step-done]="currentStep() > i"
+            [class.tae-step-error]="hasStepError(i)"
+            (click)="goToStep(i)">
+            <span class="tae-step-num">
+              @if (currentStep() > i && !hasStepError(i)) {
+                ✓
+              } @else if (hasStepError(i)) {
+                <lucide-icon [img]="AlertCircleIcon" [size]="14"></lucide-icon>
+              } @else {
+                {{ i + 1 }}
+              }
+            </span>
+            <span class="tae-step-label">{{ t('teacherAddEditCourse.' + step.labelKey) }}</span>
+          </button>
+          @if (i < steps.length - 1) {
+            <div class="tae-step-sep"></div>
+          }
+        }
+      </div>
+    </div><!-- /tae-hd -->
+
+    <!-- ══ Body ══ -->
+    <div class="tae-body">
+      <div class="tae-layout">
+
+        <!-- ── Main form card ── -->
+        <div class="tae-main">
+          <div class="tae-card">
+
+            <!-- ─── Step 0: Basics ─── -->
+            @if (currentStep() === 0) {
+              <div class="tae-card-hd">
+                <p class="tae-card-title">🎓 {{ t('teacherAddEditCourse.stepBasics') }}</p>
+                <p class="tae-card-sub">{{ t('teacherAddEditCourse.stepBasicsDesc') }}</p>
+              </div>
+              <div class="tae-fields" [formGroup]="form">
+
+                <!-- Title -->
+                <div class="tae-field" data-field="title">
+                  <label class="tae-label tae-label-req">{{ t('teacherAddEditCourse.fieldTitle') }}</label>
+                  <input nz-input formControlName="title"
+                    [placeholder]="t('teacherAddEditCourse.fieldTitlePh')"
+                    [class.tae-input-err]="isFieldInvalid('title')"
+                    class="tae-input" nzSize="large" />
+                  @if (showError('title')) {
+                    <p class="tae-field-err">
+                      {{ t('teacherAddEditCourse.' + errorKey('title')) }}
+                    </p>
+                  }
+                </div>
+
+                <!-- Subtitle -->
+                <div class="tae-field" data-field="subtitle">
+                  <label class="tae-label">{{ t('teacherAddEditCourse.fieldSubtitle') }}</label>
+                  <input nz-input formControlName="subtitle"
+                    [placeholder]="t('teacherAddEditCourse.fieldSubtitlePh')"
+                    class="tae-input" nzSize="large" />
+                </div>
+
+                <!-- Description -->
+                <div class="tae-field" data-field="description">
+                  <label class="tae-label tae-label-req">{{ t('teacherAddEditCourse.fieldDescription') }}</label>
+                  <textarea nz-input formControlName="description"
+                    [placeholder]="t('teacherAddEditCourse.fieldDescriptionPh')"
+                    [class.tae-input-err]="isFieldInvalid('description')"
+                    [nzAutosize]="{ minRows: 5, maxRows: 10 }"
+                    nzShowCount nzMaxLength="4000"
+                    class="tae-input"></textarea>
+                  @if (showError('description')) {
+                    <p class="tae-field-err">
+                      {{ t('teacherAddEditCourse.' + errorKey('description')) }}
+                    </p>
+                  }
+                </div>
+
+                <div class="tae-row">
+                  <!-- Subject -->
+                  <div class="tae-field tae-field-flex" data-field="subjectId">
+                    <label class="tae-label tae-label-req">{{ t('teacherAddEditCourse.fieldSubject') }}</label>
+                    <nz-select formControlName="subjectId"
+                      class="tae-select"
+                      [class.tae-select-err]="isFieldInvalid('subjectId')"
+                      nzSize="large"
+                      nzShowSearch
+                      nzAllowClear
+                      [nzPlaceHolder]="t('teacherAddEditCourse.fieldSubjectPh')"
+                      [nzLoading]="subjectsLoading()">
+                      @for (s of subjects(); track s.id) {
+                        <nz-option [nzValue]="s.id" [nzLabel]="s.name"></nz-option>
+                      }
+                    </nz-select>
+                    @if (showError('subjectId')) {
+                      <p class="tae-field-err">{{ t('teacherAddEditCourse.subjectRequired') }}</p>
+                    }
+                  </div>
+
+                  <!-- Language -->
+                  <div class="tae-field tae-field-flex" data-field="language">
+                    <label class="tae-label tae-label-req">{{ t('teacherAddEditCourse.fieldLanguage') }}</label>
+                    <nz-select formControlName="language" class="tae-select" nzSize="large">
+                      <nz-option nzValue="English" [nzLabel]="t('teacherAddEditCourse.langEnglish')"></nz-option>
+                      <nz-option nzValue="Arabic"  [nzLabel]="t('teacherAddEditCourse.langArabic')"></nz-option>
+                      <nz-option nzValue="French"  [nzLabel]="t('teacherAddEditCourse.langFrench')"></nz-option>
+                      <nz-option nzValue="Spanish" nzLabel="Spanish"></nz-option>
+                      <nz-option nzValue="German"  nzLabel="German"></nz-option>
+                    </nz-select>
+                  </div>
+                </div>
+
+                <!-- ── Academic Classification (optional) ── -->
+                <div style="
+                  background:linear-gradient(135deg,#f0f4ff 0%,#f5f0ff 100%);
+                  border:1.5px solid #dde1f0; border-radius:12px;
+                  padding:16px 20px; margin-top:8px; margin-bottom:16px">
+                  <div style="
+                    display:flex; align-items:center; gap:8px;
+                    font-weight:700; font-size:13px; color:#3d5af1; margin-bottom:14px">
+                    🎓 {{ t('teacherAddEditCourse.academicClassificationTitle') }}
+                    <span style="font-size:11px; color:#8a94b2; font-weight:400; margin-left:4px">
+                      ({{ t('teacherAddEditCourse.optionalTag') }})
+                    </span>
+                  </div>
+                  <div class="tae-row">
+                    <!-- Stage -->
+                    <div class="tae-field tae-field-flex">
+                      <label class="tae-label">{{ t('teacherAddEditCourse.academicStageLabel') }}</label>
+                      <nz-select formControlName="academicStageId"
+                        class="tae-select" nzSize="large" nzAllowClear
+                        [nzPlaceHolder]="t('teacherAddEditCourse.academicStagePlaceholder')"
+                        [nzLoading]="academicLoading()">
+                        @for (s of academicStages(); track s.id) {
+                          <nz-option [nzValue]="s.id" [nzLabel]="getAcademicName(s)"></nz-option>
+                        }
+                      </nz-select>
+                    </div>
+                    <!-- Year -->
+                    <div class="tae-field tae-field-flex">
+                      <label class="tae-label">{{ t('teacherAddEditCourse.academicYearLabel') }}</label>
+                      <nz-select formControlName="academicYearId"
+                        class="tae-select" nzSize="large" nzAllowClear
+                        [nzPlaceHolder]="t('teacherAddEditCourse.academicYearPlaceholder')"
+                        [nzDisabled]="!form.get('academicStageId')?.value">
+                        @for (y of academicYears(); track y.id) {
+                          <nz-option [nzValue]="y.id" [nzLabel]="getAcademicName(y)"></nz-option>
+                        }
+                      </nz-select>
+                    </div>
+                    <!-- Section -->
+                    <div class="tae-field tae-field-flex">
+                      <label class="tae-label">{{ t('teacherAddEditCourse.academicSectionLabel') }}</label>
+                      <nz-select formControlName="academicSectionId"
+                        class="tae-select" nzSize="large" nzAllowClear
+                        [nzPlaceHolder]="t('teacherAddEditCourse.academicSectionPlaceholder')"
+                        [nzDisabled]="!form.get('academicYearId')?.value">
+                        @for (sec of academicSections(); track sec.id) {
+                          <nz-option [nzValue]="sec.id" [nzLabel]="getAcademicName(sec)"></nz-option>
+                        }
+                      </nz-select>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            }
+
+            <!-- ─── Step 1: Curriculum ─── -->
+            @if (currentStep() === 1) {
+              <div class="tae-card-hd">
+                <p class="tae-card-title">📚 {{ t('teacherAddEditCourse.stepCurriculum') }}</p>
+                <p class="tae-card-sub">{{ t('teacherAddEditCourse.stepCurriculumDesc') }}</p>
+              </div>
+              <div class="tae-fields" [formGroup]="form">
+
+                <nz-alert
+                  [nzMessage]="t('teacherAddEditCourse.curriculumTipsTitle')"
+                  [nzDescription]="t('teacherAddEditCourse.curriculumTipsDesc')"
+                  nzType="info"
+                  nzShowIcon
+                  style="border-radius:10px; margin-bottom:24px">
+                </nz-alert>
+
+                <!-- Objectives / What you'll learn -->
+                <div class="tae-field" data-field="whatYouWillLearn">
+                  <label class="tae-label tae-label-req">{{ t('teacherAddEditCourse.fieldWhatLearn') }}</label>
+                  <p class="tae-field-hint">{{ t('teacherAddEditCourse.fieldWhatLearnHint') }}</p>
+                  <textarea nz-input formControlName="whatYouWillLearn"
+                    [placeholder]="t('teacherAddEditCourse.fieldWhatLearnPh')"
+                    [class.tae-input-err]="isFieldInvalid('whatYouWillLearn')"
+                    [nzAutosize]="{ minRows: 5, maxRows: 10 }"
+                    nzMaxLength="1000"
+                    class="tae-input"></textarea>
+                  @if (showError('whatYouWillLearn')) {
+                    <p class="tae-field-err">
+                      {{ t('teacherAddEditCourse.' + errorKey('whatYouWillLearn')) }}
+                    </p>
+                  }
+                </div>
+
+                <!-- Requirements -->
+                <div class="tae-field">
+                  <label class="tae-label">{{ t('teacherAddEditCourse.fieldRequirements') }}</label>
+                  <textarea nz-input formControlName="requirements"
+                    [placeholder]="t('teacherAddEditCourse.fieldRequirementsPh')"
+                    [nzAutosize]="{ minRows: 4, maxRows: 7 }"
+                    nzMaxLength="500"
+                    class="tae-input"></textarea>
+                </div>
+
+                <!-- Long description (moved here from Basics, matching React CurriculumStep) -->
+                <div class="tae-field">
+                  <label class="tae-label">{{ t('teacherAddEditCourse.fieldLongDescription') }}</label>
+                  <textarea nz-input formControlName="longDescription"
+                    [placeholder]="t('teacherAddEditCourse.fieldLongDescriptionPh')"
+                    [nzAutosize]="{ minRows: 5, maxRows: 10 }"
+                    nzMaxLength="5000"
+                    class="tae-input"></textarea>
+                </div>
+
+              </div>
+            }
+
+            <!-- ─── Step 2: Pricing ─── -->
+            @if (currentStep() === 2) {
+              <div class="tae-card-hd">
+                <p class="tae-card-title">💰 {{ t('teacherAddEditCourse.stepPricing') }}</p>
+                <p class="tae-card-sub">{{ t('teacherAddEditCourse.stepPricingDesc') }}</p>
+              </div>
+              <div class="tae-fields" [formGroup]="form">
+
+                <!-- Free toggle -->
+                <div class="tae-free-toggle">
+                  <div>
+                    <p class="tae-toggle-label">{{ t('teacherAddEditCourse.fieldFree') }}</p>
+                    <p class="tae-toggle-hint">{{ t('teacherAddEditCourse.fieldFreeHint') }}</p>
+                  </div>
+                  <nz-switch formControlName="isFree"
+                    [nzCheckedChildren]="t('teacherAddEditCourse.freeCourseSwitchOn')"
+                    [nzUnCheckedChildren]="t('teacherAddEditCourse.freeCourseSwitchOff')">
+                  </nz-switch>
+                </div>
+
+                @if (!isFree()) {
+                  <div class="tae-row">
+                    <!-- Price -->
+                    <div class="tae-field tae-field-flex" data-field="price">
+                      <label class="tae-label tae-label-req">{{ t('teacherAddEditCourse.fieldPrice') }}</label>
+                      <nz-input-number
+                        formControlName="price"
+                        [class.tae-input-err]="isFieldInvalid('price')"
+                        class="tae-input-num"
+                        nzSize="large"
+                        nzPrefix="EGP"
+                        [nzMin]="1"
+                        [nzMax]="99999"
+                        [nzStep]="1"
+                        [nzPrecision]="2"
+                        [nzFormatter]="priceFormatter"
+                        [nzParser]="priceParser"
+                        style="width:100%; max-width:280px">
+                      </nz-input-number>
+                      @if (showError('price')) {
+                        <p class="tae-field-err">{{ t('teacherAddEditCourse.priceRequired') }}</p>
+                      }
+                    </div>
+                    <!-- Discount price -->
+                    <div class="tae-field tae-field-flex">
+                      <label class="tae-label">{{ t('teacherAddEditCourse.fieldDiscountPrice') }}</label>
+                      <nz-input-number
+                        formControlName="discountPrice"
+                        class="tae-input-num"
+                        nzSize="large"
+                        nzPrefix="EGP"
+                        [nzMin]="0"
+                        [nzStep]="1"
+                        [nzPrecision]="2"
+                        [nzFormatter]="priceFormatter"
+                        [nzParser]="priceParser"
+                        style="width:100%; max-width:280px">
+                      </nz-input-number>
+                    </div>
+                  </div>
+                  <div style="
+                    background:#fffbeb; border:1px solid #fde68a;
+                    border-radius:10px; padding:10px 14px;
+                    font-size:12px; color:#78350f; margin-top:-8px; margin-bottom:16px">
+                    💡 {{ t('teacherAddEditCourse.discountPriceLaterHint') }}
+                  </div>
+                } @else {
+                  <nz-alert
+                    [nzMessage]="t('teacherAddEditCourse.freeCourseBenefitsTitle')"
+                    [nzDescription]="t('teacherAddEditCourse.freeCourseBenefitsDesc')"
+                    nzType="success"
+                    nzShowIcon
+                    style="border-radius:10px">
+                  </nz-alert>
+                }
+
+                <!-- Save & continue hint -->
+                <div style="
+                  background:linear-gradient(135deg,#eef0ff 0%,#f5f0ff 100%);
+                  border:1.5px solid #dde1f0; border-radius:12px;
+                  padding:16px 20px; margin-top:24px">
+                  <div style="font-weight:700; font-size:13px; color:#3d5af1; margin-bottom:10px; display:flex; align-items:center; gap:6px">
+                    💾 {{ t('teacherAddEditCourse.saveCourseHintTitle') }}
+                  </div>
+                  <p style="font-size:13px; color:#3a3f5c; margin:0; line-height:1.7">
+                    {{ t('teacherAddEditCourse.saveCourseHintDesc') }}
+                  </p>
+                </div>
+
+              </div>
+            }
+
+            <!-- ─── Step 3: Media ─── -->
+            @if (currentStep() === 3) {
+              <div class="tae-card-hd">
+                <p class="tae-card-title">🖼️ {{ t('teacherAddEditCourse.stepMedia') }}</p>
+                <p class="tae-card-sub">{{ t('teacherAddEditCourse.stepMediaDesc') }}</p>
+              </div>
+              <div class="tae-fields">
+
+                <div style="margin-bottom:28px">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px">
+                    <strong style="font-size:13px">{{ t('teacherAddEditCourse.fieldThumbnail') }}</strong>
+                    <nz-tag nzColor="blue">{{ t('teacherAddEditCourse.thumbnailRecommended') }}</nz-tag>
+                  </div>
+                  <p class="tae-field-hint">{{ t('teacherAddEditCourse.fieldThumbnailHint') }}</p>
+
+                  @if (thumbnailDisplayUrl) {
+                    <div class="tae-thumb-preview" style="position:relative; max-width:320px; margin-bottom:10px">
+                      <img [src]="thumbnailDisplayUrl" alt="Thumbnail"
+                        style="width:100%; height:180px; object-fit:cover; display:block; border-radius:10px" />
+                    </div>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:4px">
+                      <label class="tae-btn-ghost" for="tae-thumb-input" style="cursor:pointer; height:36px; padding:0 16px; line-height:36px">
+                        🔄 {{ t('teacherAddEditCourse.changeThumbnail') }}
+                        <input id="tae-thumb-input" type="file" accept="image/*"
+                          style="display:none" (change)="onThumbnailSelected($event)" />
+                      </label>
+                      <button class="tae-btn-ghost tae-btn-danger" style="height:36px; padding:0 14px"
+                        (click)="removeThumbnail()">
+                        ✕ {{ t('teacherAddEditCourse.removeThumbnail') }}
+                      </button>
+                    </div>
+                  } @else {
+                    <label class="tae-upload-zone" for="tae-thumb-input">
+                      <div class="tae-upload-ico">🖼️</div>
+                      <p class="tae-upload-label">{{ t('teacherAddEditCourse.uploadLabel') }}</p>
+                      <p class="tae-upload-hint">{{ t('teacherAddEditCourse.uploadHint') }}</p>
+                      <p class="tae-upload-hint" style="font-size:11px">{{ t('teacherAddEditCourse.thumbnailMaxSizeHint') }}</p>
+                      <input id="tae-thumb-input" type="file" accept="image/*"
+                        style="display:none" (change)="onThumbnailSelected($event)" />
+                    </label>
+                  }
+                </div>
+
+              </div>
+            }
+
+            <!-- ── Step nav ── -->
+            <div class="tae-nav">
+              @if (currentStep() > 0) {
+                <button class="tae-btn-ghost" (click)="prevStep()">
+                  <lucide-icon [img]="prevChevronIcon" [size]="14"></lucide-icon>
+                  {{ t('teacherAddEditCourse.previousBtn') }}
+                </button>
+              }
+              <span style="flex:1"></span>
+              @if (currentStep() < steps.length - 1) {
+                <button class="tae-btn-primary" (click)="nextStep()">
+                  {{ t('teacherAddEditCourse.nextBtn') }}: {{ t('teacherAddEditCourse.' + steps[currentStep() + 1].labelKey) }}
+                  <lucide-icon [img]="nextChevronIcon" [size]="14"></lucide-icon>
+                </button>
+              } @else {
+                <button class="tae-btn-primary"
+                  [disabled]="submitting()"
+                  [style.opacity]="submitting() ? '0.7' : '1'"
+                  (click)="handleSubmitWithValidation()">
+                  <lucide-icon [img]="SaveIcon" [size]="14"></lucide-icon>
+                  {{ submitting()
+                      ? t('teacherAddEditCourse.savingBtn')
+                      : isEditMode
+                        ? t('teacherAddEditCourse.updateBtn')
+                        : t('teacherAddEditCourse.createBtn') }}
+                </button>
+              }
+            </div>
+
+          </div><!-- /tae-card -->
+        </div><!-- /tae-main -->
+
+        <!-- ── Sidebar (desktop) ── -->
+        <aside class="tae-sidebar-desktop">
+          <ng-container *ngTemplateOutlet="sidebarContent"></ng-container>
+        </aside>
+
+      </div><!-- /tae-layout -->
+    </div><!-- /tae-body -->
+
+  </div><!-- /tae -->
+
+  <!-- ══ Sidebar Drawer (mobile) ══ -->
+  <nz-drawer
+    [nzVisible]="sidebarDrawerOpen()"
+    nzPlacement="right"
+    [nzWidth]="340"
+    [nzTitle]="t('teacherAddEditCourse.courseProgressTitle')"
+    (nzOnClose)="sidebarDrawerOpen.set(false)">
+    <ng-container *nzDrawerContent>
+      <ng-container *ngTemplateOutlet="sidebarContent"></ng-container>
+    </ng-container>
+  </nz-drawer>
+
+  <!-- ══ Publish Request Modal ══ -->
+  <nz-modal
+    [nzVisible]="showPublishModal()"
+    [nzTitle]="t('teacherAddEditCourse.submitReviewTitle')"
+    [nzWidth]="520"
+    nzCentered
+    (nzOnCancel)="closePublishModal()"
+    (nzOnOk)="submitPublishRequest()"
+    [nzOkText]="t('teacherAddEditCourse.submitReviewConfirm')"
+    [nzCancelText]="t('teacherAddEditCourse.cancel')"
+    [nzOkLoading]="publishSubmitting()"
+    [nzOkDisabled]="!completionChecklist().isPublishable">
+    <ng-container *nzModalContent>
+      <p style="margin-bottom:12px">{{ t('teacherAddEditCourse.submitReviewDesc') }}</p>
+      <textarea nz-input
+        [placeholder]="t('teacherAddEditCourse.teacherNotesPlaceholder')"
+        [nzAutosize]="{ minRows: 4, maxRows: 8 }"
+        [ngModel]="publishNotes()"
+        (ngModelChange)="publishNotes.set($event)"
+        class="tae-input">
+      </textarea>
+      @if (!completionChecklist().isPublishable) {
+        <nz-alert nzType="warning" nzShowIcon
+          style="margin-top:12px"
+          [nzMessage]="t('teacherAddEditCourse.publishNotReady')">
+        </nz-alert>
+      }
+    </ng-container>
+  </nz-modal>
+
+  <!-- ══ Success Modal ══ -->
+  <nz-modal
+    [nzVisible]="showSuccessModal()"
+    [nzTitle]="t('teacherAddEditCourse.successLabel')"
+    [nzFooter]="null"
+    [nzWidth]="480"
+    nzCentered
+    [nzClosable]="false"
+    [nzMaskClosable]="false">
+    <ng-container *nzModalContent>
+      <div class="tae-success-modal" style="padding:32px">
+        <div style="
+          width:64px; height:64px; border-radius:50%;
+          background:#22c55e15; display:flex;
+          align-items:center; justify-content:center;
+          margin:0 auto 20px">
+          <lucide-icon [img]="CheckCircleIcon" [size]="32" style="color:#22c55e"></lucide-icon>
+        </div>
+        <h2 style="text-align:center; font-size:22px; font-weight:700; color:#1a2342; margin-bottom:12px">
+          {{ t('teacherAddEditCourse.courseCreatedSuccessTitle') }}
+        </h2>
+        <p style="text-align:center; color:#64748b; margin-bottom:24px; font-size:14px; line-height:1.6">
+          {{ t('teacherAddEditCourse.courseCreatedSuccessDesc') }}
+        </p>
+
+        <div style="
+          background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);
+          border-radius:12px; padding:16px 20px; margin-bottom:24px">
+          <div style="font-weight:600; color:#166534; margin-bottom:12px">
+            📋 {{ t('teacherAddEditCourse.nextStepsTitle') }}
+          </div>
+          <ul style="margin:0; padding-left:20px; color:#14532d; font-size:13px; display:flex; flex-direction:column; gap:8px">
+            <li>{{ t('teacherAddEditCourse.nextStepAddSections') }}</li>
+            <li>{{ t('teacherAddEditCourse.nextStepAddLectures') }}</li>
+            <li>{{ t('teacherAddEditCourse.nextStepAddResources') }}</li>
+            <li>{{ t('teacherAddEditCourse.nextStepSubmitReview') }}</li>
+          </ul>
+        </div>
+
+        <div style="display:flex; gap:12px; justify-content:center">
+          <button class="tae-btn-ghost" (click)="closeSuccessModal()">
+            {{ t('teacherAddEditCourse.goToCoursesBtn') }}
+          </button>
+          <button class="tae-btn-primary" (click)="goToBuilder()">
+            <lucide-icon [img]="RocketIcon" [size]="14"></lucide-icon>
+            {{ t('teacherAddEditCourse.completeCourseBtn') }}
+          </button>
+        </div>
+      </div>
+    </ng-container>
+  </nz-modal>
+
+  }<!-- /else main -->
+
+  <!-- ══════════════════════════════════════════════════════════
+       SIDEBAR TEMPLATE — mirrors React FormSidebar
+  ══════════════════════════════════════════════════════════ -->
+  <ng-template #sidebarContent>
+    <div class="tae-sb" style="display:flex; flex-direction:column; gap:20px">
+
+      <!-- ─ Completion / Readiness card ─ -->
+      <div class="tae-sb-card">
+        <div style="padding:20px 24px">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px">
+            <strong style="font-size:14px">{{ t('teacherAddEditCourse.readinessTitle') }}</strong>
+            <!-- Conic-gradient donut (pure CSS, no extra dep) -->
+            <div style="position:relative; width:48px; height:48px; flex-shrink:0">
+              <nz-progress
+                [nzPercent]="completionPercent"
+                nzType="circle"
+                [nzWidth]="48"
+                [nzStrokeColor]="completionPercent >= 80 ? '#27ae60' : completionPercent >= 50 ? '#f39c12' : '#3d5af1'">
+              </nz-progress>
+            </div>
+          </div>
+
+          <!-- Checklist items matching React FormSidebar -->
+          <div class="tae-sb-checklist">
+            <div class="tae-sb-check" [class.tae-sb-check-done]="completionChecklist().hasThumbnail">
+              <span class="tae-sb-check-ico" [class.done]="completionChecklist().hasThumbnail">
+                {{ completionChecklist().hasThumbnail ? '✓' : '!' }}
+              </span>
+              {{ t('teacherAddEditCourse.checkThumbnail') }}
+            </div>
+            <div class="tae-sb-check" [class.tae-sb-check-done]="completionChecklist().hasDescription">
+              <span class="tae-sb-check-ico" [class.done]="completionChecklist().hasDescription">
+                {{ completionChecklist().hasDescription ? '✓' : '!' }}
+              </span>
+              {{ t('teacherAddEditCourse.checkDescription') }}
+            </div>
+            <div class="tae-sb-check" [class.tae-sb-check-done]="completionChecklist().hasObjectives">
+              <span class="tae-sb-check-ico" [class.done]="completionChecklist().hasObjectives">
+                {{ completionChecklist().hasObjectives ? '✓' : '!' }}
+              </span>
+              {{ t('teacherAddEditCourse.checkObjectives') }}
+            </div>
+            <div class="tae-sb-check" [class.tae-sb-check-done]="completionChecklist().hasSections">
+              <span class="tae-sb-check-ico" [class.done]="completionChecklist().hasSections">
+                {{ completionChecklist().hasSections ? '✓' : '!' }}
+              </span>
+              {{ t('teacherAddEditCourse.checkSections') }}
+            </div>
+            <div class="tae-sb-check" [class.tae-sb-check-done]="completionChecklist().hasLectures">
+              <span class="tae-sb-check-ico" [class.done]="completionChecklist().hasLectures">
+                {{ completionChecklist().hasLectures ? '✓' : '!' }}
+              </span>
+              {{ t('teacherAddEditCourse.checkLectures') }}
+            </div>
+            <div class="tae-sb-check tae-sb-check-optional" [class.tae-sb-check-done]="completionChecklist().hasPromoVideo">
+              <span class="tae-sb-check-ico optional" [class.done]="completionChecklist().hasPromoVideo">
+                {{ completionChecklist().hasPromoVideo ? '✓' : '○' }}
+              </span>
+              {{ t('teacherAddEditCourse.checkPromoVideo') }}
+              <nz-tag style="font-size:10px; margin-left:auto">{{ t('teacherAddEditCourse.optionalTag') }}</nz-tag>
+            </div>
+          </div>
+
+          @if (isEditMode) {
+            <!-- Go to builder -->
+            <button class="tae-btn-publish tae-btn-green" style="margin-top:16px"
+              (click)="goToBuilder()">
+              🛠️ {{ t('teacherAddEditCourse.goToBuilderBtn') }}
+            </button>
+            <div style="
+              background:#f0fdf4; border:1px solid #a7f3d0; border-radius:8px;
+              padding:10px 12px; font-size:12px; color:#065f46; margin-top:8px;
+              display:flex; align-items:center; gap:6px">
+              ℹ️ {{ t('teacherAddEditCourse.builderHint') }}
+            </div>
+
+            @if (courseData()?.isPublished) {
+              <div style="
+                margin-top:14px; padding:10px 14px; background:#e8faf0;
+                border-radius:10px; display:flex; gap:8px; align-items:center">
+                <lucide-icon [img]="CheckCircleIcon" [size]="16" style="color:#27ae60"></lucide-icon>
+                <strong style="color:#065f46; font-size:13px">{{ t('teacherAddEditCourse.courseIsLive') }}</strong>
+              </div>
+            }
+          }
+        </div>
+      </div>
+
+      <!-- ─ Publish status card (edit mode) ─ -->
+      @if (isEditMode && latestPublishRequest) {
+        <div class="tae-sb-card">
+          <div style="padding:20px 24px">
+            <strong style="font-size:14px; display:block; margin-bottom:12px">
+              {{ t('teacherAddEditCourse.reviewStatusTitle') }}
+            </strong>
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px">
+              <nz-tag [nzColor]="publishStatusMeta(latestPublishRequest.status).color">
+                {{ t('teacherAddEditCourse.' + publishStatusMeta(latestPublishRequest.status).labelKey) }}
+              </nz-tag>
+              <span style="font-size:12px; color:#8a94b2">
+                {{ (latestPublishRequest.requestedAt || latestPublishRequest.createdAt) | date:'mediumDate' }}
+              </span>
+            </div>
+            @if (latestPublishRequest.adminFeedback || latestPublishRequest.adminNotes) {
+              <div style="
+                background:#fefce8; border:1.5px solid #fde68a; border-radius:8px;
+                padding:10px 12px; font-size:13px; color:#78350f; margin-bottom:12px">
+                <strong>{{ t('teacherAddEditCourse.adminFeedbackLabel') }}:</strong>
+                {{ latestPublishRequest.adminFeedback || latestPublishRequest.adminNotes }}
+              </div>
+            }
+            @if (latestPublishRequest.status === 'Rejected' || latestPublishRequest.status === 'ChangesRequested') {
+              <button class="tae-btn-primary" style="width:100%; justify-content:center"
+                (click)="openPublishModal()">
+                <lucide-icon [img]="SendIcon" [size]="14"></lucide-icon>
+                {{ t('teacherAddEditCourse.resubmitBtn') }}
+              </button>
+            }
+            @if (!courseData()?.isPublished && latestPublishRequest.status !== 'Rejected' && latestPublishRequest.status !== 'ChangesRequested') {
+              <button class="tae-btn-publish"
+                [disabled]="!completionChecklist().isPublishable"
+                [nz-tooltip]="!completionChecklist().isPublishable ? t('teacherAddEditCourse.publishNotReady') : ''"
+                (click)="openPublishModal()">
+                <lucide-icon [img]="SendIcon" [size]="14"></lucide-icon>
+                {{ t('teacherAddEditCourse.submitForReview') }}
+              </button>
+            }
+          </div>
+        </div>
+      }
+
+      @else if (isEditMode && !latestPublishRequest && !courseData()?.isPublished) {
+        <div class="tae-sb-card">
+          <div style="padding:20px 24px">
+            <strong style="font-size:14px; display:block; margin-bottom:12px">
+              {{ t('teacherAddEditCourse.publishStatusTitle') }}
+            </strong>
+            <nz-tag nzColor="default">{{ t('teacherAddEditCourse.statusDraft') }}</nz-tag>
+            <button class="tae-btn-publish" style="margin-top:14px"
+              [disabled]="!completionChecklist().isPublishable"
+              [nz-tooltip]="!completionChecklist().isPublishable ? t('teacherAddEditCourse.publishNotReady') : ''"
+              (click)="openPublishModal()">
+              <lucide-icon [img]="SendIcon" [size]="14"></lucide-icon>
+              {{ t('teacherAddEditCourse.submitForReview') }}
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- ─ Course stats card (edit mode) ─ -->
+      @if (isEditMode && courseData()) {
+        <div class="tae-sb-card">
+          <div style="padding:20px 24px">
+            <strong style="font-size:14px; display:block; margin-bottom:14px">
+              {{ t('teacherAddEditCourse.courseInfoTitle') }}
+            </strong>
+            <div class="tae-sb-stats">
+              <div class="tae-sb-stat">
+                <div class="tae-sb-stat-ico" style="background:#3d5af115; color:#3d5af1">👥</div>
+                <div>
+                  <div class="tae-sb-stat-lbl">{{ t('teacherAddEditCourse.studentsLabel') }}</div>
+                  <div class="tae-sb-stat-val">{{ courseData()!.studentCount || 0 }}</div>
+                </div>
+              </div>
+              <div class="tae-sb-stat">
+                <div class="tae-sb-stat-ico" style="background:#f39c1215; color:#f39c12">⭐</div>
+                <div>
+                  <div class="tae-sb-stat-lbl">{{ t('teacherAddEditCourse.ratingLabel') }}</div>
+                  <div class="tae-sb-stat-val">{{ (courseData()!.rating || 0) | number:'1.1-1' }} / 5</div>
+                </div>
+              </div>
+              <div class="tae-sb-stat">
+                <div class="tae-sb-stat-ico" style="background:#27ae6015; color:#27ae60">📖</div>
+                <div>
+                  <div class="tae-sb-stat-lbl">{{ t('teacherAddEditCourse.totalLecturesLabel') }}</div>
+                  <div class="tae-sb-stat-val">{{ courseData()!.totalLectures || 0 }}</div>
+                </div>
+              </div>
+              <div class="tae-sb-stat">
+                <div class="tae-sb-stat-ico" style="background:#9b59b615; color:#9b59b6">⏱️</div>
+                <div>
+                  <div class="tae-sb-stat-lbl">{{ t('teacherAddEditCourse.totalHoursLabel') }}</div>
+                  <div class="tae-sb-stat-val">{{ courseData()!.totalHours || 0 }}h</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- ─ Tips card ─ -->
+      <div class="tae-sb-card">
+        <div style="padding:20px 24px">
+          <strong style="font-size:14px; display:block; margin-bottom:14px">
+            💡 {{ t('teacherAddEditCourse.tipsTitle') }}
+          </strong>
+          @for (tip of [
+            t('teacherAddEditCourse.tip1'),
+            t('teacherAddEditCourse.tip2'),
+            t('teacherAddEditCourse.tip3'),
+            t('teacherAddEditCourse.tip4')
+          ]; track $index) {
+            <div style="display:flex; gap:10px; margin-bottom:10px"
+              [style.opacity]="currentStep() === $index ? '1' : '0.5'">
+              <div style="
+                width:20px; height:20px; border-radius:50%; flex-shrink:0; margin-top:1px;
+                display:flex; align-items:center; justify-content:center;
+                font-size:10px; font-weight:700;"
+                [style.background]="currentStep() === $index ? '#3d5af1' : '#e8ecf5'"
+                [style.color]="currentStep() === $index ? '#fff' : '#8a94b2'">
+                {{ $index + 1 }}
+              </div>
+              <span style="font-size:12px; line-height:1.5"
+                [style.color]="currentStep() === $index ? '#1a2342' : '#8a94b2'">
+                {{ tip }}
+              </span>
+            </div>
+          }
+        </div>
+      </div>
+
+    </div>
+  </ng-template>
+
+</ng-container>

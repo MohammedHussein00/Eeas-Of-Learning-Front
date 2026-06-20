@@ -1,0 +1,1048 @@
+<ng-container *transloco="let t; scope: 'teacherCourseRooms'">
+<div class="crb-root">
+
+  <!-- ── Loading ── -->
+  <div *ngIf="loading" class="crb-loading-screen">
+    <nz-spin nzSize="large"></nz-spin>
+    <div class="crb-loading-text">{{ t('teacherCourseRooms.loadingRooms') }}</div>
+  </div>
+
+  <ng-container *ngIf="!loading">
+
+    <!-- ── Header ── -->
+    <div class="crb-header">
+      <div class="crb-header-left">
+        <button class="crb-input-btn crb-mobile-only" (click)="siderOpen = !siderOpen">
+          <lucide-icon [img]="MenuIcon" [size]="18"></lucide-icon>
+        </button>
+        <button class="crb-back-btn" (click)="navigateBack()">
+          <lucide-icon [img]="ArrowLeftIcon" [size]="16"></lucide-icon>
+          <span class="crb-back-label">{{ t('teacherCourseRooms.back') }}</span>
+        </button>
+        <div class="crb-divider-v"></div>
+        <div>
+          <div class="crb-header-title">{{ t('teacherCourseRooms.pageTitle') }}</div>
+          <div class="crb-header-sub">{{ t('teacherCourseRooms.pageSubtitle') }}</div>
+        </div>
+      </div>
+      <button nz-button nz-tooltip class="crb-btn-primary"
+        [nzTooltipTitle]="getTooltipCreate()"
+        [disabled]="!planInfo?.hasAccess || !hasCourses || atLimit || availableCoursesForRoom.length === 0"
+        (click)="openCreateRoom()">
+        <lucide-icon [img]="PlusIcon" [size]="15"></lucide-icon>
+        <span class="crb-btn-label">{{ t('teacherCourseRooms.createRoom') }}</span>
+      </button>
+    </div>
+
+    <div class="crb-body">
+
+      <!-- ── Sidebar overlay (mobile) ── -->
+      <div class="crb-sider-overlay" [class.visible]="siderOpen" (click)="siderOpen = false"></div>
+
+      <!-- ── Sidebar ── -->
+      <div class="crb-sider" [class.open]="siderOpen">
+        <div class="crb-sider-header">
+          <div class="crb-sider-title">
+            <lucide-icon [img]="UsersIcon" [size]="16" style="color:#3d5af1"></lucide-icon>
+            {{ t('teacherCourseRooms.rooms') }}
+            <nz-badge [nzCount]="rooms.length" [nzStyle]="{'background-color':'#3d5af1'}" style="margin-left:8px"></nz-badge>
+          </div>
+          <button class="crb-input-btn crb-mobile-only" (click)="siderOpen = false">
+            <lucide-icon [img]="XIcon" [size]="16"></lucide-icon>
+          </button>
+        </div>
+
+        <!-- No Access -->
+        <div *ngIf="planInfo && !planInfo.hasAccess" class="crb-no-access">
+          <div class="crb-no-access-icon">🔒</div>
+          <div class="crb-no-access-title">{{ t('teacherCourseRooms.upgradeRequired') }}</div>
+          <div class="crb-no-access-sub">{{ t('teacherCourseRooms.planNoAccess') }}</div>
+          <button class="crb-upgrade-btn" (click)="navigatePlans()">
+            <lucide-icon [img]="RocketIcon" [size]="13"></lucide-icon>
+            {{ t('teacherCourseRooms.upgradePlan') }}
+          </button>
+        </div>
+
+        <!-- Room usage bar -->
+        <div *ngIf="planInfo?.hasAccess && planInfo!.maxRoomsAllowed > 0" class="crb-plan-bar">
+          <div class="crb-plan-title">{{ t('teacherCourseRooms.roomUsage') }}</div>
+          <div class="crb-quota-bar">
+            <div class="crb-quota-fill" [style.width.%]="roomUsagePct" [style.background]="getRoomUsageColor()"></div>
+          </div>
+          <div class="crb-quota-labels">
+            <span>{{planInfo!.currentRoomCount}}/{{planInfo!.maxRoomsAllowed}}</span>
+            <span>{{planInfo!.remainingRooms}} {{ t('teacherCourseRooms.remaining') }}</span>
+          </div>
+          <div *ngIf="atLimit" class="crb-limit-warn">
+            <lucide-icon [img]="AlertCircleIcon" [size]="12"></lucide-icon>
+            {{ t('teacherCourseRooms.roomLimitReached') }}
+          </div>
+        </div>
+
+        <!-- No courses -->
+        <div *ngIf="planInfo?.hasAccess && !hasCourses" class="crb-no-courses">
+          <div class="crb-no-courses-icon">
+            <lucide-icon [img]="BookIcon" [size]="32" style="color:#0ea5e9"></lucide-icon>
+          </div>
+          <div class="crb-no-courses-title">{{ t('teacherCourseRooms.noCoursesYet') }}</div>
+          <div class="crb-no-courses-sub">{{ t('teacherCourseRooms.createCourseFirst') }}</div>
+          <button class="crb-create-course-btn" (click)="navigateCreateCourse()">
+            <lucide-icon [img]="PlusIcon" [size]="13"></lucide-icon>
+            {{ t('teacherCourseRooms.createCourse') }}
+          </button>
+        </div>
+
+        <!-- Room list -->
+        <div class="crb-room-list">
+          <div *ngIf="rooms.length === 0 && hasCourses && planInfo?.hasAccess" style="padding:24px;text-align:center">
+            <nz-empty [nzNotFoundContent]="t('teacherCourseRooms.noRoomsYet')"></nz-empty>
+          </div>
+          <div *ngFor="let room of rooms"
+            class="crb-room-item"
+            [class.active]="activeRoom?.id === room.id"
+            (click)="selectRoom(room)">
+            <div class="crb-room-avatar" [class.closed]="room.isClosed">{{room.name?.charAt(0)?.toUpperCase()}}</div>
+            <div class="crb-room-info">
+              <div class="crb-room-name">{{room.name}}</div>
+              <div class="crb-room-sub">{{room.courseTitle}} · {{room.memberCount}} {{ t('teacherCourseRooms.members') }}</div>
+            </div>
+            <nz-tag *ngIf="room.isClosed" nzColor="default" class="crb-closed-tag">{{ t('teacherCourseRooms.closed') }}</nz-tag>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Chat panel ── -->
+      <div class="crb-content">
+
+        <!-- Empty state -->
+        <div *ngIf="!activeRoom" class="crb-empty-state">
+          <div class="crb-empty-icon">💬</div>
+          <div class="crb-empty-title">{{ t('teacherCourseRooms.selectRoom') }}</div>
+          <div class="crb-empty-sub">{{ t('teacherCourseRooms.selectRoomDesc') }}</div>
+        </div>
+
+        <ng-container *ngIf="activeRoom">
+
+          <!-- Chat header -->
+          <div class="crb-chat-header">
+            <div class="crb-chat-header-left">
+              <button class="crb-input-btn crb-mobile-only" (click)="siderOpen = true">
+                <lucide-icon [img]="ArrowLeftIcon" [size]="16"></lucide-icon>
+              </button>
+              <div class="crb-room-avatar" [class.closed]="activeRoom.isClosed" style="width:40px;height:40px;font-size:16px;flex-shrink:0">
+                {{activeRoom.name?.charAt(0)?.toUpperCase()}}
+              </div>
+              <div style="min-width:0">
+                <div class="crb-chat-room-name">{{activeRoom.name}}</div>
+                <div class="crb-chat-room-sub">
+                  {{activeMembers.length}} {{ t('teacherCourseRooms.members') }} · {{onlineUsers.length}} {{ t('teacherCourseRooms.online') }}
+                  <nz-tag *ngIf="activeRoom.isClosed" nzColor="red" style="margin-left:6px;font-size:10px">{{ t('teacherCourseRooms.closed') }}</nz-tag>
+                  <span *ngIf="pagination.totalCount > 0" style="margin-left:6px;color:#b0b8d8">· {{pagination.totalCount}} {{ t('teacherCourseRooms.msgs') }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="crb-chat-header-actions">
+              <nz-badge *ngIf="pendingReports.length > 0" [nzCount]="pendingReports.length">
+                <button class="crb-input-btn crb-danger-btn" (click)="reportsDrawerOpen = true"
+                  nz-tooltip [nzTooltipTitle]="t('teacherCourseRooms.reports')">
+                  <lucide-icon [img]="FlagIcon" [size]="16"></lucide-icon>
+                </button>
+              </nz-badge>
+              <button class="crb-input-btn" nz-tooltip [nzTooltipTitle]="t('teacherCourseRooms.members')" (click)="membersDrawerOpen = true">
+                <lucide-icon [img]="UsersIcon" [size]="16"></lucide-icon>
+              </button>
+              <button class="crb-input-btn" nz-tooltip [nzTooltipTitle]="t('teacherCourseRooms.addMembers')" (click)="openAddMembers()">
+                <lucide-icon [img]="UserPlusIcon" [size]="16"></lucide-icon>
+              </button>
+              <button class="crb-input-btn" nz-tooltip [nzTooltipTitle]="t('teacherCourseRooms.settings')" (click)="openSettings()">
+                <lucide-icon [img]="SettingsIcon" [size]="16"></lucide-icon>
+              </button>
+              <button class="crb-input-btn"
+                nz-tooltip
+                [nzTooltipTitle]="activeRoom.isClosed ? t('teacherCourseRooms.reopen') : t('teacherCourseRooms.close')"
+                [class.crb-reopen-btn]="activeRoom.isClosed"
+                (click)="activeRoom.isClosed ? reopenRoom() : closeRoom()">
+                <lucide-icon [img]="activeRoom.isClosed ? UnlockIcon : LockIcon" [size]="16"></lucide-icon>
+              </button>
+            </div>
+          </div>
+
+          <!-- ── Error banner (SignalR / send errors) ── -->
+          <div *ngIf="errorMessage" class="crb-banner crb-banner-danger crb-error-banner">
+            <lucide-icon [img]="AlertCircleIcon" [size]="14"></lucide-icon>
+            <span style="flex:1">{{ errorMessage }}</span>
+            <button class="crb-input-btn" style="color:inherit;margin-left:8px" (click)="errorMessage = null">
+              <lucide-icon [img]="XIcon" [size]="13"></lucide-icon>
+            </button>
+          </div>
+
+          <!-- Banners -->
+          <div *ngIf="activeRoom.isClosed && isTeacher" class="crb-banner crb-banner-info">
+            <lucide-icon [img]="UnlockIcon" [size]="14"></lucide-icon>
+            {{ t('teacherCourseRooms.roomClosedTeacher') }}
+          </div>
+          <div *ngIf="activeRoom.isClosed && !isTeacher" class="crb-banner crb-banner-warn">
+            <lucide-icon [img]="LockIcon" [size]="14"></lucide-icon>
+            {{ t('teacherCourseRooms.roomClosedStudent') }}
+          </div>
+          <div *ngIf="showQuotaWarning" class="crb-banner"
+            [class.crb-banner-warn]="!quotaIsBlocked"
+            [class.crb-banner-danger]="quotaIsBlocked">
+            <lucide-icon [img]="AlertCircleIcon" [size]="14"></lucide-icon>
+            <span *ngIf="!quotaIsBlocked">{{quota!.used}}/{{quota!.limit}} {{ t('teacherCourseRooms.messagesUsed') }} {{quota!.periodLabel}}</span>
+            <span *ngIf="quotaIsBlocked">{{ t('teacherCourseRooms.messageLimitReached') }} {{quota!.used}}/{{quota!.limit}}. {{ t('teacherCourseRooms.upgradePlan') }}.</span>
+            <span *ngIf="quota?.nextResetTime" style="margin-left:auto;opacity:.7">{{ t('teacherCourseRooms.resets') }} {{quota!.nextResetTime | date}}</span>
+          </div>
+
+          <!-- ── Messages wrapper ── -->
+          <div class="crb-messages-wrapper">
+            <div class="crb-messages" #messagesContainer>
+
+              <!-- Top sentinel for IntersectionObserver -->
+              <div #topSentinel class="crb-top-sentinel"></div>
+
+              <!-- Loading indicator -->
+              <div *ngIf="pagination.isLoadingMore || pagination.isInitialLoading" class="crb-load-more-indicator">
+                <nz-spin [nzIndicator]="spinTpl" nzSize="small"></nz-spin>
+                <ng-template #spinTpl><span nz-icon nzType="loading" nzSpin style="font-size:14px"></span></ng-template>
+                <span>{{pagination.isInitialLoading ? t('teacherCourseRooms.loadingMessages') : t('teacherCourseRooms.loadingOlder')}}</span>
+              </div>
+
+              <!-- Empty state -->
+              <div *ngIf="!pagination.isInitialLoading && messages.length === 0" class="crb-msgs-empty">
+                <div style="font-size:36px;margin-bottom:12px">👋</div>
+                <div class="crb-msgs-empty-title">{{ t('teacherCourseRooms.noMessages') }}</div>
+                <div class="crb-msgs-empty-sub">{{ t('teacherCourseRooms.noMessagesSub') }}</div>
+              </div>
+
+              <!-- Messages list -->
+              <ng-container *ngFor="let item of groupedMessages(); trackBy: trackByMsg">
+
+                <!-- Date separator -->
+                <div *ngIf="item.type === 'separator'" class="crb-date-sep">{{item.label}}</div>
+
+                <!-- Deleted message -->
+                <div *ngIf="item.type === 'message' && item.msg!.isDeleted" class="crb-msg deleted">
+                  <span class="crb-deleted-text">{{ t('teacherCourseRooms.messageDeleted') }}</span>
+                </div>
+
+                <!-- Normal message -->
+                <ng-container *ngIf="item.type === 'message' && !item.msg!.isDeleted">
+                  <div class="crb-msg"
+                    [class.me]="item.msg!.isCurrentUserSender"
+                    [class.other]="!item.msg!.isCurrentUserSender"
+                    [class.pending]="item.msg!._pending"
+                    [class.failed]="item.msg!._failed"
+                    [attr.data-msg-id]="item.msg!.id">
+
+                    <!-- Avatar (other users only) -->
+                    <nz-avatar
+                      *ngIf="!item.msg!.isCurrentUserSender"
+                      [nzSrc]="avatarUrl(item.msg!.senderImageUrl) || undefined"
+                      [nzText]="item.msg!.senderName?.charAt(0)"
+                      [nzSize]="34"
+                      class="crb-msg-avatar">
+                    </nz-avatar>
+
+                    <div class="crb-msg-body" style="position:relative">
+
+                      <!-- Sender name -->
+                      <div *ngIf="!item.msg!.isCurrentUserSender" class="crb-msg-sender">
+                        {{item.msg!.senderName}}
+                        <nz-tag *ngIf="item.msg!.isSenderTeacher" nzColor="blue" style="margin-left:4px;font-size:10px;border-radius:4px">{{ t('teacherCourseRooms.teacher') }}</nz-tag>
+                      </div>
+
+                      <!-- Reply preview -->
+                      <div *ngIf="item.msg!.replyToMessage" class="crb-msg-reply">
+                        <div class="crb-msg-reply-name">{{item.msg!.replyToMessage.senderName}}</div>
+                        <div class="crb-msg-reply-content">{{item.msg!.replyToMessage.content ?? '[file]'}}</div>
+                      </div>
+
+                      <!-- Bubble -->
+                      <div class="crb-msg-bubble">
+
+                        <!-- File type badge (only for file types, not image/audio/video) -->
+                        <div *ngIf="getFileTypeBadge(item.msg!) as badge"
+                          class="crb-file-badge"
+                          [style.background]="badge.bg"
+                          [style.color]="badge.color">
+                          <lucide-icon *ngIf="badge.icon" [img]="badge.icon" [size]="12"></lucide-icon>
+                          <span>{{badge.label}}</span>
+                        </div>
+
+                        <!-- ── Image: clickable for full preview ── -->
+                        <img *ngIf="item.msg!.contentType === CT.Image && item.msg!.fileUrl"
+                          [src]="item.msg!._pending ? item.msg!.fileUrl : fileUrl(item.msg!.fileUrl!)"
+                          [alt]="item.msg!.fileName || ''"
+                          class="crb-msg-image crb-msg-image-clickable"
+                          (click)="openImagePreview(item.msg!)" />
+
+                        <!-- ── Audio: always rendered immediately ──
+                             FIX: use [attr.src] + changeDetection trick to force render on voice send -->
+                        <div *ngIf="item.msg!.contentType === CT.Audio && item.msg!.fileUrl" class="crb-msg-audio">
+                          <lucide-icon [img]="AudioIcon" [size]="16" [style.color]="item.msg!.isCurrentUserSender ? '#fff' : '#3d5af1'"></lucide-icon>
+                          <audio controls [attr.src]="fileUrl(item.msg!.fileUrl!)" style="height:32px;flex:1" preload="metadata"></audio>
+                          <span *ngIf="item.msg!.audioDurationSeconds != null" class="crb-audio-dur"
+                            [style.color]="item.msg!.isCurrentUserSender ? 'rgba(255,255,255,.7)' : '#8a94b2'">
+                            {{fmtDur(item.msg!.audioDurationSeconds)}}
+                          </span>
+                        </div>
+
+                        <!-- Video -->
+                        <video *ngIf="item.msg!.contentType === CT.Video && item.msg!.fileUrl"
+                          controls [src]="fileUrl(item.msg!.fileUrl!)" class="crb-msg-video">
+                        </video>
+
+                        <!-- ── File: WhatsApp-style compact card ── -->
+                        <div *ngIf="item.msg!.contentType === CT.File && item.msg!.fileName"
+                          class="crb-file-card"
+                          [class.clickable]="!!item.msg!.fileUrl"
+                          [class.pending]="!item.msg!.fileUrl"
+                          (click)="item.msg!.fileUrl ? downloadFile(item.msg!) : null">
+                          
+                          <!-- Icon side -->
+                          <div class="crb-file-card-icon" [style.background]="getFilePreviewColor(item.msg!).bg">
+                            <lucide-icon [img]="getFilePreviewIcon(item.msg!)" [size]="22" [style.color]="getFilePreviewColor(item.msg!).color"></lucide-icon>
+                          </div>
+                          
+                          <!-- Info side -->
+                          <div class="crb-file-card-info">
+                            <div class="crb-file-card-name" [title]="item.msg!.fileName">{{item.msg!.fileName}}</div>
+                            <div class="crb-file-card-meta">
+                              <span class="crb-file-card-size">{{fmtSize(item.msg!.fileSize)}}</span>
+                              <span class="crb-file-card-ext">{{getFileExt(item.msg!.fileName)}}</span>
+                            </div>
+                          </div>
+                          
+                          <!-- Download arrow (only when fileUrl exists) -->
+                          <div *ngIf="item.msg!.fileUrl" class="crb-file-card-arrow">
+                            <lucide-icon [img]="DownloadIcon" [size]="16" [style.color]="item.msg!.isCurrentUserSender ? 'rgba(255,255,255,.7)' : 'var(--text-3)'"></lucide-icon>
+                          </div>
+                          
+                          <!-- Loading spinner for pending -->
+                          <div *ngIf="!item.msg!.fileUrl" class="crb-file-card-pending">
+                            <nz-spin nzSize="small"></nz-spin>
+                          </div>
+                        </div>
+
+                        <!-- Text -->
+                        <span *ngIf="item.msg!.content"
+                          [style.color]="item.msg!.isCurrentUserSender ? '#fff' : '#1a2342'">
+                          {{item.msg!.content}}
+                        </span>
+                        <div *ngIf="item.msg!.editedAt" class="crb-edited-label">{{ t('teacherCourseRooms.edited') }}</div>
+                      </div>
+
+                      <!-- ── Send status indicator ──────────────────────────────────
+                           Three states:
+                           1. _pending  → clock icon  (sending…)
+                           2. _failed   → error icon + "Tap to retry"
+                           3. sent OK   → double-check icon
+                      ──────────────────────────────────────────────────────────── -->
+                      <div *ngIf="item.msg!.isCurrentUserSender" class="crb-msg-status">
+                        <!-- Sending (pending) -->
+                        <ng-container *ngIf="item.msg!._pending && !item.msg!._failed">
+                          <span class="crb-status-chip crb-status-pending"
+                            nz-tooltip [nzTooltipTitle]="t('teacherCourseRooms.sending')">
+                            <lucide-icon [img]="ClockIcon" [size]="12"></lucide-icon>
+                            <span class="crb-status-label">{{ t('teacherCourseRooms.sending') }}</span>
+                          </span>
+                        </ng-container>
+
+                        <!-- Failed -->
+                        <ng-container *ngIf="item.msg!._failed">
+                          <span class="crb-status-chip crb-status-failed"
+                            (click)="retryMessage(item.msg!)"
+                            nz-tooltip [nzTooltipTitle]="t('teacherCourseRooms.tapToRetry')">
+                            <lucide-icon [img]="XCircleIcon" [size]="12"></lucide-icon>
+                            <span class="crb-status-label">{{ t('teacherCourseRooms.failed') }} · {{ t('teacherCourseRooms.tapToRetry') }}</span>
+                          </span>
+                        </ng-container>
+
+                        <!-- Sent successfully -->
+                        <ng-container *ngIf="!item.msg!._pending && !item.msg!._failed">
+                          <span class="crb-status-chip crb-status-sent"
+                            nz-tooltip [nzTooltipTitle]="t('teacherCourseRooms.sent')">
+                            <lucide-icon [img]="CheckCheckIcon" [size]="12"></lucide-icon>
+                          </span>
+                        </ng-container>
+                      </div>
+
+                      <!-- Reactions -->
+                      <div *ngIf="item.msg!._reactionGroups && item.msg!._reactionGroups!.length > 0" class="crb-msg-reactions">
+                        <ng-container *ngFor="let g of item.msg!._reactionGroups">
+                          <nz-tag
+                            nz-popover
+                            [nzPopoverContent]="reactionPopTpl"
+                            nzPopoverTrigger="click"
+                            nzPopoverPlacement="top"
+                            style="cursor:pointer;border-radius:12px;font-size:12px"
+                            [style.background]="g.myReaction ? '#3d5af1' : ''"
+                            [style.color]="g.myReaction ? '#fff' : ''"
+                            [style.border-color]="g.myReaction ? '#3d5af1' : ''">
+                            {{g.emoji}} {{g.count}}
+                          </nz-tag>
+                          <ng-template #reactionPopTpl>
+                            <div class="crb-react-pop">
+                              <div class="crb-react-pop-title">{{g.emoji}} {{g.count}} reaction{{g.count !== 1 ? 's' : ''}}</div>
+                              <div *ngFor="let r of g.reactors" class="crb-react-user-row">
+                                <nz-avatar
+                                  [nzSrc]="avatarUrl(r.profileImageUrl) || undefined"
+                                  [nzText]="r.userName?.charAt(0)"
+                                  [nzSize]="22">
+                                </nz-avatar>
+                                <span [class.crb-react-me]="isSameUser(r.userId)">
+                                  {{isSameUser(r.userId) ? t('teacherCourseRooms.you') : r.userName}}
+                                </span>
+                              </div>
+                              <button *ngIf="g.myReaction" class="crb-react-remove-btn" (click)="removeReaction(item.msg!, g.emoji)">
+                                <lucide-icon [img]="XIcon" [size]="11"></lucide-icon>
+                                {{ t('teacherCourseRooms.removeReaction') }}
+                              </button>
+                            </div>
+                          </ng-template>
+                        </ng-container>
+                      </div>
+
+ 
+
+                      <div class="crb-msg-time" [class.me]="item.msg!.isCurrentUserSender">{{fmtTime(item.msg!.sentAt)}}</div>
+                    </div>
+
+                    <!-- Context menu (only for non-pending messages) -->
+                    <div *ngIf="!item.msg!._pending && !item.msg!._failed" class="crb-ctx-wrap" style="align-self:center;flex-shrink:0;position:relative">
+                      <button class="crb-ctx-trigger" (click)="toggleCtx(item.msg!)">
+                        <lucide-icon [img]="MoreHorizontalIcon" [size]="15"></lucide-icon>
+                      </button>
+                      <div *ngIf="item.msg!._ctxOpen" class="crb-ctx-menu"
+                        [style.right]="item.msg!.isCurrentUserSender ? '0' : 'auto'"
+                        [style.left]="item.msg!.isCurrentUserSender ? 'auto' : '0'">
+                        <button *ngIf="item.msg!.canEdit" class="crb-ctx-item" (click)="startEdit(item.msg!)">
+                          <lucide-icon [img]="EditIcon" [size]="13"></lucide-icon>
+                          {{ t('teacherCourseRooms.edit') }}
+                        </button>
+                        <button *ngIf="item.msg!.canDelete || isTeacher" class="crb-ctx-item danger" (click)="deleteMessage(item.msg!)">
+                          <lucide-icon [img]="Trash2Icon" [size]="13"></lucide-icon>
+                          {{ t('teacherCourseRooms.delete') }}
+                        </button>
+                        <button class="crb-ctx-item" (click)="startReply(item.msg!)">
+                          <lucide-icon [img]="MessageSquareIcon" [size]="13"></lucide-icon>
+                          {{ t('teacherCourseRooms.reply') }}
+                        </button>
+                        <button class="crb-ctx-item crb-emoji-trigger" (click)="toggleEmojiPicker(item.msg!, $event)">
+                          <lucide-icon [img]="SmileIcon" [size]="13"></lucide-icon>
+                          {{ t('teacherCourseRooms.react') }}
+                        </button>
+                        <button *ngIf="!item.msg!.isCurrentUserSender" class="crb-ctx-item" (click)="reportMessage(item.msg!)">
+                          <lucide-icon [img]="FlagIcon" [size]="13"></lucide-icon>
+                          {{ t('teacherCourseRooms.report') }}
+                        </button>
+                      </div>
+                    </div>
+
+                  </div>
+                </ng-container>
+              </ng-container>
+
+              <!-- Bottom anchor -->
+              <div #endRef style="height:1px;flex-shrink:0"></div>
+            </div>
+
+            <!-- Scroll-to-bottom FAB -->
+            <button class="crb-scroll-fab" [class.visible]="!isAtBottom" (click)="onScrollFab()">
+              <span *ngIf="unreadCount > 0" class="crb-fab-badge">{{unreadCount > 99 ? '99+' : unreadCount}}</span>
+              <lucide-icon [img]="ChevronDownIcon" [size]="18"></lucide-icon>
+            </button>
+          </div>
+
+          <!-- Reply bar -->
+          <div *ngIf="replyingTo" class="crb-bar">
+            <div>
+              <div class="crb-bar-title">{{ t('teacherCourseRooms.replyingTo') }} {{replyingTo.senderName}}</div>
+              <div class="crb-bar-content">{{replyingTo.content ?? '[file]'}}</div>
+            </div>
+            <button class="crb-input-btn" (click)="cancelReply()">
+              <lucide-icon [img]="XIcon" [size]="15"></lucide-icon>
+            </button>
+          </div>
+
+          <!-- Edit bar -->
+          <div *ngIf="editingMsg" class="crb-bar crb-bar-edit">
+            <span class="crb-edit-label">
+              <lucide-icon [img]="EditIcon" [size]="13"></lucide-icon>
+              {{ t('teacherCourseRooms.editingMessage') }}
+            </span>
+            <button class="crb-input-btn" (click)="cancelEdit()">
+              <lucide-icon [img]="XIcon" [size]="15"></lucide-icon>
+            </button>
+          </div>
+
+          <!-- Input area -->
+          <div *ngIf="inputVisible" class="crb-input-area">
+            <input type="file" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/bmp,image/svg+xml" #imageInput style="display:none" (change)="onImageSelect($event)" />
+            <input type="file" #fileInput style="display:none"
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.7z,.tar,.gz,.txt,.csv,.mp3,.mp4,.mov,.avi,.mkv,.wav,.ogg,.webm"
+              (change)="onFileSelect($event)" />
+
+            <!-- Voice recorder -->
+            <div *ngIf="showVoice" class="crb-input-row crb-voice-row">
+              <ng-container *ngIf="voice.state === 'idle'">
+                <nz-spin nzSize="small"></nz-spin>
+              </ng-container>
+              <ng-container *ngIf="voice.state === 'recording'">
+                <div class="crb-voice-dot"></div>
+                <span class="crb-voice-timer">{{fmtDur(voice.elapsed)}}</span>
+                <button class="crb-btn-stop" (click)="stopRecording()">
+                  <lucide-icon [img]="CheckCircleIcon" [size]="15"></lucide-icon>
+                  {{ t('teacherCourseRooms.stop') }}
+                </button>
+              </ng-container>
+              <ng-container *ngIf="voice.state === 'stopped' && voice.audioUrl">
+                <audio controls [src]="voice.audioUrl" style="height:32px;flex:1"></audio>
+                <span style="font-size:11px;color:#8a94b2">{{fmtDur(voice.elapsed)}}</span>
+                <button class="crb-btn-primary" style="height:36px;padding:0 14px"
+                  [disabled]="voiceSending"
+                  (click)="sendVoiceMessage()">
+                  <nz-spin *ngIf="voiceSending" nzSize="small"></nz-spin>
+                  <lucide-icon *ngIf="!voiceSending" [img]="SendIcon" [size]="14"></lucide-icon>
+                  {{ t('teacherCourseRooms.send') }}
+                </button>
+              </ng-container>
+              <button class="crb-input-btn" style="color:#ff4d4f" (click)="cancelVoice()">
+                <lucide-icon [img]="XIcon" [size]="15"></lucide-icon>
+              </button>
+            </div>
+
+            <!-- Normal input row -->
+            <div *ngIf="!showVoice" class="crb-input-row">
+              <button class="crb-input-btn" nz-tooltip [nzTooltipTitle]="t('teacherCourseRooms.sendImageHint')"
+                (click)="imageInput.click()" [disabled]="quotaBlocked || !canSendImages">
+                <lucide-icon [img]="CameraIcon" [size]="17"></lucide-icon>
+              </button>
+              <button class="crb-input-btn" nz-tooltip [nzTooltipTitle]="t('teacherCourseRooms.sendFileHint')"
+                (click)="fileInput.click()" [disabled]="quotaBlocked || !canSendFiles">
+                <lucide-icon [img]="PaperclipIcon" [size]="17"></lucide-icon>
+              </button>
+              <button class="crb-input-btn" nz-tooltip [nzTooltipTitle]="t('teacherCourseRooms.recordVoice')"
+                (click)="startVoiceRecorder()" [disabled]="quotaBlocked || !canSendVoice">
+                <lucide-icon [img]="MicIcon" [size]="17"></lucide-icon>
+              </button>
+              <input nz-input
+                [(ngModel)]="text"
+                [placeholder]="editingMsg ? t('teacherCourseRooms.editPlaceholder') : t('teacherCourseRooms.typePlaceholder')"
+                [disabled]="quotaBlocked"
+                (keydown)="onKeyDown($event)"
+                style="flex:1;border-radius:12px" />
+              <button class="crb-btn-primary" style="height:36px;padding:0 16px"
+                [disabled]="!text.trim() || sending || quotaBlocked"
+                (click)="sendText()">
+                <nz-spin *ngIf="sending" nzSize="small"></nz-spin>
+                <lucide-icon *ngIf="!sending" [img]="SendIcon" [size]="15"></lucide-icon>
+              </button>
+            </div>
+          </div>
+
+        </ng-container>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         ── Image SEND preview modal (before sending)
+    ══════════════════════════════════════════════════════════════════════ -->
+    <nz-modal
+      [(nzVisible)]="previewModalVisible"
+      [nzTitle]="t('imagePreview')"
+      [nzFooter]="imgPreviewFooter"
+      [nzWidth]="520"
+      [nzStyle]="{ maxWidth: 'calc(100vw - 32px)' }"
+      [nzBodyStyle]="{ padding: '22px' }"
+      [nzCentered]="true"
+      (nzOnCancel)="cancelPreview()"
+      nzClassName="crb-modal crb-img-preview-modal">
+      <ng-container *nzModalContent>
+        <div class="crb-img-preview-body" *ngIf="previewFile">
+          <div class="crb-img-preview-img-wrap">
+            <img [src]="previewUrl" alt="preview" class="crb-img-preview-img" />
+          </div>
+          <div class="crb-img-preview-meta">
+            <lucide-icon [img]="ImageIcon" [size]="14" class="crb-img-preview-icon"></lucide-icon>
+            <span class="crb-img-preview-name">{{previewFile.name}}</span>
+            <span class="crb-img-preview-size">· {{fmtSize(previewFile.size)}}</span>
+          </div>
+          <textarea
+            class="crb-img-preview-caption"
+            rows="2"
+            [placeholder]="t('addCaption')"
+            [(ngModel)]="previewCaption"
+            (keydown.enter)="$event.preventDefault(); sendPreview()">
+          </textarea>
+        </div>
+      </ng-container>
+      <ng-template #imgPreviewFooter>
+        <button class="crb-btn-ghost" (click)="cancelPreview()">
+          <lucide-icon [img]="XIcon" [size]="13"></lucide-icon>
+          {{ t('cancel') }}
+        </button>
+        <button class="crb-btn-primary" (click)="sendPreview()" [disabled]="previewSending">
+          <nz-spin *ngIf="previewSending" nzSize="small"></nz-spin>
+          <lucide-icon *ngIf="!previewSending" [img]="SendIcon" [size]="13"></lucide-icon>
+          {{ t('send') }}
+        </button>
+      </ng-template>
+    </nz-modal>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         ── File SEND preview modal (before sending)
+    ══════════════════════════════════════════════════════════════════════ -->
+    <nz-modal
+      [(nzVisible)]="fileSendPreviewModalVisible"
+      [nzTitle]="t('filePreview')"
+      [nzFooter]="fileSendPreviewFooter"
+      [nzWidth]="520"
+      [nzStyle]="{ maxWidth: 'calc(100vw - 32px)' }"
+      [nzBodyStyle]="{ padding: '22px' }"
+      [nzCentered]="true"
+      (nzOnCancel)="cancelFilePreview()"
+      nzClassName="crb-modal crb-file-preview-modal">
+      <ng-container *nzModalContent>
+        <div class="crb-img-preview-body" *ngIf="fileSendPreviewFile">
+          <div class="crb-img-preview-img-wrap" style="min-height:200px">
+            <div class="crb-file-preview-icon-large" [style.background]="getFilePreviewColorForFile(fileSendPreviewFile).bg">
+              <lucide-icon [img]="getFilePreviewIconForFile(fileSendPreviewFile)" [size]="48" [style.color]="getFilePreviewColorForFile(fileSendPreviewFile).color"></lucide-icon>
+            </div>
+            <div class="crb-file-preview-ext-large">{{getFileExt(fileSendPreviewFile.name)}}</div>
+          </div>
+          <div class="crb-img-preview-meta">
+            <lucide-icon [img]="getFilePreviewIconForFile(fileSendPreviewFile)" [size]="14" class="crb-img-preview-icon" [style.color]="getFilePreviewColorForFile(fileSendPreviewFile).color"></lucide-icon>
+            <span class="crb-img-preview-name" [title]="fileSendPreviewFile.name">{{fileSendPreviewFile.name}}</span>
+            <span class="crb-img-preview-size">· {{fmtSize(fileSendPreviewFile.size)}}</span>
+          </div>
+          <textarea
+            class="crb-img-preview-caption"
+            rows="2"
+            [placeholder]="t('addCaption')"
+            [(ngModel)]="fileSendPreviewCaption"
+            (keydown.enter)="$event.preventDefault(); sendFilePreview()">
+          </textarea>
+        </div>
+      </ng-container>
+      <ng-template #fileSendPreviewFooter>
+        <button class="crb-btn-ghost" (click)="cancelFilePreview()">
+          <lucide-icon [img]="XIcon" [size]="13"></lucide-icon>
+          {{ t('cancel') }}
+        </button>
+        <button class="crb-btn-primary" (click)="sendFilePreview()" [disabled]="fileSendPreviewSending">
+          <nz-spin *ngIf="fileSendPreviewSending" nzSize="small"></nz-spin>
+          <lucide-icon *ngIf="!fileSendPreviewSending" [img]="SendIcon" [size]="13"></lucide-icon>
+          {{ t('send') }}
+        </button>
+      </ng-template>
+    </nz-modal>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         ── File SEND preview modal (before sending)
+    ══════════════════════════════════════════════════════════════════════ -->
+    <nz-modal
+      [(nzVisible)]="fileSendPreviewModalVisible"
+      [nzTitle]="t('filePreview')"
+      [nzFooter]="fileSendPreviewFooter"
+      [nzWidth]="520"
+      [nzStyle]="{ maxWidth: 'calc(100vw - 32px)' }"
+      [nzBodyStyle]="{ padding: '22px' }"
+      [nzCentered]="true"
+      (nzOnCancel)="cancelFilePreview()"
+      nzClassName="crb-modal crb-file-preview-modal">
+      <ng-container *nzModalContent>
+        <div class="crb-img-preview-body" *ngIf="fileSendPreviewFile">
+          <div class="crb-img-preview-img-wrap" style="min-height:200px">
+            <div class="crb-file-preview-icon-large" [style.background]="getFilePreviewColorForFile(fileSendPreviewFile).bg">
+              <lucide-icon [img]="getFilePreviewIconForFile(fileSendPreviewFile)" [size]="48" [style.color]="getFilePreviewColorForFile(fileSendPreviewFile).color"></lucide-icon>
+            </div>
+            <div class="crb-file-preview-ext-large">{{getFileExt(fileSendPreviewFile.name)}}</div>
+          </div>
+          <div class="crb-img-preview-meta">
+            <lucide-icon [img]="getFilePreviewIconForFile(fileSendPreviewFile)" [size]="14" class="crb-img-preview-icon" [style.color]="getFilePreviewColorForFile(fileSendPreviewFile).color"></lucide-icon>
+            <span class="crb-img-preview-name" [title]="fileSendPreviewFile.name">{{fileSendPreviewFile.name}}</span>
+            <span class="crb-img-preview-size">· {{fmtSize(fileSendPreviewFile.size)}}</span>
+          </div>
+          <textarea
+            class="crb-img-preview-caption"
+            rows="2"
+            [placeholder]="t('addCaption')"
+            [(ngModel)]="fileSendPreviewCaption"
+            (keydown.enter)="$event.preventDefault(); sendFilePreview()">
+          </textarea>
+        </div>
+      </ng-container>
+      <ng-template #fileSendPreviewFooter>
+        <button class="crb-btn-ghost" (click)="cancelFilePreview()">
+          <lucide-icon [img]="XIcon" [size]="13"></lucide-icon>
+          {{ t('cancel') }}
+        </button>
+        <button class="crb-btn-primary" (click)="sendFilePreview()" [disabled]="fileSendPreviewSending">
+          <nz-spin *ngIf="fileSendPreviewSending" nzSize="small"></nz-spin>
+          <lucide-icon *ngIf="!fileSendPreviewSending" [img]="SendIcon" [size]="13"></lucide-icon>
+          {{ t('send') }}
+        </button>
+      </ng-template>
+    </nz-modal>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         ── Image VIEW modal (click on sent image in chat)
+    ══════════════════════════════════════════════════════════════════════ -->
+    <nz-modal
+      [(nzVisible)]="imageViewModalVisible"
+      [nzTitle]="imageViewMsg?.fileName || t('teacherCourseRooms.imagePreview')"
+      [nzFooter]="imageViewFooter"
+      nzWidth="720"
+      (nzOnCancel)="closeImageView()"
+      nzClassName="crb-modal crb-img-view-modal">
+      <ng-container *nzModalContent>
+        <div style="text-align:center;padding:8px 0" *ngIf="imageViewMsg">
+          <img [src]="fileUrl(imageViewMsg.fileUrl!)"
+            [alt]="imageViewMsg.fileName || 'image'"
+            style="max-width:100%;max-height:70vh;border-radius:10px;object-fit:contain;background:#111" />
+          <div *ngIf="imageViewMsg.content" style="margin-top:10px;font-size:13px;color:#ccc">
+            {{imageViewMsg.content}}
+          </div>
+          <div style="margin-top:8px;font-size:11px;color:#666;display:flex;align-items:center;justify-content:center;gap:12px">
+            <span>{{imageViewMsg.senderName}}</span>
+            <span>·</span>
+            <span>{{fmtTime(imageViewMsg.sentAt)}}</span>
+            <span *ngIf="imageViewMsg.fileSize">· {{fmtSize(imageViewMsg.fileSize)}}</span>
+          </div>
+        </div>
+      </ng-container>
+      <ng-template #imageViewFooter>
+        <button class="crb-btn-ghost" (click)="closeImageView()">
+          <lucide-icon [img]="XIcon" [size]="13"></lucide-icon>
+          {{ t('teacherCourseRooms.close') }}
+        </button>
+        <a *ngIf="imageViewMsg?.fileUrl"
+          [href]="fileUrl(imageViewMsg!.fileUrl!)"
+          target="_blank" rel="noreferrer"
+          class="crb-btn-primary" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none">
+          <lucide-icon [img]="DownloadIcon" [size]="13"></lucide-icon>
+          {{ t('teacherCourseRooms.download') }}
+        </a>
+      </ng-template>
+    </nz-modal>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         ── File preview modal (click on sent file attachment in chat)
+    ══════════════════════════════════════════════════════════════════════ -->
+    <nz-modal
+      [(nzVisible)]="filePreviewModalVisible"
+      [nzTitle]="filePreviewMsg?.fileName || t('filePreview')"
+      [nzFooter]="filePreviewFooter"
+      nzWidth="480"
+      nzCentered="false"
+      [nzStyle]="{ top: '24px' }"
+      (nzOnCancel)="closeFilePreview()"
+      nzClassName="crb-modal crb-file-preview-modal">
+      <ng-container *nzModalContent>
+        <div class="crb-img-preview-body" *ngIf="filePreviewMsg">
+
+          <!-- File icon area (matches image preview style) -->
+          <div class="crb-img-preview-img-wrap" style="min-height:200px">
+            <div class="crb-file-preview-icon-large" [style.background]="getFilePreviewColor(filePreviewMsg).bg">
+              <lucide-icon [img]="getFilePreviewIcon(filePreviewMsg)" [size]="48" [style.color]="getFilePreviewColor(filePreviewMsg).color"></lucide-icon>
+            </div>
+            <div class="crb-file-preview-ext-large">{{getFileExt(filePreviewMsg.fileName)}}</div>
+          </div>
+
+          <!-- File meta (matches image preview style) -->
+          <div class="crb-img-preview-meta">
+            <lucide-icon [img]="getFilePreviewIcon(filePreviewMsg)" [size]="14" class="crb-img-preview-icon" [style.color]="getFilePreviewColor(filePreviewMsg).color"></lucide-icon>
+            <span class="crb-img-preview-name" [title]="filePreviewMsg.fileName">{{filePreviewMsg.fileName}}</span>
+            <span class="crb-img-preview-size">{{fmtSize(filePreviewMsg.fileSize)}}</span>
+          </div>
+
+          <!-- Sender info row -->
+          <div style="display:flex;align-items:center;justify-content:center;gap:12px;font-size:12px;color:var(--text-2)">
+            <span style="display:flex;align-items:center;gap:4px">
+              <lucide-icon [img]="UserIcon" [size]="11"></lucide-icon>
+              {{filePreviewMsg.senderName}}
+            </span>
+            <span>·</span>
+            <span style="display:flex;align-items:center;gap:4px">
+              <lucide-icon [img]="ClockIcon" [size]="11"></lucide-icon>
+              {{fmtTime(filePreviewMsg.sentAt)}}
+            </span>
+          </div>
+
+          <!-- Caption if exists -->
+          <div *ngIf="filePreviewMsg.content" class="crb-file-preview-caption-text">
+            {{filePreviewMsg.content}}
+          </div>
+
+          <!-- Inline PDF preview (iframe) -->
+          <div *ngIf="isPdf(filePreviewMsg.fileName)" class="crb-pdf-preview-wrap">
+            <iframe
+              [src]="safeFileUrl(filePreviewMsg.fileUrl!)"
+              class="crb-pdf-iframe"
+              frameborder="0">
+            </iframe>
+          </div>
+
+        </div>
+      </ng-container>
+      <ng-template #filePreviewFooter>
+        <div class="crb-modal-footer">
+          <button class="crb-btn-ghost" (click)="closeFilePreview()">
+            <lucide-icon [img]="XIcon" [size]="13"></lucide-icon>
+            <span>{{ t('close') }}</span>
+          </button>
+          <a *ngIf="filePreviewMsg?.fileUrl"
+            [href]="fileUrl(filePreviewMsg!.fileUrl!)"
+            target="_blank" rel="noreferrer"
+            class="crb-btn-primary" style="text-decoration:none">
+            <lucide-icon [img]="DownloadIcon" [size]="13"></lucide-icon>
+            <span>{{ t('download') }}</span>
+          </a>
+        </div>
+      </ng-template>
+    </nz-modal>
+
+    <!-- ── Create Room Modal ── -->
+    <nz-modal
+      [(nzVisible)]="createModalOpen"
+      [nzTitle]="t('teacherCourseRooms.createRoomTitle')"
+      [nzFooter]="createRoomFooter"
+      nzWidth="520"
+      (nzOnCancel)="createModalOpen = false"
+      nzClassName="crb-modal">
+      <ng-container *nzModalContent>
+        <form nz-form [formGroup]="createForm" nzLayout="vertical">
+          <nz-form-item>
+            <nz-form-label nzRequired>{{ t('teacherCourseRooms.roomName') }}</nz-form-label>
+            <nz-form-control [nzErrorTip]="t('teacherCourseRooms.roomNameRequired')">
+              <input nz-input formControlName="name" [placeholder]="t('teacherCourseRooms.roomNamePh')" nzSize="large" />
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label>{{ t('teacherCourseRooms.description') }}</nz-form-label>
+            <nz-form-control>
+              <textarea nz-input formControlName="description" rows="2" [placeholder]="t('teacherCourseRooms.descriptionPh')"></textarea>
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label nzRequired>{{ t('teacherCourseRooms.course') }}</nz-form-label>
+            <nz-form-control [nzErrorTip]="t('teacherCourseRooms.courseRequired')">
+              <nz-select formControlName="courseId" [nzPlaceHolder]="t('teacherCourseRooms.selectCourse')" nzSize="large" style="width:100%"
+                (ngModelChange)="loadEnrolledStudents($event)">
+                <nz-option *ngFor="let c of availableCoursesForRoom" [nzLabel]="c.title" [nzValue]="c.id"></nz-option>
+              </nz-select>
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-control>
+              <label nz-checkbox formControlName="addAll">{{ t('teacherCourseRooms.addAllStudents') }}</label>
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item *ngIf="!createForm.get('addAll')?.value">
+            <nz-form-label>{{ t('teacherCourseRooms.selectStudents') }}</nz-form-label>
+            <nz-form-control>
+              <nz-select formControlName="students" nzMode="multiple" [nzPlaceHolder]="t('teacherCourseRooms.chooseStudents')" style="width:100%">
+                <nz-option *ngFor="let s of enrolledStudents" [nzLabel]="s.userName + ' (' + s.userEmail + ')'" [nzValue]="s.userId"></nz-option>
+              </nz-select>
+            </nz-form-control>
+          </nz-form-item>
+          <nz-divider [nzText]="t('teacherCourseRooms.studentPermissions')"></nz-divider>
+          <div nz-row [nzGutter]="16">
+            <div nz-col nzSpan="8"><label nz-checkbox formControlName="allowFiles">{{ t('teacherCourseRooms.files') }}</label></div>
+            <div nz-col nzSpan="8"><label nz-checkbox formControlName="allowImages">{{ t('teacherCourseRooms.images') }}</label></div>
+            <div nz-col nzSpan="8"><label nz-checkbox formControlName="allowVoice">{{ t('teacherCourseRooms.voice') }}</label></div>
+          </div>
+        </form>
+      </ng-container>
+      <ng-template #createRoomFooter>
+        <button class="crb-btn-ghost" (click)="createModalOpen = false">{{ t('teacherCourseRooms.cancel') }}</button>
+        <button class="crb-btn-primary" (click)="submitCreateRoom()">{{ t('teacherCourseRooms.create') }}</button>
+      </ng-template>
+    </nz-modal>
+
+    <!-- ── Add Members Modal ── -->
+    <nz-modal
+      [(nzVisible)]="addMembersModalOpen"
+      [nzTitle]="t('teacherCourseRooms.addMembersTitle')"
+      [nzFooter]="addMembersFooter"
+      (nzOnCancel)="addMembersModalOpen = false"
+      nzClassName="crb-modal">
+      <ng-container *nzModalContent>
+        <form nz-form [formGroup]="addMembersForm" nzLayout="vertical">
+          <nz-form-item>
+            <nz-form-control>
+              <label nz-checkbox formControlName="addAll">{{ t('teacherCourseRooms.addAllStudents') }}</label>
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item *ngIf="!addMembersForm.get('addAll')?.value">
+            <nz-form-label>{{ t('teacherCourseRooms.selectStudents') }}</nz-form-label>
+            <nz-form-control>
+              <nz-select formControlName="studentIds" nzMode="multiple" [nzPlaceHolder]="t('teacherCourseRooms.chooseStudents')" style="width:100%">
+                <nz-option *ngFor="let s of enrolledNotInRoom()" [nzLabel]="s.userName + ' (' + s.userEmail + ')'" [nzValue]="s.userId"></nz-option>
+              </nz-select>
+            </nz-form-control>
+          </nz-form-item>
+        </form>
+      </ng-container>
+      <ng-template #addMembersFooter>
+        <button class="crb-btn-ghost" (click)="addMembersModalOpen = false">{{ t('teacherCourseRooms.cancel') }}</button>
+        <button class="crb-btn-primary" (click)="submitAddMembers()">{{ t('teacherCourseRooms.add') }}</button>
+      </ng-template>
+    </nz-modal>
+
+    <!-- ── Settings Drawer ── -->
+    <nz-drawer
+      [(nzVisible)]="settingsDrawerOpen"
+      [nzTitle]="t('teacherCourseRooms.roomSettings')"
+      [nzWidth]="360"
+      (nzOnClose)="settingsDrawerOpen = false">
+      <ng-container *nzDrawerContent>
+        <form nz-form [formGroup]="settingsForm" nzLayout="vertical">
+          <nz-form-item>
+            <nz-form-label>{{ t('teacherCourseRooms.roomName') }}</nz-form-label>
+            <nz-form-control><input nz-input formControlName="name" /></nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label>{{ t('teacherCourseRooms.description') }}</nz-form-label>
+            <nz-form-control><textarea nz-input formControlName="description" rows="3"></textarea></nz-form-control>
+          </nz-form-item>
+          <nz-divider [nzText]="t('teacherCourseRooms.studentPermissions')"></nz-divider>
+          <nz-form-item>
+            <nz-form-label>{{ t('teacherCourseRooms.allowFileUploads') }}</nz-form-label>
+            <nz-form-control><nz-switch formControlName="allowFiles"></nz-switch></nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label>{{ t('teacherCourseRooms.allowImageUploads') }}</nz-form-label>
+            <nz-form-control><nz-switch formControlName="allowImages"></nz-switch></nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label>{{ t('teacherCourseRooms.allowVoiceMessages') }}</nz-form-label>
+            <nz-form-control><nz-switch formControlName="allowVoice"></nz-switch></nz-form-control>
+          </nz-form-item>
+        </form>
+      </ng-container>
+      <div *nzDrawerFooter>
+        <button class="crb-btn-primary" style="width:100%;justify-content:center" (click)="submitSettings()">
+          {{ t('teacherCourseRooms.save') }}
+        </button>
+      </div>
+    </nz-drawer>
+
+    <!-- ── Members Drawer ── -->
+    <nz-drawer
+      [(nzVisible)]="membersDrawerOpen"
+      [nzTitle]="t('teacherCourseRooms.members') + ' (' + activeMembers.length + ')'"
+      [nzWidth]="340"
+      (nzOnClose)="membersDrawerOpen = false">
+      <ng-container *nzDrawerContent>
+        <nz-list [nzDataSource]="activeMembers" [nzRenderItem]="memberItem">
+          <ng-template #memberItem let-m>
+            <nz-list-item [nzActions]="m.role !== 1 ? [muteAction, removeAction] : []">
+              <ng-template #muteAction>
+                <button nz-button nz-tooltip nzSize="small"
+                  [nzTooltipTitle]="m.isMuted ? t('teacherCourseRooms.unmute') : t('teacherCourseRooms.mute')"
+                  (click)="toggleMute(m)">
+                  <lucide-icon [img]="m.isMuted ? XCircleIcon : AudioIcon" [size]="13"></lucide-icon>
+                </button>
+              </ng-template>
+              <ng-template #removeAction>
+                <button nz-button nzSize="small" nzDanger
+                        nz-popconfirm
+                        [nzPopconfirmTitle]="t('teacherCourseRooms.removeMemberConfirm')"
+                        (nzOnConfirm)="removeMember(m)">
+                  <lucide-icon [img]="Trash2Icon" [size]="13"></lucide-icon>
+                </button>
+              </ng-template>
+              <nz-list-item-meta
+                [nzAvatar]="memberAvatar"
+                [nzTitle]="memberTitle"
+                [nzDescription]="memberDesc">
+              </nz-list-item-meta>
+              <ng-template #memberAvatar>
+                <nz-badge [nzDot]="true" [nzColor]="isOnline(m.userId) ? 'green' : 'gray'">
+                  <nz-avatar
+                    [nzSrc]="avatarUrl(m.profileImageUrl) || undefined"
+                    [nzText]="m.userName?.charAt(0)">
+                  </nz-avatar>
+                </nz-badge>
+              </ng-template>
+              <ng-template #memberTitle>
+                <span style="font-weight:600;font-size:13px">{{m.userName}}</span>
+                <nz-tag *ngIf="m.role === 1" nzColor="blue" style="font-size:10px;margin-left:4px">{{ t('teacherCourseRooms.teacher') }}</nz-tag>
+                <nz-tag *ngIf="m.isMuted" nzColor="orange" style="font-size:10px;margin-left:4px">{{ t('teacherCourseRooms.muted') }}</nz-tag>
+              </ng-template>
+              <ng-template #memberDesc>
+                <span style="font-size:11px;color:#8a94b2">
+                  {{m.lastSeen ? t('teacherCourseRooms.lastSeen') + ' ' + fmtDate(m.lastSeen) : t('teacherCourseRooms.neverSeen')}}
+                </span>
+              </ng-template>
+            </nz-list-item>
+          </ng-template>
+        </nz-list>
+      </ng-container>
+    </nz-drawer>
+
+    <!-- ── Reports Drawer ── -->
+    <nz-drawer
+      [(nzVisible)]="reportsDrawerOpen"
+      [nzTitle]="t('teacherCourseRooms.reports')"
+      [nzWidth]="360"
+      (nzOnClose)="reportsDrawerOpen = false">
+      <ng-container *nzDrawerContent>
+        <nz-empty *ngIf="pendingReports.length === 0" [nzNotFoundContent]="t('teacherCourseRooms.noPendingReports')"></nz-empty>
+        <nz-list *ngIf="pendingReports.length > 0" [nzDataSource]="pendingReports" [nzRenderItem]="reportItem">
+          <ng-template #reportItem let-r>
+            <nz-list-item [nzActions]="[dismissAction]">
+              <ng-template #dismissAction>
+                <button nz-button nzSize="small" (click)="dismissReport(r.id)">{{ t('teacherCourseRooms.dismiss') }}</button>
+              </ng-template>
+              <nz-list-item-meta
+                [nzAvatar]="reportIcon"
+                [nzTitle]="reportTitle"
+                [nzDescription]="reportDesc">
+              </nz-list-item-meta>
+              <ng-template #reportIcon>
+                <lucide-icon [img]="FlagIcon" [size]="18" style="color:#ff4d4f"></lucide-icon>
+              </ng-template>
+              <ng-template #reportTitle>
+                <span style="color:#ff4d4f;font-weight:600">{{r.reason}}</span>
+              </ng-template>
+              <ng-template #reportDesc>
+                <span style="font-size:11px;color:#8a94b2">
+                  {{ t('teacherCourseRooms.reportedBy') }} {{r.reportedByName}} · {{fmtDate(r.createdAt)}}
+                </span>
+              </ng-template>
+            </nz-list-item>
+          </ng-template>
+        </nz-list>
+      </ng-container>
+    </nz-drawer>
+
+  </ng-container>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       ── Floating Emoji Picker (global, positioned at click coordinates)
+  ══════════════════════════════════════════════════════════════════════ -->
+  <div
+    *ngIf="emojiPickerVisible"
+    class="crb-emoji-floating"
+    [style.left.px]="emojiPickerX"
+    [style.top.px]="emojiPickerY"
+    [style.position]="'fixed'"
+    [style.z-index]="9999">
+    <emoji-mart
+      theme="light"
+      [emojiSize]="20"
+      [perLine]="7"
+      [showPreview]="false"
+      [enableSearch]="true"
+      [showSingleCategory]="false"
+      [exclude]="['flags', 'symbols']"
+      (emojiSelect)="onEmojiSelect($event)">
+    </emoji-mart>
+  </div>
+
+</div>
+</ng-container>

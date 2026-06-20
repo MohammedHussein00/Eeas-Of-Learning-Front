@@ -1,1 +1,310 @@
 /* You can add global styles to this file, and also import other style files */
+// @import "ng-zorro-antd/ng-zorro-antd.aliyun.css";
+// ── Import ng-zorro base ──────────────────────────────
+// @import "ng-zorro-antd/ng-zorro-antd.compact.css";
+@import "ng-zorro-antd/ng-zorro-antd.compact.css";
+@import "@ctrl/ngx-emoji-mart/picker";
+:root {
+  /* Primary */
+  --ant-primary-color: #189952;
+  --ant-primary-color-hover: #40a9ff;
+  --ant-primary-color-active: #096dd9;
+  --brand:        #3d5af1;
+  --brand-light:  #5b78ff;
+  --brand-bg:     #eef0ff;
+  /* Status */
+  --ant-success-color: #52c41a;
+  --ant-warning-color: #faad14;
+  --ant-error-color: #f5222d;
+  --ant-info-color: #1890ff;
+
+  /* Typography */
+  --ant-font-size-base: 14px;
+  --ant-font-size-lg: 16px;
+  --ant-font-size-sm: 12px;
+
+  /* Border */
+  --ant-border-radius-base: 2px;
+  --ant-border-width-base: 1px;
+   --ld-font-head: 'Plus Jakarta Sans', sans-serif;
+  --ld-font-body: 'Outfit', sans-serif;
+
+  --ld-bg:        #f0f2f8;
+  --ld-surface:   #ffffff;
+  --ld-border:    #e4e8f4;
+  --ld-border-md: #d1d8ef;
+
+  --ld-blue:      #4f6ef7;
+  --ld-blue-bg:   #eef1ff;
+  --ld-blue-dark: #3851e0;
+
+  --ld-green:     #16a34a;
+  --ld-green-bg:  #dcfce7;
+
+  --ld-amber:     #d97706;
+  --ld-amber-bg:  #fef3c7;
+
+  --ld-red:       #dc2626;
+  --ld-red-bg:    #fee2e2;
+
+  --ld-purple:    #7c3aed;
+  --ld-purple-bg: #ede9fe;
+
+  --ld-cyan:      #0891b2;
+  --ld-cyan-bg:   #cffafe;
+
+  --ld-orange:    #ea580c;
+  --ld-orange-bg: #ffedd5;
+
+  --ld-text:      #1e2a45;
+  --ld-text-md:   #4a5568;
+  --ld-text-sm:   #718096;
+
+  --ld-radius:    12px;
+  --ld-radius-sm: 8px;
+  --ld-radius-xs: 5px;
+
+  --ld-shadow:    0 1px 3px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.04);
+  --ld-shadow-md: 0 4px 16px rgba(0,0,0,.08);
+  --ld-shadow-lg: 0 8px 32px rgba(0,0,0,.12);
+  --ld-trans:     all .18s ease;
+
+
+  --green:        #059669;
+  --green-bg:     #ecfdf5;
+  --green-dark:   #27ae60;
+  --amber:        #d97706;
+  --amber-bg:     #fffbeb;
+  --red:          #dc2626;
+  --red-bg:       #fef2f2;
+  --purple:       #7c3aed;
+  --purple-bg:    #f5f0ff;
+  --cyan:         #0891b2;
+  --cyan-bg:      #ecfeff;
+  --orange:       #ea580c;
+  --orange-bg:    #fff7ed;
+
+  --text-1:       #0f172a;
+  --text-2:       #64748b;
+  --text-3:       #94a3b8;
+
+  --border:       #e2e8f0;
+  --bg-page:      #f8fafc;
+  --bg-card:      #ffffff;
+
+  --sh-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --sh-md: 0 4px 12px rgba(0,0,0,.06), 0 2px 4px rgba(0,0,0,.04);
+
+  --r:    14px;
+  --r-sm:  8px;
+    --hdr-accent:        #4f46e5;
+  --hdr-accent-2:      #6366f1;
+  --hdr-teal:          #2dd4bf;
+  --hdr-violet:        #7c3aed;
+  --hdr-text-primary:  #0f172a;
+  --hdr-text-body:     #334155;
+  --hdr-text-muted:    #64748b;
+  --hdr-text-faint:    #94a3b8;
+  --hdr-border:        rgba(0, 0, 0, 0.08);
+  --hdr-border-focus:  rgba(79, 70, 229, 0.25);
+  --hdr-surface:       #ffffff;
+  --hdr-bg:            #f8fafc;
+  --hdr-hover:         rgba(79, 70, 229, 0.06);
+  --hdr-radius-sm:     8px;
+  --hdr-radius-md:     10px;
+  --hdr-radius-lg:     14px;
+  --hdr-shadow-sm:     0 1px 3px rgba(0, 0, 0, 0.05);
+  --hdr-shadow-md:     0 4px 16px rgba(0, 0, 0, 0.06);
+  --hdr-shadow-lg:     0 20px 60px rgba(15, 23, 42, 0.1), 0 4px 16px rgba(15, 23, 42, 0.05);
+  --hdr-gradient:      linear-gradient(135deg, var(--hdr-accent) 0%, var(--hdr-accent-2) 60%, var(--hdr-teal) 100%);
+  --hdr-gradient-bar:  linear-gradient(90deg, #4f46e5 0%, #6366f1 35%, #7c3aed 65%, #2dd4bf 100%);
+  --hdr-height:        68px;
+}
+.emoji-mart-dark .emoji-mart-category-label span {
+    background-color: #fff;
+    color: #555453;
+}
+.emoji-mart-dark {
+    color: #fff;
+    border-color: #555453;
+    background-color: #fff;
+}
+.emoji-mart-dark .emoji-mart-search input {
+    color: #fff;
+    border-color: #555453;
+    background-color: #ffffff;
+}
+    nz-tag{
+     color: #505050!important;
+  }
+/* Buttons */
+::n-deep{
+
+    // Image SEND preview modal — Light
+  .crb-img-preview-modal {
+    .ant-modal {
+      width: 520px !important;
+      max-width: calc(100vw - 32px) !important;
+      margin: 16px auto !important;
+      top: 0;
+    }
+    .ant-modal-content {
+      border-radius: 20px !important;
+      overflow: hidden;
+      background: #fff !important;
+      box-shadow: 0 20px 60px rgba(30,40,100,.15) !important;
+    }
+    .ant-modal-header {
+      background: #fff !important;
+      border-bottom: 1.5px solid #f0f3fa !important;
+      padding: 16px 22px !important;
+      margin: 0 !important;
+    }
+    .ant-modal-title {
+      color: var(--text-1) !important;
+      font-family: 'Sora', sans-serif !important;
+      font-weight: 700 !important;
+      font-size: 15px !important;
+    }
+    .ant-modal-body {
+      padding: 22px !important;
+      background: #fff !important;
+    }
+    .ant-modal-footer {
+      background: #fafbff !important;
+      border-top: 1.5px solid #f0f3fa !important;
+      padding: 14px 22px !important;
+      margin: 0 !important;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .ant-modal-close-x {
+      color: var(--text-3);
+      &:hover { color: var(--text-1); }
+    }
+  }
+  .ant-btn {
+  height: 32px;
+  padding: 0 16px;
+  font-weight: 400;
+  text-transform: none;
+  border-radius: 2px;
+}
+  // File preview modal — matches image preview light style
+  .crb-file-preview-modal {
+    .ant-modal {
+      width: 480px !important;
+      max-width: calc(100vw - 32px) !important;
+      margin: 24px auto !important;
+      top: 0 !important;
+    }
+    .ant-modal-content {
+      border-radius: 16px !important;
+      overflow: hidden;
+      background: #fff !important;
+      box-shadow: 0 20px 60px rgba(30,40,100,.15) !important;
+    }
+    .ant-modal-header {
+      background: #fff !important;
+      border-bottom: 1px solid #f0f3fa !important;
+      padding: 14px 20px !important;
+      margin: 0 !important;
+      min-height: auto !important;
+    }
+    .ant-modal-title {
+      font-family: 'Sora', sans-serif !important;
+      font-weight: 700 !important;
+      font-size: 15px !important;
+      color: var(--text-1) !important;
+    }
+    .ant-modal-body {
+      padding: 16px 20px 12px !important;
+      background: #fff !important;
+    }
+    .ant-modal-footer {
+      background: #fafbff !important;
+      border-top: 1px solid #f0f3fa !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+    .ant-modal-close-x {
+      color: var(--text-3);
+      width: 48px;
+      height: 48px;
+      line-height: 48px;
+      &:hover { color: var(--text-1); }
+    }
+  }
+
+.ant-btn-primary {
+  background-color: #189952 !important;
+  border-color: #189952 !important;
+}
+.ant-btn-primary:hover {
+  background-color: #40a9ff !important;
+  border-color: #40a9ff !important;
+}
+.ant-btn-primary:active {
+  background-color: #096dd9 !important;
+  border-color: #096dd9 !important;
+}
+.ant-btn-dangerous {
+  background-color: #f5222d !important;
+  border-color: #f5222d !important;
+  color: #fff !important;
+}
+
+/* Inputs */
+.ant-input,
+.ant-input-number-input,
+.ant-picker-input > input {
+  height: 32px;
+  border-radius: 2px;
+  border-color: #d9d9d9;
+  font-size: 14px;
+}
+.ant-input:focus,
+.ant-input-focused {
+  border-color: #40a9ff !important;
+  box-shadow: 0 0 0 2px rgba(64,169,255,0.2) !important;
+}
+
+/* Table */
+.ant-table-thead > tr > th {
+  background: #fafafa !important;
+  color: #000000 !important;
+  border-color: #f0f0f0 !important;
+}
+.ant-table-tbody > tr:hover > td {
+  background: #e6f7ff !important;
+}
+.ant-table-tbody > tr > td {
+  border-color: #f0f0f0 !important;
+}
+
+/* Links */
+a, .ant-typography a {
+  color: #189952;
+}
+a:hover {
+  color: #40a9ff;
+}
+
+}
+::ng-deep .ant-btn-primary,
+.ant-btn-primary:focus {
+  background-color: #189952 !important;
+  border-color: #189952 !important;
+}
+::ng-deep .ant-select-selector{
+  border-radius: 5px !important;
+  
+}
+::ng-deep .ant-select-selector:focus-within {
+  border-color: #3d5af1 !important;
+  box-shadow: 0 0 0 2px rgba(61,90,241,0.2) !important;
+}
+lucide-icon{
+  display:flex;
+}

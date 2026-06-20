@@ -1,0 +1,241 @@
+<!-- features/teacher/teacher-layout/teacher-layout.html -->
+<div class="tl-root" [class.rtl]="isRtl()">
+  <!-- Desktop Sidebar -->
+  @if (!isMobile()) {
+    <aside class="tl-sidebar" [class.collapsed]="isCollapsed()" [style.width.px]="sidebarWidth()">
+      <div class="tl-logo-wrap" [class.centered]="isCollapsed()">
+        <div class="tl-logo-ring">
+          <img src="/logo.jpeg" alt="EOL">
+        </div>
+        @if (!isCollapsed()) {
+          <a routerLink="/teacher/dashboard" class="tl-brand">EOL</a>
+        }
+      </div>
+
+      <div class="tl-menu-scroll">
+        <!-- DASHBOARD -->
+        <div class="tl-section-label">{{ 'dashboard' | transloco }}</div>
+        <div class="tl-menu-item" (click)="navigateTo('/teacher/dashboard')" [class.active]="isActive('/teacher/dashboard')">
+          <lucide-icon [img]="GaugeIcon" [size]="18"></lucide-icon>
+          @if (!isCollapsed()) {
+            <span>{{ 'dashboard' | transloco }}</span>
+          }
+        </div>
+
+        <!-- PROFILE -->
+        @if (!isCollapsed()) {
+          <div class="tl-section-label">{{ 'profile' | transloco }}</div>
+        }
+        <div class="tl-menu-item" (click)="navigateTo('/teacher/profile')" [class.active]="isActive('/teacher/profile')">
+          <lucide-icon [img]="UserIcon" [size]="18"></lucide-icon>
+          @if (!isCollapsed()) {
+            <span>{{ 'my_profile' | transloco }}</span>
+          }
+        </div>
+
+        <!-- COURSES -->
+        @if (!isCollapsed()) {
+          <div class="tl-section-label">{{ 'courses' | transloco }}</div>
+        }
+        <div class="tl-submenu">
+          <div class="tl-menu-item" (click)="toggleCourses()">
+            <lucide-icon [img]="BookOpenIcon" [size]="18"></lucide-icon>
+            @if (!isCollapsed()) {
+              <span>{{ 'my_courses' | transloco }}</span>
+              <lucide-icon
+                [img]="ChevronDownIcon"
+                [size]="14"
+                class="submenu-chevron"
+                [class.rotated]="coursesOpen()">
+              </lucide-icon>
+            }
+          </div>
+          @if (!isCollapsed()) {
+            <div class="tl-submenu-items" [@submenuAnimation]="coursesOpen() ? 'open' : 'closed'">
+              <div class="tl-submenu-inner">
+                <div class="tl-submenu-item" (click)="navigateTo('/teacher/courses')" [class.active]="isActive('/teacher/courses')">
+                  <lucide-icon [img]="ListIcon" [size]="14"></lucide-icon>
+                  <span>{{ 'all_courses' | transloco }}</span>
+                </div>
+                <div class="tl-submenu-item" (click)="navigateTo('/teacher/add-course')" [class.active]="isActive('/teacher/add-course')">
+                  <lucide-icon [img]="PlusIcon" [size]="14"></lucide-icon>
+                  <span>{{ 'create_course' | transloco }}</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- STUDENTS -->
+        @if (!isCollapsed()) {
+          <div class="tl-section-label">{{ 'students' | transloco }}</div>
+        }
+        <div class="tl-menu-item" (click)="navigateTo('/teacher/students')" [class.active]="isActive('/teacher/students')">
+          <lucide-icon [img]="UsersIcon" [size]="18"></lucide-icon>
+          @if (!isCollapsed()) {
+            <span>{{ 'my_students' | transloco }}</span>
+          }
+        </div>
+
+        <!-- REVIEWS -->
+        @if (!isCollapsed()) {
+          <div class="tl-section-label">{{ 'reviews' | transloco }}</div>
+        }
+        <div class="tl-menu-item" (click)="navigateTo('/teacher/reviews')" [class.active]="isActive('/teacher/reviews')">
+          <lucide-icon [img]="BarChart3Icon" [size]="18"></lucide-icon>
+          @if (!isCollapsed()) {
+            <span>{{ 'reviews_analytics' | transloco }}</span>
+          }
+        </div>
+
+        <!-- EARNINGS -->
+        @if (!isCollapsed()) {
+          <div class="tl-section-label">{{ 'earnings' | transloco }}</div>
+        }
+        <div class="tl-menu-item" (click)="navigateTo('/teacher/earnings')" [class.active]="isActive('/teacher/earnings')">
+          <lucide-icon [img]="DollarSignIcon" [size]="18"></lucide-icon>
+          @if (!isCollapsed()) {
+            <span>{{ 'earnings' | transloco }}</span>
+          }
+        </div>
+        <div class="tl-menu-item" (click)="navigateTo('/teacher/my-plan')" [class.active]="isActive('/teacher/my-plan')">
+          <lucide-icon [img]="CreditCardIcon" [size]="18"></lucide-icon>
+          @if (!isCollapsed()) {
+            <span>{{ 'my_plan' | transloco }}</span>
+          }
+        </div>
+
+        <!-- MESSAGES -->
+        @if (!isCollapsed()) {
+          <div class="tl-section-label">{{ 'messages' | transloco }}</div>
+        }
+        <div class="tl-menu-item" (click)="navigateTo('/teacher/notifications')" [class.active]="isActive('/teacher/notifications')">
+          <lucide-icon [img]="BellIcon" [size]="18"></lucide-icon>
+          @if (!isCollapsed()) {
+            <span>{{ 'notifications' | transloco }}</span>
+          }
+        </div>
+        <div class="tl-menu-item" (click)="navigateTo('/teacher/chats')" [class.active]="isActive('/teacher/chats')">
+          <lucide-icon [img]="MailIcon" [size]="18"></lucide-icon>
+          @if (!isCollapsed()) {
+            <span>{{ 'messages' | transloco }}</span>
+          }
+        </div>
+        <div class="tl-menu-item" (click)="navigateTo('/teacher/rooms')" [class.active]="isActive('/teacher/rooms')">
+          <lucide-icon [img]="Users2Icon" [size]="18"></lucide-icon>
+          @if (!isCollapsed()) {
+            <span>{{ 'groups' | transloco }}</span>
+          }
+        </div>
+
+        <!-- ADVERTISEMENTS -->
+        @if (!isCollapsed()) {
+          <div class="tl-section-label">{{ 'advertisements' | transloco }}</div>
+        }
+        <div class="tl-menu-item" (click)="navigateTo('/teacher/advertisements')" [class.active]="isActive('/teacher/advertisements')">
+          <lucide-icon [img]="MegaphoneIcon" [size]="18"></lucide-icon>
+          @if (!isCollapsed()) {
+            <span>{{ 'advertisements' | transloco }}</span>
+          }
+        </div>
+      </div>
+    </aside>
+  }
+
+  <!-- Mobile Drawer -->
+  @if (isMobile()) {
+    <div class="tl-mobile-drawer-overlay" *ngIf="drawerOpen()" (click)="closeDrawer()"></div>
+    <div class="tl-mobile-drawer" [class.open]="drawerOpen()">
+      <div class="tl-mobile-drawer-header">
+        <div class="tl-logo-wrap">
+          <div class="tl-logo-ring">
+            <img src="/logo.jpeg" alt="EOL">
+          </div>
+          <span class="tl-brand">EOL</span>
+        </div>
+        <button class="close-btn" (click)="closeDrawer()">
+          <lucide-icon [img]="PanelLeftCloseIcon" [size]="18"></lucide-icon>
+        </button>
+      </div>
+      <div class="tl-menu-scroll">
+        <div class="tl-menu-item" (click)="navigateTo('/teacher/dashboard')">
+          <lucide-icon [img]="GaugeIcon" [size]="18"></lucide-icon>
+          <span>{{ 'dashboard' | transloco }}</span>
+        </div>
+        <div class="tl-menu-item" (click)="navigateTo('/teacher/profile')">
+          <lucide-icon [img]="UserIcon" [size]="18"></lucide-icon>
+          <span>{{ 'my_profile' | transloco }}</span>
+        </div>
+        <div class="tl-submenu">
+          <div class="tl-menu-item" (click)="toggleMobileCourses()">
+            <lucide-icon [img]="BookOpenIcon" [size]="18"></lucide-icon>
+            <span>{{ 'my_courses' | transloco }}</span>
+            <lucide-icon
+              [img]="ChevronDownIcon"
+              [size]="14"
+              class="submenu-chevron"
+              [class.rotated]="mobileCoursesOpen()">
+            </lucide-icon>
+          </div>
+          <div class="tl-submenu-items" [@submenuAnimation]="mobileCoursesOpen() ? 'open' : 'closed'">
+            <div class="tl-submenu-inner">
+              <div class="tl-submenu-item" (click)="navigateTo('/teacher/courses')">
+                <lucide-icon [img]="ListIcon" [size]="14"></lucide-icon>
+                <span>{{ 'all_courses' | transloco }}</span>
+              </div>
+              <div class="tl-submenu-item" (click)="navigateTo('/teacher/add-course')">
+                <lucide-icon [img]="PlusIcon" [size]="14"></lucide-icon>
+                <span>{{ 'create_course' | transloco }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tl-menu-item" (click)="navigateTo('/teacher/students')">
+          <lucide-icon [img]="UsersIcon" [size]="18"></lucide-icon>
+          <span>{{ 'my_students' | transloco }}</span>
+        </div>
+        <div class="tl-menu-item" (click)="navigateTo('/teacher/earnings')">
+          <lucide-icon [img]="DollarSignIcon" [size]="18"></lucide-icon>
+          <span>{{ 'earnings' | transloco }}</span>
+        </div>
+        <div class="tl-menu-item" (click)="navigateTo('/teacher/notifications')">
+          <lucide-icon [img]="BellIcon" [size]="18"></lucide-icon>
+          <span>{{ 'notifications' | transloco }}</span>
+        </div>
+        <div class="tl-menu-item" (click)="navigateTo('/teacher/advertisements')">
+          <lucide-icon [img]="MegaphoneIcon" [size]="18"></lucide-icon>
+          <span>{{ 'advertisements' | transloco }}</span>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Main Content -->
+  <div class="tl-main" [style.margin-left.px]="!isMobile() ? sidebarWidth() : 0">
+    <header class="tl-header">
+      <div class="tl-header-left">
+        @if (isMobile()) {
+          <button class="tl-menu-btn" (click)="toggleDrawer()">
+            <lucide-icon [img]="MenuIcon" [size]="18"></lucide-icon>
+          </button>
+        } @else {
+          <button class="tl-menu-btn" (click)="toggleCollapse()" [title]="isCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'">
+            <lucide-icon [img]="isCollapsed() ? PanelLeftOpenIcon : PanelLeftCloseIcon" [size]="18"></lucide-icon>
+          </button>
+        }
+        @if (isMobile()) {
+          <div class="tl-mobile-logo">
+            <div class="tl-logo-ring-small">
+              <img src="/logo.jpeg" alt="EOL">
+            </div>
+            <span class="tl-brand-small">EOL</span>
+          </div>
+        }
+      </div>
+      <app-teacher-header />
+    </header>
+    <main class="tl-content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

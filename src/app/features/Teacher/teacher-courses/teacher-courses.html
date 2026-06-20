@@ -1,0 +1,396 @@
+<ng-container *transloco="let t; scope: 'teacherCourses'">
+  <div class="tc">
+
+    <!-- ══ Header ══ -->
+    <div class="tc-hd">
+      <div class="tc-hd-row">
+        <div class="tc-hd-left">
+          <div class="tc-hd-ico">
+            <lucide-icon [img]="BarChartIcon" [size]="20" style="color:#fff"></lucide-icon>
+          </div>
+          <div>
+            <div class="tc-title">{{ t('teacherCourses.pageTitle') }}</div>
+            <div class="tc-sub">{{ t('teacherCourses.pageSubtitle') }}</div>
+          </div>
+        </div>
+        <button class="tc-create" (click)="navigateToCreate()">
+          <lucide-icon [img]="PlusIcon" [size]="16"></lucide-icon>
+          <span>{{ t('teacherCourses.createCourse') }}</span>
+        </button>
+      </div>
+
+      <!-- Stats Strip -->
+      <div class="tc-stats">
+        <div class="tc-stat">
+          <div class="tc-stat-ico" style="background:#eef0ff; color:#3d5af1">
+            <lucide-icon [img]="BookIcon" [size]="16"></lucide-icon>
+          </div>
+          <div>
+            <div class="tc-stat-v">{{ stats().totalCourses || 0 }}</div>
+            <div class="tc-stat-l">{{ t('teacherCourses.statTotalCourses') }}</div>
+          </div>
+        </div>
+        <div class="tc-stat">
+          <div class="tc-stat-ico" style="background:#ecfdf5; color:#059669">
+            <lucide-icon [img]="CheckCircleIcon" [size]="16"></lucide-icon>
+          </div>
+          <div>
+            <div class="tc-stat-v">{{ stats().publishedCourses || 0 }}</div>
+            <div class="tc-stat-l">{{ t('teacherCourses.statPublished') }}</div>
+          </div>
+        </div>
+        <div class="tc-stat">
+          <div class="tc-stat-ico" style="background:#f8fafc; color:#94a3b8">
+            <lucide-icon [img]="XCircleIcon" [size]="16"></lucide-icon>
+          </div>
+          <div>
+            <div class="tc-stat-v">{{ stats().draftCourses || 0 }}</div>
+            <div class="tc-stat-l">{{ t('teacherCourses.statDraft') }}</div>
+          </div>
+        </div>
+        <div class="tc-stat">
+          <div class="tc-stat-ico" style="background:#f5f0ff; color:#7c3aed">
+            <lucide-icon [img]="UsersIcon" [size]="16"></lucide-icon>
+          </div>
+          <div>
+            <div class="tc-stat-v">{{ stats().totalStudents || 0 }}</div>
+            <div class="tc-stat-l">{{ t('teacherCourses.statTotalStudents') }}</div>
+          </div>
+        </div>
+        <div class="tc-stat">
+          <div class="tc-stat-ico" style="background:#ecfdf5; color:#059669">
+            <lucide-icon [img]="DollarSignIcon" [size]="16"></lucide-icon>
+          </div>
+          <div>
+            <div class="tc-stat-v">${{ (stats().totalRevenue || 0).toFixed(2) }}</div>
+            <div class="tc-stat-l">{{ t('teacherCourses.statTotalRevenue') }}</div>
+          </div>
+        </div>
+        <div class="tc-stat">
+          <div class="tc-stat-ico" style="background:#fffbeb; color:#d97706">
+            <lucide-icon [img]="StarIcon" [size]="16"></lucide-icon>
+          </div>
+          <div>
+            <div class="tc-stat-v">{{ (stats().averageRating || 0).toFixed(1) }}</div>
+            <div class="tc-stat-l">{{ t('teacherCourses.statAvgRating') }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Body ══ -->
+    <div class="tc-body">
+
+      <!-- Delete Success Banner -->
+      @if (deleteSuccessMsg()) {
+        <div class="tc-banner tc-banner--success">
+          <lucide-icon [img]="CheckCircleIcon" [size]="17" class="tc-banner-ico"></lucide-icon>
+          <div class="tc-banner-body">
+            <p class="tc-banner-title">{{ deleteSuccessMsg() }}</p>
+          </div>
+          <button class="tc-banner-x" (click)="clearDeleteSuccess()" aria-label="Dismiss">✕</button>
+        </div>
+      }
+
+      <!-- Delete Error Banner -->
+      @if (deleteErr()) {
+        <div class="tc-banner tc-banner--error">
+          <lucide-icon [img]="AlertCircleIcon" [size]="17" class="tc-banner-ico"></lucide-icon>
+          <div class="tc-banner-body">
+            <p class="tc-banner-title">{{ deleteErr()!.message }}</p>
+            @if (deleteErr()!.courseName) {
+              <p class="tc-banner-detail">
+                {{ t('teacherCourses.deletedCourseLabel') }}: <strong>{{ deleteErr()!.courseName }}</strong>
+              </p>
+            }
+          </div>
+          <button class="tc-banner-x" (click)="clearDeleteErr()" aria-label="Dismiss">✕</button>
+        </div>
+      }
+
+      <div class="tc-card">
+
+        <!-- Filters -->
+        <div class="tc-filters">
+          <div class="tc-search-wrap">
+            <lucide-icon [img]="SearchIcon" [size]="14" style="position:absolute; left:10px; color:#94a3b8; pointer-events:none"></lucide-icon>
+            <input
+              class="tc-search-input"
+              type="text"
+              [placeholder]="t('teacherCourses.searchPlaceholder')"
+              [value]="searchTerm()"
+              (input)="onSearch($event)"
+              [disabled]="loading()" />
+            @if (searchTerm()) {
+              <button class="tc-search-clear" (click)="clearSearch()">✕</button>
+            }
+          </div>
+
+          <nz-select
+            class="tc-filter-select"
+            [nzPlaceHolder]="t('teacherCourses.filterStatus')"
+            nzAllowClear
+            [ngModel]="statusFilter()"
+            (ngModelChange)="onStatusChange($event)"
+            [nzDisabled]="loading()">
+            <nz-option [nzValue]="true"  [nzLabel]="t('teacherCourses.statusPublished')"></nz-option>
+            <nz-option [nzValue]="false" [nzLabel]="t('teacherCourses.statusDraft')"></nz-option>
+          </nz-select>
+
+          <button class="tc-refresh" [disabled]="loading()" (click)="refresh()">
+            <lucide-icon [img]="RefreshCwIcon" [size]="13"
+              [style.animation]="loading() ? 'tcSpin 1s linear infinite' : 'none'">
+            </lucide-icon>
+            {{ t('teacherCourses.refreshBtn') }}
+          </button>
+        </div>
+
+        <!-- ── Desktop Table ── -->
+        <div class="tc-table-wrap">
+          <nz-table
+            #nzTable
+            [nzData]="courses()"
+            [nzLoading]="loading()"
+            [nzFrontPagination]="false"
+            [nzTotal]="pagination().total"
+            [nzPageIndex]="pagination().current"
+            [nzPageSize]="pagination().pageSize"
+            [nzShowSizeChanger]="true"
+            [nzPageSizeOptions]="[10, 20, 50, 100]"
+            [nzShowTotal]="totalTemplate"
+            (nzPageIndexChange)="onPageChange($event)"
+            (nzPageSizeChange)="onPageSizeChange($event)"
+            nzSize="middle"
+            [nzScroll]="{ x: '960px' }">
+
+            <ng-template #totalTemplate let-total>
+              {{ t('teacherCourses.paginationTotal').replace('{total}', total) }}
+            </ng-template>
+
+            <thead>
+              <tr>
+                <th nzWidth="280px">{{ t('teacherCourses.tableTitle') }}</th>
+                <th nzWidth="130px">{{ t('teacherCourses.tableCategory') }}</th>
+                <th nzWidth="120px" nzAlign="center">{{ t('teacherCourses.tableStatus') }}</th>
+                <th nzWidth="110px" nzAlign="center" [nzSortFn]="sortByStudents">{{ t('teacherCourses.tableStudents') }}</th>
+                <th nzWidth="120px" nzAlign="right"  [nzSortFn]="sortByRevenue">{{ t('teacherCourses.tableRevenue') }}</th>
+                <th nzWidth="120px" nzAlign="center">{{ t('teacherCourses.tableRating') }}</th>
+                <th nzWidth="114px" nzAlign="center" nzRight>{{ t('teacherCourses.tableActions') }}</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              @for (row of nzTable.data; track row.id) {
+                <tr>
+                  <!-- Title -->
+                  <td>
+                    <div style="display:flex; flex-direction:column; gap:4px">
+                      <span style="font-weight:700; font-size:13px; color:#0f172a; line-height:1.3">{{ row.title }}</span>
+                      @if (row.subtitle) {
+                        <span style="font-size:11px; color:#94a3b8">{{ row.subtitle }}</span>
+                      }
+                    </div>
+                  </td>
+
+                  <!-- Category -->
+                  <td>
+                    <span class="tc-tag" style="background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe">{{ row.categoryName || '—' }}</span>
+                  </td>
+
+                  <!-- Status -->
+                  <td nzAlign="center">
+                    <span class="tc-status-tag"
+                      [class.tc-status-published]="row.isPublished"
+                      [class.tc-status-draft]="!row.isPublished">
+                      <lucide-icon [img]="row.isPublished ? CheckCircleIcon : XCircleIcon" [size]="11"></lucide-icon>
+                      {{ row.isPublished ? t('teacherCourses.statusPublished') : t('teacherCourses.statusDraft') }}
+                    </span>
+                  </td>
+
+                  <!-- Students -->
+                  <td nzAlign="center">
+                    <div style="display:flex; align-items:center; justify-content:center; gap:5px">
+                      <lucide-icon [img]="UsersIcon" [size]="12" style="color:#94a3b8"></lucide-icon>
+                      <span style="font-weight:600; color:#0f172a">{{ row.studentCount || 0 }}</span>
+                    </div>
+                  </td>
+
+                  <!-- Revenue -->
+                  <td nzAlign="right">
+                    <span style="color:#059669; font-weight:700; font-size:13px">${{ (row.totalRevenue || 0).toFixed(2) }}</span>
+                  </td>
+
+                  <!-- Rating -->
+                  <td nzAlign="center">
+                    <div style="display:flex; align-items:center; justify-content:center; gap:4px">
+                      <lucide-icon [img]="StarIcon" [size]="12" style="color:#d97706"></lucide-icon>
+                      <span style="font-weight:700; color:#0f172a">{{ (row.rating || 0).toFixed(1) }}</span>
+                      <span style="color:#94a3b8; font-size:11px">({{ row.ratingCount || 0 }})</span>
+                    </div>
+                  </td>
+
+                  <!-- Actions -->
+                  <td nzAlign="center" nzRight>
+                    <div style="display:flex; align-items:center; justify-content:center; gap:6px">
+                      <button class="tc-btn tc-bv"
+                        nz-tooltip [nzTooltipTitle]="t('teacherCourses.actionView')"
+                        (click)="viewCourse(row.id)">
+                        <lucide-icon [img]="EyeIcon" [size]="13"></lucide-icon>
+                      </button>
+                      <button class="tc-btn tc-be"
+                        nz-tooltip [nzTooltipTitle]="t('teacherCourses.actionEdit')"
+                        (click)="editCourse(row.id)">
+                        <lucide-icon [img]="EditIcon" [size]="13"></lucide-icon>
+                      </button>
+                      <button class="tc-btn tc-bd"
+                        [disabled]="row.studentCount > 0 || deletingId() === row.id"
+                        [style.opacity]="row.studentCount > 0 ? '0.3' : '1'"
+                        nz-tooltip
+                        [nzTooltipTitle]="row.studentCount > 0 ? t('teacherCourses.deleteHasStudents') : t('teacherCourses.actionDelete')"
+                        nz-popconfirm
+                        [nzPopconfirmTitle]="row.studentCount > 0 ? confirmWarnTpl : confirmTpl"
+                        nzPopconfirmPlacement="left"
+                        nzOkType="danger"
+                        [nzOkText]="t('teacherCourses.actionDelete')"
+                        [nzCancelText]="t('teacherCourses.cancel')"
+                        [nzCondition]="row.studentCount > 0"
+                        (nzOnConfirm)="handleDelete(row.id, row.title)">
+                        @if (deletingId() === row.id) {
+                          <nz-spin nzSize="small"></nz-spin>
+                        } @else {
+                          <lucide-icon [img]="Trash2Icon" [size]="13"></lucide-icon>
+                        }
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </nz-table>
+        </div>
+
+        <!-- ── Mobile Cards ── -->
+        <div class="tc-mlist">
+          @if (loading()) {
+            <div style="text-align:center; padding:40px 0"><nz-spin nzSize="large"></nz-spin></div>
+          } @else if (courses().length === 0) {
+            <ng-container *ngTemplateOutlet="emptyState"></ng-container>
+          } @else {
+            @for (record of courses(); track record.id) {
+              <div class="tc-mc">
+                <div class="tc-mc-hd">
+                  <div style="flex:1; min-width:0">
+                    <div class="tc-mc-title">{{ record.title }}</div>
+                    @if (record.subtitle) {
+                      <div class="tc-mc-sub">{{ record.subtitle }}</div>
+                    }
+                  </div>
+                  <span class="tc-status-tag tc-status-tag-sm"
+                    [class.tc-status-published]="record.isPublished"
+                    [class.tc-status-draft]="!record.isPublished">
+                    <lucide-icon [img]="record.isPublished ? CheckCircleIcon : XCircleIcon" [size]="10"></lucide-icon>
+                    {{ record.isPublished ? t('teacherCourses.statusPublished') : t('teacherCourses.statusDraft') }}
+                  </span>
+                </div>
+
+                <div class="tc-mc-meta">
+                  @if (record.categoryName) {
+                    <span class="tc-tag" style="background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; margin:0; font-size:11px">{{ record.categoryName }}</span>
+                  }
+                  <div class="tc-mc-mi">
+                    <lucide-icon [img]="UsersIcon" [size]="12" style="color:#94a3b8"></lucide-icon>
+                    <span>{{ record.studentCount || 0 }} students</span>
+                  </div>
+                  <div class="tc-mc-mi">
+                    <lucide-icon [img]="DollarSignIcon" [size]="12" style="color:#059669"></lucide-icon>
+                    <span style="color:#059669; font-weight:700">${{ (record.totalRevenue || 0).toFixed(2) }}</span>
+                  </div>
+                  <div class="tc-mc-mi">
+                    <lucide-icon [img]="StarIcon" [size]="12" style="color:#d97706"></lucide-icon>
+                    <span style="font-weight:600">{{ (record.rating || 0).toFixed(1) }}</span>
+                    <span style="color:#94a3b8">({{ record.ratingCount || 0 }})</span>
+                  </div>
+                </div>
+
+                <div class="tc-mc-actions">
+                  <button class="tc-btn tc-bv"
+                    style="flex:1; width:auto; border-radius:8px; font-size:12px; gap:5px; display:flex; align-items:center; justify-content:center"
+                    (click)="viewCourse(record.id)">
+                    <lucide-icon [img]="EyeIcon" [size]="12"></lucide-icon>
+                    <span>{{ t('teacherCourses.actionView') }}</span>
+                  </button>
+                  <button class="tc-btn tc-be"
+                    style="flex:1; width:auto; border-radius:8px; font-size:12px; gap:5px; display:flex; align-items:center; justify-content:center"
+                    (click)="editCourse(record.id)">
+                    <lucide-icon [img]="EditIcon" [size]="12"></lucide-icon>
+                    <span>{{ t('teacherCourses.actionEdit') }}</span>
+                  </button>
+                  <button class="tc-btn tc-bd"
+                    style="width:auto; flex:1; border-radius:8px; font-size:12px; gap:5px; display:flex; align-items:center; justify-content:center"
+                    [disabled]="record.studentCount > 0 || deletingId() === record.id"
+                    nz-popconfirm
+                    [nzPopconfirmTitle]="record.studentCount > 0 ? confirmWarnTpl : confirmTpl"
+                    nzPopconfirmPlacement="top"
+                    nzOkType="danger"
+                    [nzOkText]="t('teacherCourses.actionDelete')"
+                    [nzCancelText]="t('teacherCourses.cancel')"
+                    [nzCondition]="record.studentCount > 0"
+                    (nzOnConfirm)="handleDelete(record.id, record.title)">
+                    @if (deletingId() === record.id) {
+                      <nz-spin nzSize="small"></nz-spin>
+                    } @else {
+                      <lucide-icon [img]="Trash2Icon" [size]="12"></lucide-icon>
+                      <span>{{ t('teacherCourses.actionDelete') }}</span>
+                    }
+                  </button>
+                </div>
+              </div>
+            }
+            <div style="text-align:center; font-size:12px; color:#94a3b8; padding:6px 0">
+              {{ t('teacherCourses.paginationTotal').replace('{total}', pagination().total.toString()) }}
+            </div>
+          }
+        </div>
+
+      </div><!-- /tc-card -->
+    </div><!-- /tc-body -->
+
+  </div><!-- /tc -->
+
+  <!-- ═══ Templates ═══ -->
+
+  <!-- Standard delete confirm -->
+  <ng-template #confirmTpl>
+    <div style="display:flex; flex-direction:column; gap:4px; max-width:260px">
+      <p style="font-weight:700; font-size:14px; color:#0f172a; margin:0">{{ t('teacherCourses.deleteConfirmTitle') }}</p>
+      <p style="font-size:13px; color:#475569; margin:0">{{ t('teacherCourses.deleteConfirmDesc') }}</p>
+    </div>
+  </ng-template>
+
+  <!-- Delete confirm with "has students" warning -->
+  <ng-template #confirmWarnTpl>
+    <div style="display:flex; flex-direction:column; gap:4px; max-width:260px">
+      <p style="font-weight:700; font-size:14px; color:#0f172a; margin:0">{{ t('teacherCourses.deleteConfirmTitle') }}</p>
+      <p style="font-size:13px; color:#475569; margin:0">{{ t('teacherCourses.deleteConfirmDesc') }}</p>
+      <div style="display:flex; align-items:center; gap:6px; background:#fffbeb; border:1px solid #fde68a; border-radius:6px; padding:7px 10px; margin-top:4px; font-size:12px; color:#78350f">
+        <lucide-icon [img]="AlertTriangleIcon" [size]="12"></lucide-icon>
+        {{ t('teacherCourses.deleteHasStudents') }}
+      </div>
+    </div>
+  </ng-template>
+
+  <!-- Empty state -->
+  <ng-template #emptyState>
+    <div class="tc-empty">
+      <div class="tc-empty-ico">📚</div>
+      <p style="font-family:'Sora',sans-serif; font-weight:700; font-size:15px; color:#0f172a">{{ t('teacherCourses.noCoursesTitle') }}</p>
+      <p style="font-size:13px; color:#94a3b8">{{ t('teacherCourses.noCoursesDesc') }}</p>
+      <button style="background:linear-gradient(135deg,#3d5af1,#5b78ff); border:none; border-radius:9px; height:38px; padding:0 18px; font-weight:600; font-size:13px; color:#fff; cursor:pointer; display:inline-flex; align-items:center; gap:6px; margin-top:6px; font-family:inherit"
+        (click)="navigateToCreate()">
+        <lucide-icon [img]="PlusIcon" [size]="14"></lucide-icon>
+        {{ t('teacherCourses.createCourse') }}
+      </button>
+    </div>
+  </ng-template>
+
+</ng-container>

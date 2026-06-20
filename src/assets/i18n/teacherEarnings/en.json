@@ -1,0 +1,112 @@
+{
+    "loading": "Loading your earnings...",
+    "back_to_dashboard": "Dashboard",
+    "page_title": "Earnings & Payments",
+    "page_subtitle": "Track your income and request payouts",
+    "export": "Export",
+    "request_payout": "Request Payout",
+    
+    "welcome_title": "Welcome to your Earnings Dashboard!",
+    "welcome_msg1": "When students enroll in your courses, you'll earn money here.",
+    "welcome_msg2": "The platform takes a small fee. You keep the rest.",
+    "welcome_msg3": "Once you have EGP 40.00 or more, you can request a payout.",
+    
+    "available_to_withdraw": "Available Balance",
+    "total_sales": "Total Sales",
+    "fees": "Fees",
+    "already_paid": "Already Paid",
+    "need_more": "You need",
+    "to_reach_minimum": "more to reach the minimum payout amount",
+    "minimum": "Minimum",
+    "min_payout": "Min payout",
+    
+    "progress_to_payout": "Progress to Payout",
+    "ready_to_payout": "You can request a payout now",
+    "minimum_required": "Minimum required",
+    "reached": "reached",
+    
+    "total_courses": "Your Courses",
+    "total_students": "Total Students",
+    "avg_per_course": "Avg / Course",
+    "platform_fees": "Platform Fees",
+    "this_month": "This Month",
+    "total_earned": "Total Earned",
+    
+    "revenue_overview": "Revenue Overview",
+    "last_12_months": "last 12 months",
+    "revenue": "Revenue",
+    "new_students": "Students",
+    
+    "earnings_history": "Earnings History",
+    "payout_history": "Payout History",
+    
+    "search_placeholder": "Search course or student…",
+    "all_courses": "All Courses",
+    "all_statuses": "All Statuses",
+    "reset": "Reset",
+    
+    "date": "Date",
+    "course": "Course",
+    "student": "Student",
+    "gross_amount": "Gross Amount",
+    "fee": "Fee",
+    "net_amount": "Net Amount",
+    "status": "Status",
+    "platform_fee": "Platform Fee",
+    
+    "pending": "Pending",
+    "processing": "Processing",
+    "completed": "Completed",
+    "failed": "Failed",
+    
+    "no_earnings": "No earnings yet",
+    "no_payouts": "No payout requests yet",
+    "request_first_payout": "Request Payout",
+    
+    "requested_amount": "Requested",
+    "received_amount": "Received",
+    "method": "Method",
+    "recipient": "Recipient",
+    "completed_on": "Completed On",
+    
+    "summary": "Summary",
+    "available_now": "Available Now",
+    
+    "how_it_works_title": "How It Works",
+    "simple_process": "Simple Process",
+    "how_it_works_desc": "When a student enrolls in your course, you earn money. Platform fees are deducted automatically. The rest is yours to withdraw.",
+    "minimum_amount": "Minimum",
+    "fee_rate": "Platform Fee",
+    "cooldown": "Cooldown",
+    "every_x_days": "Every {days} days",
+    
+    "payment_methods": "Payment Methods",
+    "egypt_wallets_only": "Egyptian payment methods only",
+    
+    "transaction_details": "Transaction Details",
+    "close": "Close",
+    
+    "payout_subtitle": "Your earnings will be sent to your wallet",
+    "payout_amount": "Payout Amount",
+    "enter_amount": "Enter an amount",
+    "maximum": "Maximum",
+    "payment_method": "Payment Method",
+    "account_number": "Account Number",
+    "enter_account_number": "Enter your account number",
+    "notes_optional": "Notes (Optional)",
+    "additional_info": "Any additional information…",
+    "you_will_receive": "You Will Receive",
+    "fee_already_deducted": "Platform fee already deducted — you receive the full amount",
+    "cancel": "Cancel",
+    "submit_request": "Submit Request",
+    
+    "data_refreshed": "Refreshed",
+    "withdrawal_submitted": "Withdrawal request submitted",
+    "withdrawal_failed": "Failed",
+    "could_not_load_details": "Could not load details",
+    "export_started": "Export started",
+    "error": "Error",
+    
+    "need_more_to_withdraw": "Need at least"
+  
+}

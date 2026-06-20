@@ -1,0 +1,15 @@
+{
+
+    "title": "مرحباً بعودتك",
+    "subtitle": "تسجيل الدخول إلى حسابك",
+    "email": "البريد الإلكتروني",
+    "emailPlaceholder": "example@example.com",
+    "password": "كلمة المرور",
+    "passwordPlaceholder": "أدخل كلمة المرور",
+    "forgotPassword": "نسيت كلمة المرور؟",
+    "signIn": "تسجيل الدخول",
+    "signingIn": "جاري تسجيل الدخول...",
+    "noAccount": "ليس لديك حساب؟",
+    "createAccount": "إنشاء حساب"
+  
+}

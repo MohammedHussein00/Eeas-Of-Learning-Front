@@ -1,0 +1,22 @@
+{
+    "platformName": "EOL Platform",
+    "platformTagline": "Empowering Education",
+    "or": "or",
+    "requiredField": "This field is required",
+    "invalidCredentials": "Invalid email or password",
+    "server": "Server error, please try again later",
+    "network": "Network error, please check your connection",
+    "generic": "An error occurred, please try again",
+    "title": "Welcome Back",
+    "subtitle": "Sign in to your account",
+    "email": "Email Address",
+    "emailPlaceholder": "you@example.com",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "forgotPassword": "Forgot password?",
+    "signIn": "Sign In",
+    "signingIn": "Signing in...",
+    "noAccount": "Don't have an account?",
+      "createAccount": "Create account"
+  
+}

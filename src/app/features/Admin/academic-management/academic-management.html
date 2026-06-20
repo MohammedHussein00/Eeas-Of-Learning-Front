@@ -1,0 +1,648 @@
+<ng-container *transloco="let t; scope: 'academicManagement'">
+
+  <!-- ══════════════════════════════════════════════════════════
+       LOADING / ERROR GUARDS
+  ══════════════════════════════════════════════════════════ -->
+  @if (initialLoading()) {
+    <div class="am-center-screen">
+      <nz-spin nzSize="large"></nz-spin>
+      <p style="color:#6366f1; font-weight:500; margin-top:16px; font-size:13px">
+        {{ t('academicManagement.loading') }}
+      </p>
+    </div>
+  }
+
+  @else if (fatalError()) {
+    <div class="am-center-screen am-guard">
+      <div class="am-guard-ico" style="background:linear-gradient(135deg,#fee2e2,#fecaca)">⚠️</div>
+      <h2 class="am-guard-title">{{ t('academicManagement.errorTitle') }}</h2>
+      <p class="am-guard-desc">{{ t('academicManagement.errorDesc') }}</p>
+      <div style="display:flex; gap:12px; justify-content:center">
+        <button class="am-btn-primary" (click)="fetchAll()">
+          <lucide-icon [img]="RefreshCwIcon" [size]="14"></lucide-icon>
+          {{ t('academicManagement.retry') }}
+        </button>
+      </div>
+    </div>
+  }
+
+  @else {
+  <!-- ════════════════════════════════════════════════════════
+       MAIN LAYOUT
+  ════════════════════════════════════════════════════════ -->
+  <div class="am-root">
+    <div class="am-bg"></div>
+
+    <!-- ══ Header ══ -->
+    <div class="am-header">
+      <div class="am-brand">
+        <div class="am-logo">
+          <lucide-icon [img]="GraduationCapIcon" [size]="20" style="color:#fff"></lucide-icon>
+        </div>
+        <div>
+          <div class="am-brand-title">{{ t('academicManagement.title') }}</div>
+          <div class="am-brand-sub">{{ t('academicManagement.subtitle') }}</div>
+        </div>
+      </div>
+      <div class="am-hright">
+        <button
+          class="am-btn-ghost"
+          [class.spinning]="refreshing()"
+          (click)="handleRefresh()"
+          nz-tooltip
+          [nzTooltipTitle]="t('academicManagement.refresh')"
+        >
+          <lucide-icon [img]="RefreshCwIcon" [size]="14"></lucide-icon>
+        </button>
+        <button class="am-btn-primary" (click)="navigateToAdd()">
+          <lucide-icon [img]="PlusIcon" [size]="16"></lucide-icon>
+          {{ t('academicManagement.addNew') }}
+        </button>
+      </div>
+    </div>
+
+    <!-- ══ Body ══ -->
+    <div class="am-rel">
+      <div class="am-body">
+
+        <!-- Section Label -->
+        <div class="am-sec">
+          <div class="am-sec-ico">
+            <lucide-icon [img]="LayersIcon" [size]="11"></lucide-icon>
+          </div>
+          {{ t('academicManagement.overviewLabel') }}
+        </div>
+
+        <!-- ══ Stat Cards ══ -->
+        <div class="am-stats">
+          <div class="am-stat blue">
+            <div class="am-stat-top">
+              <div class="am-stat-ico">
+                <lucide-icon [img]="GraduationCapIcon" [size]="19"></lucide-icon>
+              </div>
+              <span class="am-stat-badge">{{ t('academicManagement.stages') }}</span>
+            </div>
+            <div class="am-stat-val">{{ statsData().stages }}</div>
+            <div class="am-stat-lbl">{{ t('academicManagement.totalStages') }}</div>
+          </div>
+          <div class="am-stat teal">
+            <div class="am-stat-top">
+              <div class="am-stat-ico">
+                <lucide-icon [img]="CalendarIcon" [size]="19"></lucide-icon>
+              </div>
+              <span class="am-stat-badge">{{ t('academicManagement.years') }}</span>
+            </div>
+            <div class="am-stat-val">{{ statsData().years }}</div>
+            <div class="am-stat-lbl">{{ t('academicManagement.totalYears') }}</div>
+          </div>
+          <div class="am-stat violet">
+            <div class="am-stat-top">
+              <div class="am-stat-ico">
+                <lucide-icon [img]="UsersIcon" [size]="19"></lucide-icon>
+              </div>
+              <span class="am-stat-badge">{{ t('academicManagement.sections') }}</span>
+            </div>
+            <div class="am-stat-val">{{ statsData().sections }}</div>
+            <div class="am-stat-lbl">{{ t('academicManagement.totalSections') }}</div>
+          </div>
+          <div class="am-stat amber">
+            <div class="am-stat-top">
+              <div class="am-stat-ico">
+                <lucide-icon [img]="LayoutGridIcon" [size]="19"></lucide-icon>
+              </div>
+              <span class="am-stat-badge">{{ t('academicManagement.all') }}</span>
+            </div>
+            <div class="am-stat-val">{{ statsData().stages + statsData().years + statsData().sections }}</div>
+            <div class="am-stat-lbl">{{ t('academicManagement.totalEntities') }}</div>
+          </div>
+        </div>
+
+        <!-- ══ Main Card ══ -->
+        <div class="am-card">
+
+          <!-- Tabs -->
+          <div class="am-tabs">
+            <button
+              class="am-tab"
+              [class.active]="activeTab() === 'stages'"
+              (click)="setTab('stages')"
+            >
+              <lucide-icon [img]="GraduationCapIcon" [size]="15"></lucide-icon>
+              {{ t('academicManagement.stages') }}
+              <span class="am-tab-badge">{{ statsData().stages }}</span>
+            </button>
+            <button
+              class="am-tab"
+              [class.active]="activeTab() === 'years'"
+              (click)="setTab('years')"
+            >
+              <lucide-icon [img]="CalendarIcon" [size]="15"></lucide-icon>
+              {{ t('academicManagement.years') }}
+              <span class="am-tab-badge">{{ statsData().years }}</span>
+            </button>
+            <button
+              class="am-tab"
+              [class.active]="activeTab() === 'sections'"
+              (click)="setTab('sections')"
+            >
+              <lucide-icon [img]="UsersIcon" [size]="15"></lucide-icon>
+              {{ t('academicManagement.sections') }}
+              <span class="am-tab-badge">{{ statsData().sections }}</span>
+            </button>
+          </div>
+
+          <!-- Toolbar -->
+          <div class="am-toolbar">
+            <div class="am-search">
+              <lucide-icon [img]="SearchIcon" [size]="15"></lucide-icon>
+              <input
+                [value]="searchQuery()"
+                (input)="onSearch($event)"
+                [placeholder]="t('academicManagement.searchPlaceholder')"
+              />
+              @if (searchQuery()) {
+                <button class="clear-btn" (click)="clearSearch()">
+                  <lucide-icon [img]="XIcon" [size]="13"></lucide-icon>
+                </button>
+              }
+            </div>
+            <div style="font-size:12px; color:#94a3b8; font-weight:500;">
+              {{ currentData().length }} {{ t('academicManagement.records') }}
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div class="am-table-wrap">
+            @if (isLoading()) {
+              <div>
+                @for (item of skeletonRows; track $index) {
+                  <div class="am-skel-row am-skeleton">
+                    <div class="am-skel-box" style="width:180px; height:16px"></div>
+                    <div class="am-skel-box" style="width:100px; height:24px; border-radius:20px"></div>
+                    <div class="am-skel-box" style="width:60px; height:28px"></div>
+                    <div style="margin-left:auto; display:flex; gap:6px">
+                      <div class="am-skel-box" style="width:32px; height:32px; border-radius:8px"></div>
+                      <div class="am-skel-box" style="width:32px; height:32px; border-radius:8px"></div>
+                      <div class="am-skel-box" style="width:32px; height:32px; border-radius:8px"></div>
+                      <div class="am-skel-box" style="width:32px; height:32px; border-radius:8px"></div>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+
+            @else if (currentData().length === 0) {
+              <div class="am-empty">
+                <lucide-icon [img]="GraduationCapIcon" [size]="48" style="opacity:.3; display:block; margin:0 auto 12px"></lucide-icon>
+                <p>{{ t('academicManagement.noDataFound') }}</p>
+              </div>
+            }
+
+            @else {
+
+              <!-- Stages Table -->
+              @if (activeTab() === 'stages') {
+                <table class="am-table">
+                  <thead>
+                    <tr>
+                      <th>{{ t('academicManagement.name') }}</th>
+                      <th style="width:80px; text-align:center">ID</th>
+                      <th style="width:160px; text-align:center">{{ t('academicManagement.actions') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of pagedData(); track row.id) {
+                      <tr>
+                        <td>
+                          <div class="am-cell-name">{{ displayName(row) }}</div>
+                          @if (row.nameInAr && language() !== 'ar') {
+                            <div class="am-cell-sub">{{ row.nameInAr }}</div>
+                          }
+                        </td>
+                        <td style="text-align:center"><span class="am-id-badge">{{ row.id }}</span></td>
+                        <td>
+                          <div class="am-actions">
+                            <button class="am-action-btn" (click)="openDetails('stages', row)" nz-tooltip nzTooltipTitle="View">
+                              <lucide-icon [img]="EyeIcon" [size]="14"></lucide-icon>
+                            </button>
+                            <button class="am-action-btn" (click)="navigate(editRoute['stages'] + row.id)" nz-tooltip nzTooltipTitle="Edit">
+                              <lucide-icon [img]="PencilIcon" [size]="14"></lucide-icon>
+                            </button>
+                            <button class="am-action-btn danger" (click)="openDeleteModal('stages', row)" nz-tooltip nzTooltipTitle="Delete">
+                              <lucide-icon [img]="Trash2Icon" [size]="14"></lucide-icon>
+                            </button>
+                            <div class="am-dropdown-wrap">
+                              <button class="am-action-btn" (click)="toggleDropdown(row.id, $event)">
+                                <lucide-icon [img]="MoreHorizontalIcon" [size]="14"></lucide-icon>
+                              </button>
+                              @if (dropdown().visible && dropdown().recordId === row.id) {
+                                <div class="am-dropdown" (click)="$event.stopPropagation()">
+                                  <button class="am-drop-item" (click)="openDetails('stages', row); closeDropdown()">
+                                    <lucide-icon [img]="EyeIcon" [size]="14"></lucide-icon>
+                                    {{ t('academicManagement.viewDetails') }}
+                                  </button>
+                                  <button class="am-drop-item" (click)="navigate(editRoute['stages'] + row.id)">
+                                    <lucide-icon [img]="PencilIcon" [size]="14"></lucide-icon>
+                                    {{ t('academicManagement.edit') }}
+                                  </button>
+                                  <button class="am-drop-item" (click)="filterToYears(row); closeDropdown()">
+                                    <lucide-icon [img]="CalendarIcon" [size]="14"></lucide-icon>
+                                    {{ t('academicManagement.viewYears') }}
+                                  </button>
+                                  <div class="am-drop-divider"></div>
+                                  <button class="am-drop-item danger" (click)="openDeleteModal('stages', row); closeDropdown()">
+                                    <lucide-icon [img]="Trash2Icon" [size]="14"></lucide-icon>
+                                    {{ t('academicManagement.delete') }}
+                                  </button>
+                                </div>
+                              }
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+
+              <!-- Years Table -->
+              @if (activeTab() === 'years') {
+                <table class="am-table">
+                  <thead>
+                    <tr>
+                      <th>{{ t('academicManagement.yearName') }}</th>
+                      <th>{{ t('academicManagement.academicStage') }}</th>
+                      <th style="width:80px; text-align:center">ID</th>
+                      <th style="width:160px; text-align:center">{{ t('academicManagement.actions') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of pagedData(); track row.id) {
+                      <tr>
+                        <td>
+                          <div class="am-cell-name">{{ displayName(row) }}</div>
+                          @if (row.nameInAr && language() !== 'ar') {
+                            <div class="am-cell-sub">{{ row.nameInAr }}</div>
+                          }
+                        </td>
+                        <td>
+                          @if (row.stage) {
+                            <span class="am-tag violet">
+                              <lucide-icon [img]="Link2Icon" [size]="11"></lucide-icon>
+                              {{ displayName(row.stage) }}
+                            </span>
+                          } @else {
+                            <span class="am-tag gray">{{ t('academicManagement.notAssigned') }}</span>
+                          }
+                        </td>
+                        <td style="text-align:center"><span class="am-id-badge">{{ row.id }}</span></td>
+                        <td>
+                          <div class="am-actions">
+                            <button class="am-action-btn" (click)="openDetails('years', row)">
+                              <lucide-icon [img]="EyeIcon" [size]="14"></lucide-icon>
+                            </button>
+                            <button class="am-action-btn" (click)="navigate(editRoute['years'] + row.id)">
+                              <lucide-icon [img]="PencilIcon" [size]="14"></lucide-icon>
+                            </button>
+                            <button class="am-action-btn danger" (click)="openDeleteModal('years', row)">
+                              <lucide-icon [img]="Trash2Icon" [size]="14"></lucide-icon>
+                            </button>
+                            <div class="am-dropdown-wrap">
+                              <button class="am-action-btn" (click)="toggleDropdown(row.id, $event)">
+                                <lucide-icon [img]="MoreHorizontalIcon" [size]="14"></lucide-icon>
+                              </button>
+                              @if (dropdown().visible && dropdown().recordId === row.id) {
+                                <div class="am-dropdown" (click)="$event.stopPropagation()">
+                                  <button class="am-drop-item" (click)="openDetails('years', row); closeDropdown()">
+                                    <lucide-icon [img]="EyeIcon" [size]="14"></lucide-icon>
+                                    {{ t('academicManagement.viewDetails') }}
+                                  </button>
+                                  <button class="am-drop-item" (click)="navigate(editRoute['years'] + row.id)">
+                                    <lucide-icon [img]="PencilIcon" [size]="14"></lucide-icon>
+                                    {{ t('academicManagement.edit') }}
+                                  </button>
+                                  <button class="am-drop-item" (click)="filterToSections(row); closeDropdown()">
+                                    <lucide-icon [img]="UsersIcon" [size]="14"></lucide-icon>
+                                    {{ t('academicManagement.viewSections') }}
+                                  </button>
+                                  <div class="am-drop-divider"></div>
+                                  <button class="am-drop-item danger" (click)="openDeleteModal('years', row); closeDropdown()">
+                                    <lucide-icon [img]="Trash2Icon" [size]="14"></lucide-icon>
+                                    {{ t('academicManagement.delete') }}
+                                  </button>
+                                </div>
+                              }
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+
+              <!-- Sections Table -->
+              @if (activeTab() === 'sections') {
+                <table class="am-table">
+                  <thead>
+                    <tr>
+                      <th>{{ t('academicManagement.sectionName') }}</th>
+                      <th>{{ t('academicManagement.academicYear') }}</th>
+                      <th>{{ t('academicManagement.academicStage') }}</th>
+                      <th style="width:80px; text-align:center">ID</th>
+                      <th style="width:160px; text-align:center">{{ t('academicManagement.actions') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of pagedData(); track row.id) {
+                      <tr>
+                        <td>
+                          <div class="am-cell-name">{{ displayName(row) }}</div>
+                          @if (row.nameInAr && language() !== 'ar') {
+                            <div class="am-cell-sub">{{ row.nameInAr }}</div>
+                          }
+                        </td>
+                        <td>
+                          @if (row.academicYear) {
+                            <span class="am-tag blue">
+                              <lucide-icon [img]="CalendarIcon" [size]="11"></lucide-icon>
+                              {{ displayName(row.academicYear) }}
+                            </span>
+                          } @else {
+                            <span class="am-tag gray">{{ t('academicManagement.notAssigned') }}</span>
+                          }
+                        </td>
+                        <td>
+                          @if (row.academicYear?.stage) {
+                            <span class="am-tag violet">
+                              <lucide-icon [img]="GraduationCapIcon" [size]="11"></lucide-icon>
+                              {{ displayName(row.academicYear.stage) }}
+                            </span>
+                          } @else {
+                            <span class="am-tag gray">—</span>
+                          }
+                        </td>
+                        <td style="text-align:center"><span class="am-id-badge">{{ row.id }}</span></td>
+                        <td>
+                          <div class="am-actions">
+                            <button class="am-action-btn" (click)="openDetails('sections', row)">
+                              <lucide-icon [img]="EyeIcon" [size]="14"></lucide-icon>
+                            </button>
+                            <button class="am-action-btn" (click)="navigate(editRoute['sections'] + row.id)">
+                              <lucide-icon [img]="PencilIcon" [size]="14"></lucide-icon>
+                            </button>
+                            <button class="am-action-btn danger" (click)="openDeleteModal('sections', row)">
+                              <lucide-icon [img]="Trash2Icon" [size]="14"></lucide-icon>
+                            </button>
+                            <div class="am-dropdown-wrap">
+                              <button class="am-action-btn" (click)="toggleDropdown(row.id, $event)">
+                                <lucide-icon [img]="MoreHorizontalIcon" [size]="14"></lucide-icon>
+                              </button>
+                              @if (dropdown().visible && dropdown().recordId === row.id) {
+                                <div class="am-dropdown" (click)="$event.stopPropagation()">
+                                  <button class="am-drop-item" (click)="openDetails('sections', row); closeDropdown()">
+                                    <lucide-icon [img]="EyeIcon" [size]="14"></lucide-icon>
+                                    {{ t('academicManagement.viewDetails') }}
+                                  </button>
+                                  <button class="am-drop-item" (click)="navigate(editRoute['sections'] + row.id)">
+                                    <lucide-icon [img]="PencilIcon" [size]="14"></lucide-icon>
+                                    {{ t('academicManagement.edit') }}
+                                  </button>
+                                  <div class="am-drop-divider"></div>
+                                  <button class="am-drop-item danger" (click)="openDeleteModal('sections', row); closeDropdown()">
+                                    <lucide-icon [img]="Trash2Icon" [size]="14"></lucide-icon>
+                                    {{ t('academicManagement.delete') }}
+                                  </button>
+                                </div>
+                              }
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+            }
+          </div>
+
+          <!-- Pagination -->
+          @if (!isLoading() && currentData().length > PAGE_SIZE) {
+            <div class="am-pagination">
+              <span class="am-page-info">
+                {{ (currentPage() - 1) * PAGE_SIZE + 1 }}–{{ pageEnd() }}
+                {{ t('academicManagement.of') }} {{ currentData().length }}
+                {{ t('academicManagement.records') }}
+              </span>
+              <div class="am-page-btns">
+                <button class="am-page-btn" [disabled]="currentPage() === 1" (click)="setPage(currentPage() - 1)">‹</button>
+                @for (n of pageNumbers(); track n) {
+                  <button
+                    class="am-page-btn"
+                    [class.active]="currentPage() === n"
+                    (click)="setPage(n)"
+                  >{{ n }}</button>
+                }
+                <button class="am-page-btn" [disabled]="currentPage() === totalPages()" (click)="setPage(currentPage() + 1)">›</button>
+              </div>
+            </div>
+          }
+
+        </div><!-- /am-card -->
+      </div><!-- /am-body -->
+    </div><!-- /am-rel -->
+  </div><!-- /am-root -->
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       DELETE MODAL
+  ══════════════════════════════════════════════════════════ -->
+  @if (deleteState().visible && deleteState().record) {
+    <div class="am-overlay" (click)="closeDelete()">
+      <div class="am-modal" (click)="$event.stopPropagation()">
+        <div class="am-modal-header">
+          <div class="am-modal-title">
+            <div class="am-modal-title-ico" style="background:rgba(244,63,94,.1)">
+              <lucide-icon [img]="AlertTriangleIcon" [size]="16" style="color:#f43f5e"></lucide-icon>
+            </div>
+            {{ deleteTitle() }}
+          </div>
+          @if (!deleteState().loading) {
+            <button class="am-modal-close" (click)="closeDelete()">
+              <lucide-icon [img]="XIcon" [size]="14"></lucide-icon>
+            </button>
+          }
+        </div>
+        <div class="am-modal-body">
+          @if (deleteState().error) {
+            <div class="am-alert error">
+              <lucide-icon [img]="AlertTriangleIcon" [size]="15"></lucide-icon>
+              <span>{{ deleteState().error }}</span>
+            </div>
+          } @else {
+            @if (deleteState().relatedInfo?.years || deleteState().relatedInfo?.sections) {
+              <div class="am-alert warn">
+                <lucide-icon [img]="AlertTriangleIcon" [size]="15"></lucide-icon>
+                <span>{{ deleteWarningText() }}</span>
+              </div>
+            }
+            <div class="am-desc-grid">
+              <div class="am-desc-row">
+                <div class="am-desc-label">{{ t('academicManagement.name') }}</div>
+                <div class="am-desc-val" style="font-weight:700">{{ displayName(deleteState().record) }}</div>
+              </div>
+              <div class="am-desc-row">
+                <div class="am-desc-label">ID</div>
+                <div class="am-desc-val"><span class="am-id-badge">{{ deleteState().record.id }}</span></div>
+              </div>
+              @if (deleteState().type === 'years' && deleteState().record.stage) {
+                <div class="am-desc-row">
+                  <div class="am-desc-label">{{ t('academicManagement.stage') }}</div>
+                  <div class="am-desc-val">{{ displayName(deleteState().record.stage) }}</div>
+                </div>
+              }
+              @if (deleteState().type === 'sections' && deleteState().record.academicYear) {
+                <div class="am-desc-row">
+                  <div class="am-desc-label">{{ t('academicManagement.year') }}</div>
+                  <div class="am-desc-val">{{ displayName(deleteState().record.academicYear) }}</div>
+                </div>
+                @if (deleteState().record.academicYear?.stage) {
+                  <div class="am-desc-row">
+                    <div class="am-desc-label">{{ t('academicManagement.stage') }}</div>
+                    <div class="am-desc-val">{{ displayName(deleteState().record.academicYear.stage) }}</div>
+                  </div>
+                }
+              }
+              @if (deleteState().relatedInfo?.years !== undefined) {
+                <div class="am-desc-row">
+                  <div class="am-desc-label">{{ t('academicManagement.relatedYears') }}</div>
+                  <div class="am-desc-val"><span class="am-tag blue">{{ deleteState().relatedInfo!.years }}</span></div>
+                </div>
+              }
+              @if (deleteState().relatedInfo?.sections !== undefined) {
+                <div class="am-desc-row">
+                  <div class="am-desc-label">{{ t('academicManagement.relatedSections') }}</div>
+                  <div class="am-desc-val"><span class="am-tag violet">{{ deleteState().relatedInfo!.sections }}</span></div>
+                </div>
+              }
+            </div>
+            <div class="am-confirm-box">{{ t('academicManagement.confirmDelete') }}</div>
+          }
+        </div>
+        <div class="am-modal-footer">
+          <button class="am-btn-cancel" (click)="closeDelete()" [disabled]="deleteState().loading">
+            {{ t('academicManagement.cancel') }}
+          </button>
+          <button class="am-btn-danger" (click)="handleDelete()" [disabled]="deleteState().loading">
+            @if (deleteState().loading) {
+              <lucide-icon [img]="RefreshCwIcon" [size]="14" class="spin-icon"></lucide-icon>
+              {{ t('academicManagement.deleting') }}
+            } @else {
+              <lucide-icon [img]="Trash2Icon" [size]="14"></lucide-icon>
+              {{ t('academicManagement.delete') }}
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       DETAILS MODAL
+  ══════════════════════════════════════════════════════════ -->
+  @if (detailsState().visible && detailsState().data) {
+    <div class="am-overlay" (click)="closeDetails()">
+      <div class="am-modal" (click)="$event.stopPropagation()">
+        <div class="am-modal-header">
+          <div class="am-modal-title">
+            <div class="am-modal-title-ico" style="background:rgba(99,102,241,.1)">
+              @if (detailsState().type === 'stages') {
+                <lucide-icon [img]="GraduationCapIcon" [size]="16" style="color:#6366f1"></lucide-icon>
+              } @else if (detailsState().type === 'years') {
+                <lucide-icon [img]="CalendarIcon" [size]="16" style="color:#14b8a6"></lucide-icon>
+              } @else {
+                <lucide-icon [img]="UsersIcon" [size]="16" style="color:#8b5cf6"></lucide-icon>
+              }
+            </div>
+            {{ detailsTitle() }}
+          </div>
+          <button class="am-modal-close" (click)="closeDetails()">
+            <lucide-icon [img]="XIcon" [size]="14"></lucide-icon>
+          </button>
+        </div>
+        <div class="am-modal-body">
+          <div class="am-desc-grid">
+            <div class="am-desc-row">
+              <div class="am-desc-label">{{ t('academicManagement.nameEn') }}</div>
+              <div class="am-desc-val" style="font-weight:700">{{ detailsState().data.name }}</div>
+            </div>
+            <div class="am-desc-row">
+              <div class="am-desc-label">{{ t('academicManagement.nameAr') }}</div>
+              <div class="am-desc-val">{{ detailsState().data.nameInAr || '—' }}</div>
+            </div>
+            <div class="am-desc-row">
+              <div class="am-desc-label">ID</div>
+              <div class="am-desc-val"><span class="am-id-badge">{{ detailsState().data.id }}</span></div>
+            </div>
+            @if (detailsState().type === 'years' && detailsState().data.stage) {
+              <div class="am-desc-row">
+                <div class="am-desc-label">{{ t('academicManagement.stage') }}</div>
+                <div class="am-desc-val">
+                  <span class="am-tag violet">
+                    <lucide-icon [img]="Link2Icon" [size]="11"></lucide-icon>
+                    {{ displayName(detailsState().data.stage) }}
+                  </span>
+                </div>
+              </div>
+            }
+            @if (detailsState().type === 'sections' && detailsState().data.academicYear) {
+              <div class="am-desc-row">
+                <div class="am-desc-label">{{ t('academicManagement.year') }}</div>
+                <div class="am-desc-val">
+                  <span class="am-tag blue">
+                    <lucide-icon [img]="CalendarIcon" [size]="11"></lucide-icon>
+                    {{ displayName(detailsState().data.academicYear) }}
+                  </span>
+                </div>
+              </div>
+              @if (detailsState().data.academicYear.stage) {
+                <div class="am-desc-row">
+                  <div class="am-desc-label">{{ t('academicManagement.stage') }}</div>
+                  <div class="am-desc-val">
+                    <span class="am-tag violet">
+                      <lucide-icon [img]="GraduationCapIcon" [size]="11"></lucide-icon>
+                      {{ displayName(detailsState().data.academicYear.stage) }}
+                    </span>
+                  </div>
+                </div>
+              }
+            }
+            @if (detailsRelatedYears() !== null) {
+              <div class="am-desc-row">
+                <div class="am-desc-label">{{ t('academicManagement.relatedYears') }}</div>
+                <div class="am-desc-val"><span class="am-tag teal">{{ detailsRelatedYears() }}</span></div>
+              </div>
+            }
+            @if (detailsRelatedSections() !== null) {
+              <div class="am-desc-row">
+                <div class="am-desc-label">{{ t('academicManagement.relatedSections') }}</div>
+                <div class="am-desc-val"><span class="am-tag violet">{{ detailsRelatedSections() }}</span></div>
+              </div>
+            }
+          </div>
+        </div>
+        <div class="am-modal-footer">
+          <button class="am-btn-cancel" (click)="closeDetails()">{{ t('academicManagement.close') }}</button>
+          <button class="am-btn-edit" (click)="navigateToEdit(detailsState().type, detailsState().data.id); closeDetails()">
+            <lucide-icon [img]="PencilIcon" [size]="14"></lucide-icon>
+            {{ t('academicManagement.edit') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  }<!-- /else main -->
+
+</ng-container>

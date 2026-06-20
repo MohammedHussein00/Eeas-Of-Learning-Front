@@ -1,0 +1,274 @@
+<!-- academic-year-form.html -->
+<ng-container *transloco="let t; scope: 'academicYearForm'">
+
+  <!-- ══════════════════════════════════════════════════════════
+       LOADING SCREEN
+  ══════════════════════════════════════════════════════════ -->
+  @if (pageLoading()) {
+    <div class="af-center-screen">
+      <nz-spin nzSize="large"></nz-spin>
+      <p style="color:#6366f1; font-weight:500; margin-top:16px; font-size:13px">
+        {{ t('academicYearForm.loading') }}
+      </p>
+    </div>
+  }
+
+  @else {
+  <!-- ════════════════════════════════════════════════════════
+       MAIN LAYOUT
+  ════════════════════════════════════════════════════════ -->
+  <div class="af-root">
+    <div class="af-bg"></div>
+
+    <!-- ══ Header ══ -->
+    <div class="af-header">
+      <div class="af-brand">
+        <div class="af-logo">
+          <lucide-icon [img]="CalendarIcon" [size]="20" style="color:#fff"></lucide-icon>
+        </div>
+        <div>
+          <div class="af-brand-title">
+            {{ isEdit() ? t('academicYearForm.editYear') : t('academicYearForm.addNewYear') }}
+          </div>
+          <div class="af-brand-sub">{{ t('academicYearForm.academicYearForm') }}</div>
+        </div>
+      </div>
+      <button class="af-btn-ghost" (click)="navigateToList()">
+        <lucide-icon [img]="ArrowLeftIcon" [size]="14"></lucide-icon>
+        {{ t('academicYearForm.backToList') }}
+      </button>
+    </div>
+
+    <!-- ══ Body ══ -->
+    <div class="af-rel">
+      <div class="af-body">
+
+        <!-- Breadcrumb -->
+        <div class="af-breadcrumb">
+          <a (click)="navigateToAcademics()">{{ t('academicYearForm.academicManagement') }}</a>
+          <span>›</span>
+          <span>{{ t('academicYearForm.years') }}</span>
+          <span>›</span>
+          <span style="color: #64748b">{{ isEdit() ? t('academicYearForm.edit') : t('academicYearForm.new') }}</span>
+        </div>
+
+        <!-- Page Title -->
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 4px">
+          <div class="af-page-title">
+            {{ isEdit() ? t('academicYearForm.editYear') : t('academicYearForm.addNewYear') }}
+          </div>
+          <span class="af-mode-badge" [class.edit]="isEdit()" [class.create]="!isEdit()">
+            {{ isEdit() ? t('academicYearForm.editMode') : t('academicYearForm.createMode') }}
+          </span>
+        </div>
+        <div class="af-page-sub">
+          {{ isEdit()
+            ? t('academicYearForm.editYearSubtitle')
+            : t('academicYearForm.addYearSubtitle') }}
+        </div>
+
+        <!-- Alerts -->
+        @if (success()) {
+          <div class="af-alert success">
+            <lucide-icon [img]="CheckCircleIcon" [size]="15"></lucide-icon>
+            <span>
+              {{ isEdit()
+                ? t('academicYearForm.yearUpdatedSuccessfully')
+                : t('academicYearForm.yearCreatedSuccessfully') }}
+            </span>
+          </div>
+        }
+        @if (apiError()) {
+          <div class="af-alert error">
+            <lucide-icon [img]="AlertTriangleIcon" [size]="15"></lucide-icon>
+            <span>{{ apiError() }}</span>
+            <button class="af-alert-close" (click)="apiError.set(null)">
+              <lucide-icon [img]="XIcon" [size]="14"></lucide-icon>
+            </button>
+          </div>
+        }
+        @if (hasErrors() && !apiError()) {
+          <div class="af-alert error">
+            <lucide-icon [img]="AlertTriangleIcon" [size]="15"></lucide-icon>
+            <span>{{ t('academicYearForm.fixErrors') }}</span>
+          </div>
+        }
+
+        <!-- ══ Form ══ -->
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+
+          <!-- Section: Names -->
+          <div class="af-sec">
+            <div class="af-sec-ico">
+              <lucide-icon [img]="CalendarIcon" [size]="11"></lucide-icon>
+            </div>
+            {{ t('academicYearForm.yearDetails') }}
+          </div>
+          <div class="af-card">
+            <div class="af-grid2">
+              <!-- English Name -->
+              <div class="af-field">
+                <label class="af-label">
+                  {{ t('academicYearForm.yearNameEn') }} <span class="req">*</span>
+                </label>
+                <input
+                  class="af-input"
+                  [class.error]="hasFieldError('nameInEn')"
+                  formControlName="nameInEn"
+                  [placeholder]="t('academicYearForm.enterYearNameEn')"
+                />
+                @if (hasFieldError('nameInEn')) {
+                  <span class="af-err">
+                    <lucide-icon [img]="AlertTriangleIcon" [size]="12"></lucide-icon>
+                    {{ getFieldError('nameInEn') }}
+                  </span>
+                }
+                <span class="af-hint">{{ t('academicYearForm.yearNameEnHint') }}</span>
+              </div>
+
+              <!-- Arabic Name -->
+              <div class="af-field">
+                <label class="af-label">
+                  {{ t('academicYearForm.yearNameAr') }} <span class="req">*</span>
+                </label>
+                <input
+                  class="af-input"
+                  [class.error]="hasFieldError('nameInAr')"
+                  formControlName="nameInAr"
+                  [placeholder]="t('academicYearForm.enterYearNameAr')"
+                  dir="rtl"
+                />
+                @if (hasFieldError('nameInAr')) {
+                  <span class="af-err">
+                    <lucide-icon [img]="AlertTriangleIcon" [size]="12"></lucide-icon>
+                    {{ getFieldError('nameInAr') }}
+                  </span>
+                }
+                <span class="af-hint">{{ t('academicYearForm.yearNameArHint') }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Parent Stage -->
+          <div class="af-sec" style="margin-top: 20px">
+            <div class="af-sec-ico">
+              <lucide-icon [img]="GraduationCapIcon" [size]="11"></lucide-icon>
+            </div>
+            {{ t('academicYearForm.parentStage') }}
+          </div>
+          <div class="af-card">
+            <div class="af-grid1">
+              <div class="af-field">
+                <label class="af-label">
+                  {{ t('academicYearForm.academicStage') }} <span class="req">*</span>
+                </label>
+                <div class="af-select-wrap">
+                  <select
+                    class="af-select"
+                    [class.error]="hasFieldError('academicStageId')"
+                    formControlName="academicStageId"
+                    [disabled]="stagesLoading()"
+                  >
+                    <option value="">
+                      {{ stagesLoading()
+                        ? t('academicYearForm.loadingStages')
+                        : t('academicYearForm.selectAcademicStage') }}
+                    </option>
+                    @for (s of stages(); track s.id) {
+                      <option [value]="s.id">
+                        {{ displayStageName(s) }}
+                      </option>
+                    }
+                  </select>
+                  <lucide-icon class="af-select-ico" [img]="ChevronDownIcon" [size]="16"></lucide-icon>
+                </div>
+                @if (hasFieldError('academicStageId')) {
+                  <span class="af-err">
+                    <lucide-icon [img]="AlertTriangleIcon" [size]="12"></lucide-icon>
+                    {{ getFieldError('academicStageId') }}
+                  </span>
+                }
+
+                <!-- Selected stage display -->
+                @if (selectedStage()) {
+                  <div class="af-hierarchy">
+                    <lucide-icon [img]="GraduationCapIcon" [size]="13" style="color: #8b5cf6"></lucide-icon>
+                    <span class="af-tag violet">
+                      {{ t('academicYearForm.selectedStage') }}: {{ displayStageName(selectedStage()) }}
+                    </span>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Preview -->
+          @if (showPreview()) {
+            <div class="af-sec" style="margin-top: 20px">
+              <div class="af-sec-ico">
+                <lucide-icon [img]="CalendarIcon" [size]="11"></lucide-icon>
+              </div>
+              {{ t('academicYearForm.preview') }}
+            </div>
+            <div class="af-preview">
+              <div class="af-preview-title">{{ t('academicYearForm.yearPreview') }}</div>
+              <div class="af-preview-grid">
+                <div class="af-preview-item">
+                  <div class="af-preview-item-lbl">{{ t('academicYearForm.nameEn') }}</div>
+                  <div class="af-preview-item-val">
+                    {{ form.get('nameInEn')?.value || '—' }}
+                  </div>
+                </div>
+                <div class="af-preview-item">
+                  <div class="af-preview-item-lbl">{{ t('academicYearForm.nameAr') }}</div>
+                  <div class="af-preview-item-val" dir="rtl">
+                    {{ form.get('nameInAr')?.value || '—' }}
+                  </div>
+                </div>
+                @if (selectedStage()) {
+                  <div class="af-preview-item">
+                    <div class="af-preview-item-lbl">{{ t('academicYearForm.stage') }}</div>
+                    <div class="af-preview-item-val">
+                      {{ displayStageName(selectedStage()) }}
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Footer -->
+          <div class="af-footer">
+            <button
+              type="button"
+              class="af-btn-cancel"
+              (click)="navigateToList()"
+            >
+              <lucide-icon [img]="ArrowLeftIcon" [size]="14"></lucide-icon>
+              {{ t('academicYearForm.cancel') }}
+            </button>
+            <button
+              type="submit"
+              class="af-btn-save"
+              [class.spinning]="form.disabled"
+              [disabled]="form.invalid || stagesLoading()"
+            >
+              @if (form.disabled) {
+                <lucide-icon [img]="RefreshCwIcon" [size]="16" class="spin-icon"></lucide-icon>
+                {{ t('academicYearForm.saving') }}
+              } @else {
+                <lucide-icon [img]="SaveIcon" [size]="16"></lucide-icon>
+                {{ isEdit()
+                  ? t('academicYearForm.updateYear')
+                  : t('academicYearForm.createYear') }}
+              }
+            </button>
+          </div>
+        </form>
+
+      </div><!-- /af-body -->
+    </div><!-- /af-rel -->
+  </div><!-- /af-root -->
+  }<!-- /else main -->
+
+</ng-container>

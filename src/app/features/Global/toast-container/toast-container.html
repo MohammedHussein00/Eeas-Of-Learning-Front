@@ -1,0 +1,19 @@
+<!-- core/components/toast-container/toast-container.html -->
+<div class="toast-viewport">
+  @for (toast of toasts(); track toast.id) {
+    <div class="toast-item toast-{{ toast.type }}" role="alert">
+      <div class="toast-icon">
+        @switch (toast.type) {
+          @case ('success') { <lucide-icon [img]="CheckCircleIcon" [size]="18"></lucide-icon> }
+          @case ('error')   { <lucide-icon [img]="XCircleIcon"     [size]="18"></lucide-icon> }
+          @case ('warning') { <lucide-icon [img]="AlertTriangleIcon" [size]="18"></lucide-icon> }
+          @case ('info')    { <lucide-icon [img]="InfoIcon"         [size]="18"></lucide-icon> }
+        }
+      </div>
+      <span class="toast-msg">{{ toast.message }}</span>
+      <button class="toast-close" (click)="dismiss(toast.id, $event)" aria-label="Dismiss notification">
+        <lucide-icon [img]="XIcon" [size]="14"></lucide-icon>
+      </button>
+    </div>
+  }
+</div>

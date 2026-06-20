@@ -1,0 +1,107 @@
+<!-- features/auth/login/login.html -->
+<ng-container *transloco="let t; scope: 'login'">
+<div class="eol-auth-root eol-auth-bg">
+
+  <!-- Background -->
+  <div class="eol-auth-bg-canvas">
+    <div class="eol-auth-grid"></div>
+    <div class="eol-auth-orb eol-auth-orb-1"></div>
+    <div class="eol-auth-orb eol-auth-orb-2"></div>
+    <div class="eol-auth-orb eol-auth-orb-3"></div>
+    <div class="eol-auth-fs" style="top:6%;left:4%;animation-delay:0s">
+      <svg width="76" height="76" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+      </svg>
+    </div>
+    @for (p of particles; track $index) {
+      <div class="eol-auth-particle"
+           [style.left.%]="p.left" [style.top.%]="p.top"
+           [style.--dur]="p.dur"   [style.--del]="p.del"
+           [style.--tx]="p.tx"     [style.--ty]="p.ty"></div>
+    }
+  </div>
+
+  <!-- Card -->
+  <div class="eol-auth-card-wrap">
+    <div class="eol-auth-card">
+      <div class="eol-auth-card-band"></div>
+      <div class="eol-auth-card-body">
+
+        <!-- Logo -->
+        <div class="eol-auth-logo">
+          <div class="eol-auth-logo-icon">
+            <img src="assets/logo.jpeg" alt="EOL" (error)="onLogoError()" [class.hidden]="logoFailed()">
+            <span class="logo-fallback" [class.visible]="logoFailed()">
+              <lucide-icon [img]="bookOpenIcon" [size]="20"></lucide-icon>
+            </span>
+          </div>
+          <div>
+            <div class="eol-auth-logo-name">{{ t('login.platformName') }}</div>
+            <div class="eol-auth-logo-tag">{{ t('login.platformTagline') }}</div>
+          </div>
+        </div>
+
+        <h1 class="eol-auth-heading">{{ t('login.title') }}</h1>
+        <p class="eol-auth-subhead">{{ t('login.subtitle') }}</p>
+
+        @if (errorMsg()) {
+          <div class="eol-auth-error-banner">
+            <span class="eol-auth-error-icon">⚠</span>
+            <span>{{ errorMsg() }}</span>
+          </div>
+        }
+
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" (input)="clearError()">
+          <div class="form-item">
+            <label class="form-label">{{ t('login.email') }}</label>
+            <div class="input-wrapper">
+              <lucide-icon class="input-icon" [img]="mailIcon" [size]="14" color="#8a94b2"></lucide-icon>
+              <input type="email" name="email" formControlName="email" [placeholder]="t('login.emailPlaceholder')" autocomplete="username">
+            </div>
+            @if (loginForm.get('email')?.invalid && loginForm.get('email')?.touched) {
+              <div class="error-text">{{ t('.requiredField') }}</div>
+            }
+          </div>
+
+          <div class="form-item">
+            <label class="form-label">{{ t('login.password') }}</label>
+            <div class="input-wrapper">
+              <lucide-icon class="input-icon" [img]="lockIcon" [size]="14" color="#8a94b2"></lucide-icon>
+              <input [type]="showPassword() ? 'text' : 'password'"
+                     name="password" formControlName="password" [placeholder]="t('login.passwordPlaceholder')"
+                     autocomplete="current-password">
+              <button type="button" class="toggle-btn" (click)="togglePassword()">
+                <lucide-icon [img]="showPassword() ? eyeOffIcon : eyeIcon" [size]="14" color="#8a94b2"></lucide-icon>
+              </button>
+            </div>
+            @if (loginForm.get('password')?.invalid && loginForm.get('password')?.touched) {
+              <div class="error-text">{{ t('login.requiredField') }}</div>
+            }
+          </div>
+
+          <div class="eol-auth-forgot">
+            <a routerLink="/forgot-password">{{ t('login.forgotPassword') }}</a>
+          </div>
+
+          <button type="submit" class="eol-auth-btn-primary" [disabled]="loading()">
+            @if (loading()) {
+              <lucide-icon class="spin" [img]="loaderIcon" [size]="16"></lucide-icon>
+              <span>{{ t('login.signingIn') }}</span>
+            } @else {
+              <lucide-icon [img]="arrowRightIcon" [size]="15"></lucide-icon>
+              <span>{{ t('login.signIn') }}</span>
+            }
+          </button>
+        </form>
+
+        <div class="eol-auth-divider"><span>{{ t('login.or') }}</span></div>
+
+        <div class="eol-auth-link-row">
+          {{ t('login.noAccount') }} <a routerLink="/sign-up">{{ t('login.createAccount') }}</a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+</ng-container>

@@ -1,0 +1,80 @@
+<!-- shared/components/footer/footer.html -->
+<footer class="eol-footer" [dir]="isRtl() ? 'rtl' : 'ltr'" role="contentinfo">
+  <!-- Background Layer -->
+  <div class="eol-footer-bg">
+    <div class="eol-footer-grid-bg"></div>
+    <div class="eol-footer-orb eol-footer-orb-1"></div>
+    <div class="eol-footer-orb eol-footer-orb-2"></div>
+    <div class="eol-footer-orb eol-footer-orb-3"></div>
+  </div>
+
+  <div class="eol-footer-container">
+    <!-- Main Grid -->
+    <div class="eol-footer-grid">
+      <!-- Brand Column -->
+      <div class="eol-footer-brand">
+        <a class="eol-footer-logo" routerLink="/">
+          <div class="eol-footer-logo-icon">
+            <lucide-icon [img]="GraduationCapIcon" [size]="22" color="#fff"></lucide-icon>
+          </div>
+          <span class="eol-footer-logo-text">EOL</span>
+        </a>
+
+        <p class="eol-footer-desc">
+          {{ isRtl()
+            ? 'منصة التعلم الرائدة عبر الإنترنت التي تمكّن الطلاب حول العالم بأحدث الدورات والتعليم الاحترافي.'
+            : 'The leading online learning platform empowering students worldwide with cutting-edge courses and expert instruction.' }}
+        </p>
+
+        <!-- Contact Info -->
+        <div class="eol-footer-contact">
+          @for (item of contactInfo(); track item.text) {
+            <div class="eol-footer-contact-item">
+              <span class="eol-footer-contact-icon">
+                <lucide-icon [img]="item.icon" [size]="14"></lucide-icon>
+              </span>
+              <span>{{ item.text }}</span>
+            </div>
+          }
+        </div>
+
+        <!-- Social Links -->
+        <div class="eol-footer-socials">
+          @for (s of socials; track s.href; let i = $index) {
+            <a [href]="s.href" class="eol-footer-social-link" [attr.aria-label]="'Social link ' + (i + 1)" target="_blank" rel="noopener noreferrer">
+              <lucide-icon [img]="s.Icon" [size]="15"></lucide-icon>
+            </a>
+          }
+        </div>
+      </div>
+
+      <!-- Navigation Columns -->
+      @for (col of cols(); track col.head) {
+        <div class="eol-footer-col">
+          <h4 class="eol-footer-col-title">{{ col.head }}</h4>
+          <ul class="eol-footer-col-list">
+            @for (link of col.links; track link.href) {
+              <li class="eol-footer-col-item">
+                <a [href]="link.href" (click)="$event.preventDefault(); navigateTo(link.href)" class="eol-footer-col-link">
+                  {{ link.label }}
+                </a>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+
+    <!-- Bottom Bar -->
+    <div class="eol-footer-bottom">
+      <span class="eol-footer-bottom-left">
+        © {{ currentYear }} EOL Platform. {{ isRtl() ? 'جميع الحقوق محفوظة.' : 'All rights reserved.' }}
+      </span>
+      <span class="eol-footer-bottom-right">
+        {{ isRtl() ? 'صُنع بـ' : 'Made with' }}
+        <lucide-icon [img]="HeartIcon" [size]="12" class="eol-footer-heart"></lucide-icon>
+        {{ isRtl() ? 'للمتعلمين في كل مكان' : 'for learners everywhere' }}
+      </span>
+    </div>
+  </div>
+</footer>

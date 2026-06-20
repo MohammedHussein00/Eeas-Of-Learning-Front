@@ -1,0 +1,756 @@
+<<ng-container *transloco="let t; scope: 'teacherAdvertisements'">
+
+  @if (loading()) {
+    <div class="cb-loader">
+      <nz-spin nzSize="large"></nz-spin>
+      <span style="color: var(--text-2); font-size: 13px;">{{ t('teacherAdvertisements.loading') }}</span>
+    </div>
+  }
+
+  @else {
+  <div class="cb-root">
+
+    <!-- ── Header ── -->
+    <header class="cb-header">
+      <div class="cb-header-left">
+        <button class="cb-back-btn" (click)="router.navigate(['/teacher/dashboard'])">
+          <lucide-icon [img]="ArrowLeftIcon" [size]="16"></lucide-icon>
+          <span class="cb-back-label">{{ t('teacherAdvertisements.dashboard') }}</span>
+        </button>
+        <div class="cb-header-sep"></div>
+        <div class="cb-header-info">
+          <h1 class="cb-header-title">{{ t('teacherAdvertisements.page_title') }}</h1>
+          <p class="cb-header-sub">{{ t('teacherAdvertisements.page_subtitle') }}</p>
+        </div>
+      </div>
+      <div class="cb-header-right">
+        @if (planInfo()?.subscriptionPlanName) {
+          <span class="cb-status-pill status--published">
+            <lucide-icon [img]="CrownIcon" [size]="13"></lucide-icon>
+            <span>{{ planInfo()!.subscriptionPlanName }}</span>
+          </span>
+        }
+        @if (hasAccess()) {
+          <span class="cb-status-pill status--published">
+            <lucide-icon [img]="CheckIcon" [size]="13"></lucide-icon>
+            <span>{{ t('teacherAdvertisements.plan_active') }}</span>
+          </span>
+        } @else {
+          <span class="cb-status-pill status--rejected">
+            <lucide-icon [img]="LockIcon" [size]="13"></lucide-icon>
+            <span>{{ t('teacherAdvertisements.plan_no_access') }}</span>
+          </span>
+        }
+        <button class="cb-settings-btn" (click)="fetchAll(false)">
+          <lucide-icon [img]="RefreshCwIcon" [size]="14"></lucide-icon>
+          <span class="cb-settings-label">{{ t('teacherAdvertisements.refresh') }}</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="cb-body">
+
+      <!-- ── Hero ── -->
+      <div class="cb-hero">
+        <div class="cb-hero-accent"></div>
+        <div class="cb-hero-content">
+          <div class="cb-hero-left">
+            <div class="cb-thumbnail-wrap">
+              <div class="cb-ad-hero-icon">📢</div>
+            </div>
+            <div class="cb-hero-text">
+              <h2 class="cb-hero-title">{{ t('teacherAdvertisements.hero_title') }}</h2>
+              <p class="cb-hero-subtitle">{{ t('teacherAdvertisements.hero_subtitle') }}</p>
+              <div class="cb-hero-pills">
+                @if (hasAccess()) {
+                  <span class="cb-status-pill status--published">
+                    <lucide-icon [img]="CheckIcon" [size]="12"></lucide-icon>
+                    <span>{{ t('teacherAdvertisements.plan_active') }}</span>
+                  </span>
+                } @else {
+                  <span class="cb-status-pill status--rejected">
+                    <lucide-icon [img]="LockIcon" [size]="12"></lucide-icon>
+                    <span>{{ t('teacherAdvertisements.plan_upgrade_required') }}</span>
+                  </span>
+                }
+                <span class="cb-pill blue">
+                  <lucide-icon [img]="LayoutIcon" [size]="12"></lucide-icon>
+                  {{ myAds().length }} {{ t('teacherAdvertisements.ads_submitted') }}
+                </span>
+                <span class="cb-pill cyan">
+                  <lucide-icon [img]="EyeIcon" [size]="12"></lucide-icon>
+                  {{ totalImpressions() }} {{ t('teacherAdvertisements.impressions') }}
+                </span>
+                <!-- REMOVED: plan-gated video_enabled / image_enabled pills -->
+              </div>
+            </div>
+          </div>
+
+          <div class="cb-hero-right">
+            <!-- Quota ring -->
+            <div class="cb-hero-ring">
+              <div class="cb-quota-ring">
+                <svg viewBox="0 0 72 72" width="72" height="72">
+                  <circle cx="36" cy="36" r="30" fill="none" stroke="#eef0ff" stroke-width="6"/>
+                  <circle cx="36" cy="36" r="30" fill="none"
+                    [attr.stroke]="quotaColor()"
+                    stroke-width="6"
+                    stroke-linecap="round"
+                    [attr.stroke-dasharray]="188.4"
+                    [attr.stroke-dashoffset]="188.4 - (188.4 * quotaPct() / 100)"
+                    transform="rotate(-90 36 36)"/>
+                  <text x="36" y="40" text-anchor="middle"
+                    style="font-family:'Sora',sans-serif;font-size:12px;font-weight:800;fill:#0f172a">
+                    {{ usedQuota() }}/{{ totalQuota() }}
+                  </text>
+                </svg>
+              </div>
+              <span class="cb-hero-ring-label">{{ t('teacherAdvertisements.monthly_quota') }}</span>
+            </div>
+            <!-- Actions -->
+            <div class="cb-hero-actions">
+              @if (canSubmit()) {
+                <button class="cb-hero-publish-btn" (click)="setActiveTab('create')">
+                  <lucide-icon [img]="PlusIcon" [size]="15"></lucide-icon>
+                  <span>{{ t('teacherAdvertisements.create_ad_btn') }}</span>
+                </button>
+              }
+              <button class="cb-hero-secondary-btn" (click)="setActiveTab('myads')">
+                <lucide-icon [img]="LayoutIcon" [size]="14"></lucide-icon>
+                <span>{{ t('teacherAdvertisements.my_ads_btn') }} ({{ myAds().length }})</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Stats Grid ── -->
+      <div class="cb-stats-grid">
+        <div class="cb-stat-card blue">
+          <div class="cb-stat-icon"><lucide-icon [img]="LayoutIcon" [size]="20"></lucide-icon></div>
+          <div>
+            <div class="cb-stat-value">{{ myAds().length }}</div>
+            <div class="cb-stat-label">{{ t('teacherAdvertisements.stat_total_ads') }}</div>
+          </div>
+        </div>
+        <div class="cb-stat-card green">
+          <div class="cb-stat-icon"><lucide-icon [img]="CheckCircleIcon" [size]="20"></lucide-icon></div>
+          <div>
+            <div class="cb-stat-value">{{ approvedCount() }}</div>
+            <div class="cb-stat-label">{{ t('teacherAdvertisements.stat_approved') }}</div>
+          </div>
+        </div>
+        <div class="cb-stat-card cyan">
+          <div class="cb-stat-icon"><lucide-icon [img]="EyeIcon" [size]="20"></lucide-icon></div>
+          <div>
+            <div class="cb-stat-value">{{ totalImpressions() }}</div>
+            <div class="cb-stat-label">{{ t('teacherAdvertisements.stat_total_impressions') }}</div>
+          </div>
+        </div>
+        <div class="cb-stat-card amber">
+          <div class="cb-stat-icon"><lucide-icon [img]="RocketIcon" [size]="20"></lucide-icon></div>
+          <div>
+            <div class="cb-stat-value">{{ remainingQuota() }}<<span class="cb-stat-suffix">/{{ totalQuota() }}</span></div>
+            <div class="cb-stat-label">{{ t('teacherAdvertisements.stat_remaining_quota') }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Main Grid ── -->
+      <div class="cb-main-grid">
+
+        <!-- ── Left: Tabs ── -->
+        <div class="cb-content-col">
+          <nz-tabs
+            class="cb-tabs"
+            nzType="card"
+            [nzSelectedIndex]="activeTabIndex()"
+            (nzSelectedIndexChange)="onTabChange($event)">
+
+            <!-- ══ TAB: CREATE ══ -->
+            <nz-tab [nzTitle]="createTabTitleTpl">
+              <ng-template #createTabTitleTpl>
+                <span class="cb-tab-label">
+                  <lucide-icon [img]="PlusIcon" [size]="13"></lucide-icon>
+                  <span class="cb-tab-text">{{ t('teacherAdvertisements.tab_create') }}</span>
+                </span>
+              </ng-template>
+
+              <div class="cb-tab-pane">
+                <div class="cb-card">
+                  <div class="cb-card-head">
+                    <div class="cb-card-heading">
+                      <div class="cb-card-chip blue">
+                        <lucide-icon [img]="PlusIcon" [size]="14"></lucide-icon>
+                      </div>
+                      {{ t('teacherAdvertisements.new_ad_title') }}
+                    </div>
+                    @if (!canSubmit()) {
+                      <span [class]="'cb-status-pill ' + (!hasAccess() ? 'status--rejected' : 'status--changes')">
+                        <lucide-icon [img]="!hasAccess() ? LockIcon : AlertIcon" [size]="12"></lucide-icon>
+                        <span>{{ !hasAccess() ? t('teacherAdvertisements.plan_upgrade_required') : t('teacherAdvertisements.quota_exhausted') }}</span>
+                      </span>
+                    }
+                  </div>
+                  <div class="cb-card-body">
+
+                    <!-- No access banner -->
+                    @if (!hasAccess()) {
+                      <div class="cb-no-access-banner">
+                        <div class="cb-no-access-icon">
+                          <lucide-icon [img]="LockIcon" [size]="22"></lucide-icon>
+                        </div>
+                        <div>
+                          <div class="cb-no-access-title">{{ t('teacherAdvertisements.no_access_title') }}</div>
+                          <div class="cb-no-access-desc">{{ planInfo()?.reason || t('teacherAdvertisements.no_access_desc') }}</div>
+                        </div>
+                      </div>
+                    }
+
+                    <!-- Quota warning -->
+                    @if (hasAccess() && remainingQuota() <= 0) {
+                      <nz-alert
+                        nzType="warning"
+                        [nzMessage]="t('teacherAdvertisements.quota_exhausted')"
+                        [nzDescription]="t('teacherAdvertisements.quota_exhausted_desc')"
+                        nzShowIcon
+                        style="border-radius: 10px; margin-bottom: 20px;">
+                      </nz-alert>
+                    }
+
+                    <form [formGroup]="createForm" (ngSubmit)="handleSubmit()">
+
+                      <!-- Basic Info Section -->
+                      <div class="cb-form-section">
+                        <div class="cb-form-section-label">
+                          <lucide-icon [img]="FileTextIcon" [size]="13"></lucide-icon>
+                          {{ t('teacherAdvertisements.section_basic_info') }}
+                        </div>
+
+                        <nz-form-item>
+                          <nz-form-label nzRequired>{{ t('teacherAdvertisements.field_title') }}</nz-form-label>
+                          <nz-form-control [nzErrorTip]="titleError">
+                            <input nz-input formControlName="title"
+                              [placeholder]="t('teacherAdvertisements.field_title_placeholder')"
+                              nzSize="large"
+                              [disabled]="!canSubmit() || submitting()" />
+                            <ng-template #titleError let-control>
+                              @if (control.hasError('required')) { {{ t('teacherAdvertisements.validation_title_required') }} }
+                              @else if (control.hasError('maxlength')) { {{ t('teacherAdvertisements.validation_title_max') }} }
+                              @else if (control.hasError('minlength')) { {{ t('teacherAdvertisements.validation_title_min') }} }
+                            </ng-template>
+                          </nz-form-control>
+                        </nz-form-item>
+
+                        <nz-form-item>
+                          <nz-form-label>{{ t('teacherAdvertisements.field_description') }}</nz-form-label>
+                          <nz-form-control [nzErrorTip]="descError">
+                            <textarea nz-input formControlName="description"
+                              [placeholder]="t('teacherAdvertisements.field_description_placeholder')"
+                              [nzAutosize]="{ minRows: 4, maxRows: 8 }"
+                              [disabled]="!canSubmit() || submitting()">
+                            </textarea>
+                            <ng-template #descError let-control>
+                              @if (control.hasError('maxlength')) { {{ t('teacherAdvertisements.validation_desc_max') }} }
+                            </ng-template>
+                          </nz-form-control>
+                        </nz-form-item>
+                      </div>
+
+                      <!-- Media Section -->
+                      <div class="cb-form-section">
+                        <div class="cb-form-section-label">
+                          <lucide-icon [img]="ImageIcon" [size]="13"></lucide-icon>
+                          {{ t('teacherAdvertisements.section_media') }}
+                        </div>
+
+                        <div class="cb-media-grid">
+                          <!-- Image Upload -->
+                          <div>
+                            <div class="cb-field-label">
+                              <lucide-icon [img]="ImageIcon" [size]="13" style="color: var(--green-dark)"></lucide-icon>
+                              {{ t('teacherAdvertisements.field_image') }}
+                              <span class="cb-mini-tag gray">opt</span>
+                            </div>
+                            <nz-upload
+                              [nzBeforeUpload]="handleImageBefore"
+                              [nzShowUploadList]="false"
+                              nzAccept=".jpg,.jpeg,.png,.webp,.gif"
+                              [nzDisabled]="!canSubmit() || submitting() || videoFile()">
+                              <div class="cb-upload-zone" [class.cb-upload-zone--disabled]="videoFile()">
+                                <div class="cb-upload-emoji">🖼️</div>
+                                <div class="cb-upload-title">
+                                  {{ videoFile() ? t('teacherAdvertisements.upload_disabled') : t('teacherAdvertisements.upload_image') }}
+                                </div>
+                                <div class="cb-upload-sub">
+                                  {{ videoFile() ? t('teacherAdvertisements.remove_video_first') : t('teacherAdvertisements.image_hint') }}
+                                </div>
+                              </div>
+                            </nz-upload>
+                            @if (mediaErrors().image) {
+                              <div class="cb-field-error">{{ mediaErrors().image }}</div>
+                            }
+                            @if (imageFile()) {
+                              <div class="cb-media-preview">
+                                <lucide-icon [img]="ImageIcon" [size]="16" style="color: var(--green-dark); flex-shrink:0"></lucide-icon>
+                                <span class="cb-media-name">{{ imageFile()!.name }}</span>
+                                <span class="cb-media-size">{{ formatFileSize(imageFile()!.size) }}</span>
+                                <button type="button" class="cb-icon-btn primary sm"
+                                  nz-tooltip [nzTooltipTitle]="t('teacherAdvertisements.preview')"
+                                  (click)="openPreview('image', imageFile())">
+                                  <lucide-icon [img]="EyeIcon" [size]="13"></lucide-icon>
+                                </button>
+                                <button type="button" class="cb-icon-btn danger sm"
+                                  nz-tooltip [nzTooltipTitle]="t('teacherAdvertisements.remove')"
+                                  (click)="clearImage()">
+                                  <lucide-icon [img]="TrashIcon" [size]="13"></lucide-icon>
+                                </button>
+                              </div>
+                            }
+                          </div>
+
+                          <!-- Video Upload -->
+                          <div>
+                            <div class="cb-field-label">
+                              <lucide-icon [img]="VideoIcon" [size]="13" style="color: var(--purple)"></lucide-icon>
+                              {{ t('teacherAdvertisements.field_video') }}
+                              <span class="cb-mini-tag gray">opt</span>
+                            </div>
+                            <nz-upload
+                              [nzBeforeUpload]="handleVideoBefore"
+                              [nzShowUploadList]="false"
+                              nzAccept=".mp4,.mov,.avi,.webm"
+                              [nzDisabled]="!canSubmit() || submitting() || imageFile()">
+                              <div class="cb-upload-zone" [class.cb-upload-zone--disabled]="imageFile()">
+                                <div class="cb-upload-emoji">🎬</div>
+                                <div class="cb-upload-title">
+                                  {{ imageFile() ? t('teacherAdvertisements.upload_disabled') : t('teacherAdvertisements.upload_video') }}
+                                </div>
+                                <div class="cb-upload-sub">
+                                  {{ imageFile() ? t('teacherAdvertisements.remove_image_first') : t('teacherAdvertisements.video_hint') }}
+                                </div>
+                              </div>
+                            </nz-upload>
+                            @if (mediaErrors().video) {
+                              <div class="cb-field-error">{{ mediaErrors().video }}</div>
+                            }
+                            @if (videoFile()) {
+                              <div class="cb-media-preview">
+                                <lucide-icon [img]="VideoIcon" [size]="16" style="color: var(--purple); flex-shrink:0"></lucide-icon>
+                                <span class="cb-media-name">{{ videoFile()!.name }}</span>
+                                <span class="cb-media-size">{{ formatFileSize(videoFile()!.size) }}</span>
+                                <button type="button" class="cb-icon-btn purple sm"
+                                  nz-tooltip [nzTooltipTitle]="t('teacherAdvertisements.preview')"
+                                  (click)="openPreview('video', videoFile())">
+                                  <lucide-icon [img]="EyeIcon" [size]="13"></lucide-icon>
+                                </button>
+                                <button type="button" class="cb-icon-btn danger sm"
+                                  nz-tooltip [nzTooltipTitle]="t('teacherAdvertisements.remove')"
+                                  (click)="clearVideo()">
+                                  <lucide-icon [img]="TrashIcon" [size]="13"></lucide-icon>
+                                </button>
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Upload progress -->
+                      @if (submitting() && uploadPct() > 0) {
+                        <nz-progress
+                          [nzPercent]="uploadPct()"
+                          [nzStrokeColor]="'var(--brand)'"
+                          style="margin-bottom: 16px">
+                        </nz-progress>
+                      }
+
+                      <div class="cb-action-group">
+                        <button type="submit" class="cb-btn-primary"
+                          [disabled]="!canSubmit() || submitting()">
+                          <lucide-icon [img]="SendIcon" [size]="14"></lucide-icon>
+                          {{ submitting() ? t('teacherAdvertisements.submitting') : t('teacherAdvertisements.submit_btn') }}
+                        </button>
+                        <button type="button" class="cb-btn-ghost" (click)="resetForm()">
+                          {{ t('teacherAdvertisements.reset_btn') }}
+                        </button>
+                      </div>
+                    </form>
+
+                  </div>
+                </div>
+              </div>
+            </nz-tab>
+
+            <!-- ══ TAB: MY ADS ══ -->
+            <nz-tab [nzTitle]="myAdsTabTitleTpl">
+              <ng-template #myAdsTabTitleTpl>
+                <span class="cb-tab-label">
+                  <lucide-icon [img]="LayoutIcon" [size]="13"></lucide-icon>
+                  <span class="cb-tab-text">{{ t('teacherAdvertisements.tab_my_ads') }}</span>
+                  <nz-badge [nzCount]="myAds().length" [nzStyle]="{ backgroundColor: 'var(--brand)' }"></nz-badge>
+                </span>
+              </ng-template>
+
+              <div class="cb-tab-pane">
+                <div class="cb-card">
+                  <div class="cb-card-head">
+                    <div class="cb-card-heading">
+                      <div class="cb-card-chip blue">
+                        <lucide-icon [img]="LayoutIcon" [size]="14"></lucide-icon>
+                      </div>
+                      {{ t('teacherAdvertisements.my_ads_title') }}
+                      <span class="cb-count">({{ myAds().length }})</span>
+                    </div>
+                    <button class="cb-settings-btn" (click)="fetchAll(false)">
+                      <lucide-icon [img]="RefreshCwIcon" [size]="13"></lucide-icon>
+                      {{ t('teacherAdvertisements.refresh') }}
+                    </button>
+                  </div>
+                  <div class="cb-card-body">
+
+                    @if (myAds().length === 0) {
+                      <div class="cb-empty-state">
+                        <div class="cb-empty-emoji">📢</div>
+                        <div style="font-family:'Sora',sans-serif; font-weight:700; font-size:15px; color:var(--text-1)">
+                          {{ t('teacherAdvertisements.no_ads_yet') }}
+                        </div>
+                        <div style="font-size:13px; color:var(--text-2)">{{ t('teacherAdvertisements.no_ads_desc') }}</div>
+                        @if (canSubmit()) {
+                          <button class="cb-btn-primary" (click)="setActiveTab('create')">
+                            <lucide-icon [img]="PlusIcon" [size]="14"></lucide-icon>
+                            {{ t('teacherAdvertisements.create_first_ad') }}
+                          </button>
+                        }
+                      </div>
+                    } @else {
+                      <div class="cb-ad-list">
+                        @for (ad of myAds(); track ad.id) {
+                          <div class="cb-ad-row">
+                            <div class="cb-ad-row-left">
+                              <div class="cb-ad-thumb">
+                                @if (ad.imagePath) {
+                                  <img [src]="baseUrl + ad.imagePath" alt="" class="cb-ad-thumb-img"
+                                    (error)="onThumbError($event)" />
+                                } @else if (ad.videoPath) {
+                                  🎬
+                                } @else {
+                                  📢
+                                }
+                              </div>
+                              <div class="cb-ad-info">
+                                <div class="cb-ad-title">{{ ad.title }}</div>
+                                @if (ad.description) {
+                                  <div class="cb-ad-desc">{{ ad.description }}</div>
+                                }
+                                <div class="cb-ad-meta">
+                                  <span [class]="'cb-status-pill ' + getStatusClass(ad.status)">
+                                    <lucide-icon [img]="getStatusIcon(ad.status)" [size]="11"></lucide-icon>
+                                    <span>{{ getStatusLabel(ad.status) }}</span>
+                                  </span>
+                                  @if (ad.imagePath) {
+                                    <span class="cb-mini-tag green">
+                                      <lucide-icon [img]="ImageIcon" [size]="10"></lucide-icon>
+                                      {{ t('teacherAdvertisements.has_image') }}
+                                    </span>
+                                  }
+                                  @if (ad.videoPath) {
+                                    <span class="cb-mini-tag purple">
+                                      <lucide-icon [img]="VideoIcon" [size]="10"></lucide-icon>
+                                      {{ t('teacherAdvertisements.has_video') }}
+                                    </span>
+                                  }
+                                  <span class="cb-mini-tag gray">
+                                    <lucide-icon [img]="EyeIcon" [size]="10"></lucide-icon>
+                                    {{ ad.impressionCount || 0 }} {{ t('teacherAdvertisements.impressions') }}
+                                  </span>
+                                  <span style="font-size:11px; color:var(--text-3)">{{ ad.createdAt | date:'mediumDate' }}</span>
+                                </div>
+                                @if (ad.reviewNote) {
+                                  <nz-alert nzType="error" [nzMessage]="ad.reviewNote" nzShowIcon
+                                    style="font-size:11px; border-radius:8px; margin-top:8px; padding: 4px 10px">
+                                  </nz-alert>
+                                }
+                              </div>
+                            </div>
+
+                            <div class="cb-ad-actions">
+                              @if (ad.imagePath) {
+                                <button class="cb-icon-btn primary"
+                                  nz-tooltip [nzTooltipTitle]="t('teacherAdvertisements.view_image')"
+                                  (click)="openPreviewUrl('image', baseUrl + ad.imagePath)">
+                                  <lucide-icon [img]="ImageIcon" [size]="14"></lucide-icon>
+                                </button>
+                              }
+                              @if (ad.status !== 1) {
+                                <button class="cb-icon-btn"
+                                  nz-tooltip [nzTooltipTitle]="t('teacherAdvertisements.edit')"
+                                  (click)="openEditModal(ad)">
+                                  <lucide-icon [img]="EditIcon" [size]="14"></lucide-icon>
+                                </button>
+                                <button class="cb-icon-btn danger"
+                                  nz-tooltip [nzTooltipTitle]="t('teacherAdvertisements.delete')"
+                                  (click)="openDeleteModal(ad.id)">
+                                  <lucide-icon [img]="TrashIcon" [size]="14"></lucide-icon>
+                                </button>
+                              }
+                              @if (ad.status === 1) {
+                                <span class="cb-status-pill status--published">
+                                  {{ t('teacherAdvertisements.ad_live') }}
+                                </span>
+                              }
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    }
+
+                  </div>
+                </div>
+              </div>
+            </nz-tab>
+
+          </nz-tabs>
+        </div>
+
+        <!-- ── Sidebar ── -->
+        <div class="cb-sidebar-col">
+
+          <!-- Plan Info Card -->
+          @if (planInfo()) {
+            <div class="cb-card" style="margin-bottom: 20px">
+              <div class="cb-card-head">
+                <div class="cb-card-heading">
+                  <div class="cb-card-chip amber">
+                    <lucide-icon [img]="CrownIcon" [size]="14"></lucide-icon>
+                  </div>
+                  {{ t('teacherAdvertisements.plan_card_title') }}
+                </div>
+              </div>
+              <div class="cb-card-body">
+                <!-- Plan name banner -->
+                <div class="cb-plan-banner">
+                  <div class="cb-plan-banner-name">{{ planInfo()!.subscriptionPlanName || t('teacherAdvertisements.plan_active') }}</div>
+                  <div class="cb-plan-banner-sub">{{ t('teacherAdvertisements.plan_active') }}</div>
+                </div>
+                <!-- Quota bar -->
+                <div class="cb-quota-section">
+                  <div class="cb-quota-row">
+                    <span>{{ t('teacherAdvertisements.monthly_quota') }}</span>
+                    <strong>{{ usedQuota() }}/{{ totalQuota() }}</strong>
+                  </div>
+                  <nz-progress
+                    [nzPercent]="quotaPct()"
+                    [nzShowInfo]="false"
+                    [nzStrokeColor]="quotaColor()"
+                    nzTrailColor="#eef0ff">
+                  </nz-progress>
+                  @if (planInfo()!.quotaResetDate) {
+                    <div class="cb-quota-reset">
+                      <lucide-icon [img]="CalendarIcon" [size]="11"></lucide-icon>
+                      {{ t('teacherAdvertisements.resets') }} {{ planInfo()!.quotaResetDate | date:'mediumDate' }}
+                    </div>
+                  }
+                </div>
+
+                @if (!hasAccess()) {
+                  <nz-alert nzType="error"
+                    [nzMessage]="t('teacherAdvertisements.no_access_title')"
+                    [nzDescription]="planInfo()!.reason || t('teacherAdvertisements.no_access_desc')"
+                    nzShowIcon
+                    style="border-radius:10px; margin-top:12px">
+                  </nz-alert>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Quick Stats Card -->
+          <div class="cb-card" style="margin-bottom: 20px">
+            <div class="cb-card-head">
+              <div class="cb-card-heading">
+                <div class="cb-card-chip green">
+                  <lucide-icon [img]="BarChartIcon" [size]="14"></lucide-icon>
+                </div>
+                {{ t('teacherAdvertisements.quick_stats_title') }}
+              </div>
+            </div>
+            <div class="cb-card-body">
+              <div class="cb-checklist">
+                <div class="cb-check-row">
+                  <div class="cb-quick-stat-val" style="color:var(--green-dark)">{{ approvedCount() }}</div>
+                  <span class="cb-check-label">{{ t('teacherAdvertisements.stat_approved') }}</span>
+                </div>
+                <div class="cb-check-row">
+                  <div class="cb-quick-stat-val" style="color:var(--amber)">{{ pendingCount() }}</div>
+                  <span class="cb-check-label">{{ t('teacherAdvertisements.stat_pending') }}</span>
+                </div>
+                <div class="cb-check-row">
+                  <div class="cb-quick-stat-val" style="color:var(--cyan)">{{ totalImpressions() }}</div>
+                  <span class="cb-check-label">{{ t('teacherAdvertisements.stat_impressions') }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tips Card -->
+          <div class="cb-card">
+            <div class="cb-card-head">
+              <div class="cb-card-heading">
+                <div class="cb-card-chip orange">
+                  <lucide-icon [img]="ZapIcon" [size]="14"></lucide-icon>
+                </div>
+                {{ t('teacherAdvertisements.tips_title') }}
+              </div>
+            </div>
+            <div class="cb-card-body">
+              <div class="cb-checklist">
+                @for (tip of tips; track $index) {
+                  <div class="cb-check-row">
+                    <div class="cb-check-dot done" style="background:#fff7ed; color:var(--amber)">
+                      <lucide-icon [img]="InfoIcon" [size]="11"></lucide-icon>
+                    </div>
+                    <span class="cb-check-label" style="line-height:1.5">{{ t('teacherAdvertisements.' + tip) }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ MODALS ═══ -->
+
+    <!-- ── Edit Modal ── -->
+    <nz-modal
+      [(nzVisible)]="editModalVisible"
+      [nzTitle]="editModalTitle"
+      [nzFooter]="editModalFooter"
+      (nzOnCancel)="closeEditModal()"
+      nzWidth="560px"
+      nzClassName="cb-modal">
+
+      <ng-template #editModalTitle>
+        <div class="cb-modal-title-row">
+          <div class="cb-modal-title-icon amber">
+            <lucide-icon [img]="EditIcon" [size]="16"></lucide-icon>
+          </div>
+          <div>
+            <div class="cb-modal-title-text">{{ t('teacherAdvertisements.edit_modal_title') }}</div>
+            <div class="cb-modal-title-sub">{{ t('teacherAdvertisements.edit_modal_subtitle') }}</div>
+          </div>
+        </div>
+      </ng-template>
+
+      <ng-container *nzModalContent>
+        <form [formGroup]="editForm">
+          <nz-form-item>
+            <nz-form-label nzRequired>{{ t('teacherAdvertisements.field_title') }}</nz-form-label>
+            <nz-form-control [nzErrorTip]="editTitleError">
+              <input nz-input formControlName="title" nzSize="large" />
+              <ng-template #editTitleError let-control>
+                @if (control.hasError('required')) { {{ t('teacherAdvertisements.validation_title_required') }} }
+                @else if (control.hasError('maxlength')) { {{ t('teacherAdvertisements.validation_title_max') }} }
+                @else if (control.hasError('minlength')) { {{ t('teacherAdvertisements.validation_title_min') }} }
+              </ng-template>
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label>{{ t('teacherAdvertisements.field_description') }}</nz-form-label>
+            <nz-form-control>
+              <textarea nz-input formControlName="description"
+                [nzAutosize]="{ minRows: 4, maxRows: 8 }">
+              </textarea>
+            </nz-form-control>
+          </nz-form-item>
+          @if (editingAd()?.status === 2) {
+            <nz-alert nzType="info" [nzMessage]="t('teacherAdvertisements.rejected_edit_hint')" nzShowIcon style="border-radius:10px"></nz-alert>
+          }
+        </form>
+      </ng-container>
+
+      <ng-template #editModalFooter>
+        <button class="cb-btn-ghost" (click)="closeEditModal()">{{ t('teacherAdvertisements.cancel') }}</button>
+        <button class="cb-btn-primary" (click)="handleUpdate()" [disabled]="editForm.invalid">
+          <lucide-icon [img]="CheckIcon" [size]="14"></lucide-icon>
+          {{ t('teacherAdvertisements.save') }}
+        </button>
+      </ng-template>
+    </nz-modal>
+
+    <!-- ── Delete Modal ── -->
+    <nz-modal
+      [(nzVisible)]="deleteModalVisible"
+      [nzTitle]="deleteModalTitle"
+      [nzFooter]="deleteModalFooter"
+      (nzOnCancel)="closeDeleteModal()"
+      nzWidth="400px"
+      nzClassName="cb-modal cb-modal--delete">
+
+      <ng-template #deleteModalTitle>
+        <div class="cb-modal-title-row">
+          <div class="cb-modal-title-icon danger">📢</div>
+          <div>
+            <div class="cb-modal-title-text" style="color:var(--red)">{{ t('teacherAdvertisements.delete_modal_title') }}</div>
+            <div class="cb-modal-title-sub">{{ t('teacherAdvertisements.cannot_be_undone') }}</div>
+          </div>
+        </div>
+      </ng-template>
+
+      <ng-container *nzModalContent>
+        <div class="cb-delete-body">
+          <div class="cb-delete-icon">🗑️</div>
+          <div class="cb-delete-heading">{{ t('teacherAdvertisements.are_you_sure') }}</div>
+          <div class="cb-delete-text">{{ t('teacherAdvertisements.delete_confirm_text') }}</div>
+        </div>
+      </ng-container>
+
+      <ng-template #deleteModalFooter>
+        <button class="cb-btn-ghost" (click)="closeDeleteModal()">{{ t('teacherAdvertisements.cancel') }}</button>
+        <button class="cb-btn-danger" (click)="handleDelete()" [disabled]="deleteLoading()">
+          <lucide-icon [img]="TrashIcon" [size]="14"></lucide-icon>
+          {{ t('teacherAdvertisements.delete') }}
+        </button>
+      </ng-template>
+    </nz-modal>
+
+    <!-- ── Media Preview Modal ── -->
+    <nz-modal
+      [(nzVisible)]="previewModalVisible"
+      [nzTitle]="previewModalTitle"
+      [nzFooter]="previewModalFooter"
+      (nzOnCancel)="closePreviewModal()"
+      [nzWidth]="previewModal().type === 'image' ? '580px' : '760px'"
+      nzClassName="cb-modal">
+
+      <ng-template #previewModalTitle>
+        <div class="cb-modal-title-row">
+          <div class="cb-modal-title-icon brand">
+            <lucide-icon [img]="previewModal().type === 'image' ? ImageIcon : VideoIcon" [size]="16"></lucide-icon>
+          </div>
+          <div class="cb-modal-title-text">{{ t('teacherAdvertisements.preview_title') }}</div>
+        </div>
+      </ng-template>
+
+      <ng-container *nzModalContent>
+        @if (previewModalVisible) {
+          @if (previewModal().type === 'image') {
+            <img [src]="previewModal().src" alt="preview" style="width:100%;border-radius:8px;display:block" />
+          } @else {
+            <video controls style="width:100%;border-radius:8px;display:block">
+              <source [src]="previewModal().src" />
+            </video>
+          }
+        }
+      </ng-container>
+
+      <ng-template #previewModalFooter>
+        <button class="cb-btn-ghost" (click)="closePreviewModal()">{{ t('teacherAdvertisements.close') }}</button>
+      </ng-template>
+    </nz-modal>
+
+  </div>
+  }
+
+</ng-container>

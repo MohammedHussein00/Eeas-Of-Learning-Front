@@ -1,0 +1,51 @@
+{
+    "pageTitle": "دوراتي",
+    "pageSubtitle": "إدارة ومتابعة جميع دوراتك التدريبية",
+    "createCourse": "إنشاء دورة",
+
+    "statTotalCourses": "إجمالي الدورات",
+    "statPublished": "منشور",
+    "statDraft": "مسودات",
+    "statTotalStudents": "إجمالي الطلاب",
+    "statTotalRevenue": "إجمالي الإيرادات",
+    "statAvgRating": "متوسط التقييم",
+
+    "searchPlaceholder": "البحث في الدورات…",
+    "filterStatus": "كل الحالات",
+    "filterLevel": "كل المستويات",
+    "refreshBtn": "تحديث",
+
+    "statusPublished": "منشور",
+    "statusDraft": "مسودة",
+    "levelBeginner": "مبتدئ",
+    "levelIntermediate": "متوسط",
+    "levelAdvanced": "متقدم",
+
+    "tableTitle": "الدورة",
+    "tableCategory": "الفئة",
+    "tableStatus": "الحالة",
+    "tableStudents": "الطلاب",
+    "tableRevenue": "الإيرادات",
+    "tableRating": "التقييم",
+    "tableActions": "الإجراءات",
+
+    "actionView": "عرض المنشئ",
+    "actionEdit": "تعديل التفاصيل",
+    "actionDelete": "حذف",
+    "cancel": "إلغاء",
+
+    "deleteConfirmTitle": "هل تريد حذف هذه الدورة؟",
+    "deleteConfirmDesc": "لا يمكن التراجع عن هذا الإجراء. ستُحذف جميع الأقسام والمحاضرات والاختبارات نهائيًا.",
+    "deleteHasStudents": "لا يمكن حذف هذه الدورة لأنها تحتوي على طلاب مسجلين.",
+    "permissionDenied": "ليس لديك صلاحية لحذف هذه الدورة.",
+    "deleteFailed": "فشل حذف الدورة. يرجى المحاولة مجددًا.",
+    "deleteSuccess": "تم حذف الدورة بنجاح.",
+    "deletedCourseLabel": "الدورة",
+
+    "loadFailed": "فشل تحميل الدورات. يرجى تحديث الصفحة.",
+
+    "paginationTotal": "إجمالي {total} دورة",
+
+    "noCoursesTitle": "لا توجد دورات بعد",
+    "noCoursesDesc": "ابدأ ببناء دورتك الأولى وشارك معرفتك مع العالم."
+}

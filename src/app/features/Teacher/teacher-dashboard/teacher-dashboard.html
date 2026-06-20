@@ -1,0 +1,351 @@
+<!-- features/teacher/dashboard/teacher-dashboard.html -->
+<!--
+  scope: 'teacherDashboard' tells Transloco which JSON file to load.
+  alias 'td' means keys resolve as t('totalRevenue') not t('teacherDashboard.totalRevenue').
+  Root-scope keys (common.*) still work via | transloco pipe anywhere.
+-->
+
+@if (loading()) {
+  <div class="td-loading">
+    <div class="td-loading-inner">
+      <div class="td-loading-spin"></div>
+      <!-- Root scope key — always loaded, safe to use here -->
+      <div class="td-loading-text">{{ 'teacherDashboard.loading' | transloco }}</div>
+    </div>
+  </div>
+} @else {
+  <ng-container *transloco="let t; scope: 'teacherDashboard'">
+  <div class="td-root">
+
+    <!-- ── Header ── -->
+    <div class="td-header">
+      <div class="td-header-left">
+        <div class="td-header-icon">
+          <lucide-icon [img]="BarChart3Icon" [size]="18"></lucide-icon>
+        </div>
+        <div>
+          <div class="td-header-title">{{ t('teacherDashboard.dashboardTitle') }}</div>
+          <div class="td-header-sub">{{ today }}</div>
+        </div>
+      </div>
+      <button class="td-btn-primary" (click)="goToAddCourse()">
+        <lucide-icon [img]="PlusIcon" [size]="14"></lucide-icon>
+        <span class="td-btn-text">{{ t('teacherDashboard.newCourse') }}</span>
+      </button>
+    </div>
+
+    <div class="td-body">
+
+      <!-- ── Stat Cards ── -->
+      <div class="td-stats-grid">
+
+        <div class="td-stat-card revenue">
+          <div class="td-stat-top">
+            <div class="td-stat-icon-w" style="background:#eef0ff">
+              <lucide-icon [img]="DollarSignIcon" [size]="20" style="color:#3d5af1"></lucide-icon>
+            </div>
+            <div class="td-stat-badge" style="background:#eef0ff;color:#3d5af1">
+              <lucide-icon [img]="TrendingUpIcon" [size]="12"></lucide-icon>
+              +{{ fmtCurrency(stats()?.revenueThisMonth ?? 0) }}
+            </div>
+          </div>
+          <div class="td-stat-value">{{ fmtCurrency(stats()?.totalRevenue ?? 0) }}</div>
+          <div class="td-stat-label">{{ t('teacherDashboard.totalRevenue') }}</div>
+          <div class="td-progress-wrap">
+            <div class="td-progress-bar">
+              <div class="td-progress-fill" style="background:#3d5af1"
+                   [style.width.%]="pct(stats()?.revenueThisMonth ?? 0, stats()?.totalRevenue ?? 1)"></div>
+            </div>
+          </div>
+          <div class="td-stat-sub">{{ t('teacherDashboard.thisMonth') }}</div>
+        </div>
+
+        <div class="td-stat-card students">
+          <div class="td-stat-top">
+            <div class="td-stat-icon-w" style="background:#e0f9ff">
+              <lucide-icon [img]="UsersIcon" [size]="20" style="color:#06b6d4"></lucide-icon>
+            </div>
+            <div class="td-stat-badge" style="background:#e0f9ff;color:#06b6d4">
+              <lucide-icon [img]="TrendingUpIcon" [size]="12"></lucide-icon>
+              +{{ stats()?.newStudentsThisMonth ?? 0 }}
+            </div>
+          </div>
+          <div class="td-stat-value">{{ (stats()?.totalStudents ?? 0) | number }}</div>
+          <div class="td-stat-label">{{ t('teacherDashboard.totalStudents') }}</div>
+          <div class="td-progress-wrap">
+            <div class="td-progress-bar">
+              <div class="td-progress-fill" style="background:#06b6d4"
+                   [style.width.%]="pct(stats()?.newStudentsThisMonth ?? 0, stats()?.totalStudents ?? 1)"></div>
+            </div>
+          </div>
+          <div class="td-stat-sub">{{ t('teacherDashboard.newThisMonth') }}</div>
+        </div>
+
+        <div class="td-stat-card rating">
+          <div class="td-stat-top">
+            <div class="td-stat-icon-w" style="background:#fff8e6">
+              <lucide-icon [img]="StarIcon" [size]="20" style="color:#f59e0b"></lucide-icon>
+            </div>
+            <div class="td-stat-badge" style="background:#fff8e6;color:#f59e0b">
+              {{ stats()?.totalReviews ?? 0 }} {{ t('teacherDashboard.reviews') }}
+            </div>
+          </div>
+          <div class="td-stat-value">{{ (stats()?.averageRating ?? 0) | number:'1.1-1' }}</div>
+          <div class="td-stat-label">{{ t('teacherDashboard.averageRating') }}</div>
+          <div class="td-progress-wrap">
+            <div class="td-progress-bar">
+              <div class="td-progress-fill" style="background:#f59e0b"
+                   [style.width.%]="((stats()?.averageRating ?? 0) / 5) * 100"></div>
+            </div>
+          </div>
+          <div class="td-stat-sub">{{ t('teacherDashboard.outOf5') }}</div>
+        </div>
+
+        <div class="td-stat-card courses">
+          <div class="td-stat-top">
+            <div class="td-stat-icon-w" style="background:#e8faf0">
+              <lucide-icon [img]="BookOpenIcon" [size]="20" style="color:#10b981"></lucide-icon>
+            </div>
+            <div class="td-stat-badge" style="background:#e8faf0;color:#10b981">
+              {{ stats()?.publishedCourses ?? 0 }} {{ t('teacherDashboard.live') }}
+            </div>
+          </div>
+          <div class="td-stat-value">
+            {{ stats()?.publishedCourses ?? 0 }}<span class="td-stat-total">/{{ stats()?.totalCourses ?? 0 }}</span>
+          </div>
+          <div class="td-stat-label">{{ t('teacherDashboard.publishedCourses') }}</div>
+          <div class="td-tags-row">
+            <span class="td-tag td-tag-orange">{{ t('teacherDashboard.draft') }}: {{ stats()?.draftCourses ?? 0 }}</span>
+            <span class="td-tag td-tag-blue">{{ t('teacherDashboard.lectures') }}: {{ stats()?.totalLectures ?? 0 }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Charts Row ── -->
+      <div class="td-charts-grid">
+        <div class="td-card">
+          <div class="td-card-header">
+            <div class="td-card-title">
+              <div class="td-card-icon"><lucide-icon [img]="TrendingUpIcon" [size]="14"></lucide-icon></div>
+              {{ t('teacherDashboard.revenueGrowthTitle') }}
+            </div>
+            <span class="td-tag td-tag-blue">{{ t('teacherDashboard.last12Months') }}</span>
+          </div>
+          <div class="td-card-body">
+            <div class="td-area-chart">
+              <div class="td-area-bars">
+                @for (point of areaData(); track point.name) {
+                  <div class="td-area-col">
+                    <div class="td-area-bars-inner">
+                      <div class="td-area-bar td-area-bar-rev" [style.height.%]="(point.revenue / maxAreaRevenue()) * 100" [title]="'$' + point.revenue.toLocaleString()"></div>
+                      <div class="td-area-bar td-area-bar-stu" [style.height.%]="(point.students / maxAreaStudents()) * 100" [title]="point.students"></div>
+                    </div>
+                    <div class="td-area-label">{{ point.name }}</div>
+                  </div>
+                }
+              </div>
+              <div class="td-chart-legend">
+                <span class="td-legend-item"><span class="td-legend-dot" style="background:#3d5af1"></span>{{ t('teacherDashboard.revenue') }}</span>
+                <span class="td-legend-item"><span class="td-legend-dot" style="background:#06b6d4"></span>{{ t('teacherDashboard.newStudents') }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="td-card">
+          <div class="td-card-header">
+            <div class="td-card-title">
+              <div class="td-card-icon"><lucide-icon [img]="StarIcon" [size]="14"></lucide-icon></div>
+              {{ t('teacherDashboard.ratingBreakdownTitle') }}
+            </div>
+          </div>
+          <div class="td-card-body">
+            <div class="td-rating-center">
+              <div class="td-big-rating">{{ (stats()?.averageRating ?? 0) | number:'1.1-1' }}</div>
+              <div class="td-stars-row">
+                @for (s of [1,2,3,4,5]; track s) {
+                  <lucide-icon [img]="StarIcon" [size]="14" [style.color]="s <= (stats()?.averageRating ?? 0) ? '#f59e0b' : '#e2e8f0'"></lucide-icon>
+                }
+              </div>
+              <div class="td-rating-total-text">{{ stats()?.totalReviews ?? 0 }} {{ t('teacherDashboard.totalRatings') }}</div>
+            </div>
+            @for (row of ratingBreakdown(); track row.stars) {
+              <div class="td-rating-row">
+                <span class="td-rating-lbl">{{ row.stars }}★</span>
+                <div class="td-progress-bar td-progress-bar-sm">
+                  <div class="td-progress-fill" style="background:#f59e0b" [style.width.%]="row.percentage"></div>
+                </div>
+                <span class="td-rating-pct">{{ row.percentage | number:'1.1-1' }}%</span>
+                <span class="td-rating-count">({{ row.count }})</span>
+              </div>
+            }
+            <div class="td-divider"></div>
+            @for (item of [
+              { key: 'publishedCourses', value: stats()?.publishedCourses ?? 0, color: '#10b981' },
+              { key: 'totalLectures',    value: stats()?.totalLectures ?? 0,    color: '#3d5af1' },
+              { key: 'totalHours',       value: ((stats()?.totalHours ?? 0) | number:'1.0-0') + 'h', color: '#06b6d4' }
+            ]; track item.key) {
+              <div class="td-legend-row">
+                <div class="td-legend-row-left">
+                  <span class="td-legend-dot" [style.background]="item.color"></span>
+                  <span class="td-legend-label">{{ t(item.key) }}</span>
+                </div>
+                <strong class="td-legend-val">{{ item.value }}</strong>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Bottom 3-col ── -->
+      <div class="td-bottom-grid">
+        <div class="td-card">
+          <div class="td-card-header">
+            <div class="td-card-title">
+              <div class="td-card-icon"><lucide-icon [img]="TrophyIcon" [size]="14"></lucide-icon></div>
+              {{ t('teacherDashboard.topCourses') }}
+            </div>
+            <span class="td-tag td-tag-indigo">{{ topCourses().length }} {{ t('teacherDashboard.courses') }}</span>
+          </div>
+          <div class="td-card-body">
+            @if (topCourses().length === 0) {
+              <div class="td-empty">
+                <lucide-icon [img]="BookOpenIcon" [size]="24" class="td-empty-icon"></lucide-icon>
+                <span>{{ t('teacherDashboard.noCoursesYet') }}</span>
+              </div>
+            } @else {
+              @for (course of topCourses(); track course.id; let i = $index) {
+                <div class="td-list-item" (click)="goToCourse(course.id)">
+                  <div class="td-list-avatar" [style.background]="chartColor(i)">
+                    @if (course.thumbnailUrl) {
+                      <img [src]="config.baseUrl + '/' + course.thumbnailUrl" [alt]="course.title">
+                    } @else {
+                      <lucide-icon [img]="BookOpenIcon" [size]="16" style="color:#fff"></lucide-icon>
+                    }
+                  </div>
+                  <div class="td-list-info">
+                    <div class="td-list-name">{{ course.title }}</div>
+                    <div class="td-list-sub">{{ course.studentCount }} {{ t('teacherDashboard.students') }} · ⭐ {{ course.rating | number:'1.1-1' }}</div>
+                    <div class="td-tags-row" style="margin-top:4px">
+                      <span class="td-tag td-tag-indigo">{{ fmtCurrency(course.totalRevenue) }}</span>
+                      <span class="td-tag" [ngClass]="course.isPublished ? 'td-tag-green' : 'td-tag-orange'">
+                        {{ course.isPublished ? t('teacherDashboard.live') : t('teacherDashboard.draft') }}
+                      </span>
+                    </div>
+                  </div>
+                  <lucide-icon [img]="ArrowRightIcon" [size]="11" class="td-list-arrow"></lucide-icon>
+                </div>
+              }
+            }
+          </div>
+        </div>
+
+        <div class="td-card">
+          <div class="td-card-header">
+            <div class="td-card-title">
+              <div class="td-card-icon"><lucide-icon [img]="UsersIcon" [size]="14"></lucide-icon></div>
+              {{ t('teacherDashboard.recentStudents') }}
+            </div>
+            <span class="td-tag td-tag-cyan">+{{ stats()?.newStudentsThisMonth ?? 0 }} {{ t('teacherDashboard.thisMonth') }}</span>
+          </div>
+          <div class="td-card-body">
+            @if (recentStudents().length === 0) {
+              <div class="td-empty">
+                <lucide-icon [img]="UsersIcon" [size]="24" class="td-empty-icon"></lucide-icon>
+                <span>{{ t('teacherDashboard.noRecentStudents') }}</span>
+              </div>
+            } @else {
+              @for (student of recentStudents(); track student.studentId; let i = $index) {
+                <div class="td-list-item" (click)="goToStudent(student.studentId, student.courseId)">
+                  <div class="td-list-avatar" [style.background]="chartColor(i)">
+                    <img [src]="avatarUrl(student.studentAvatar, student.studentName)" [alt]="student.studentName">
+                  </div>
+                  <div class="td-list-info">
+                    <div class="td-list-name">{{ student.studentName }}</div>
+                    <div class="td-list-sub">{{ t('teacherDashboard.enrolled') }}: {{ student.enrollmentDate | date:'mediumDate' }}</div>
+                    <div class="td-progress-bar td-progress-bar-sm" style="margin-top:4px">
+                      <div class="td-progress-fill" style="background:#06b6d4" [style.width.%]="student.progressPercentage"></div>
+                    </div>
+                  </div>
+                  <div class="td-student-pct" style="color:#06b6d4">{{ student.progressPercentage | number:'1.0-0' }}%</div>
+                </div>
+              }
+            }
+          </div>
+        </div>
+
+        <div class="td-card">
+          <div class="td-card-header">
+            <div class="td-card-title">
+              <div class="td-card-icon"><lucide-icon [img]="FlameIcon" [size]="14"></lucide-icon></div>
+              {{ t('teacherDashboard.courseRevenue') }}
+            </div>
+            <span class="td-tag td-tag-amber">{{ stats()?.totalCourses ?? 0 }} {{ t('teacherDashboard.total') }}</span>
+          </div>
+          <div class="td-card-body">
+            @if (barData().length === 0) {
+              <div class="td-empty" style="padding-top:40px">
+                <lucide-icon [img]="BarChart3Icon" [size]="24" class="td-empty-icon"></lucide-icon>
+                <span>{{ t('teacherDashboard.noDataYet') }}</span>
+              </div>
+            } @else {
+            <div class="td-bar-chart">
+              @for (bar of barData(); track bar.name; let i = $index) {
+                <div class="td-bar-row">
+                  <div class="td-bar-label" [title]="bar.name">{{ bar.name }}</div>
+                  <div class="td-bar-track">
+                    <div class="td-bar-fill"
+                        [style.width.%]="barPct(bar.revenue)"
+                        [style.background]="chartColor(i)">
+                    </div>
+                  </div>
+                  <div class="td-bar-value">{{ fmtCurrency(bar.revenue) }}</div>
+                </div>
+              }
+            </div>
+              
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Monthly Growth ── -->
+      <div class="td-section-head">
+        <div class="td-card-icon"><lucide-icon [img]="ZapIcon" [size]="14"></lucide-icon></div>
+        <span class="td-section-title">{{ t('teacherDashboard.monthlyGrowthTitle') }}</span>
+      </div>
+
+      <div class="td-growth-grid">
+        @for (item of growthMetrics(); track item.labelKey) {
+          <div class="td-metric-card">
+            <div class="td-metric-top">
+              <div class="td-metric-icon" [style.background]="item.bg" [style.color]="item.color">
+                <lucide-icon [img]="TrendingUpIcon" [size]="18"></lucide-icon>
+              </div>
+              <div>
+                <div class="td-metric-name">{{ item.labelKey | transloco }}</div>
+                <div class="td-metric-val" [style.color]="item.color">{{ item.value }}</div>
+              </div>
+            </div>
+            <div class="td-metric-sub">{{ t('teacherDashboard.newThisMonth') }}</div>
+            <div class="td-progress-bar">
+              <div class="td-progress-fill" [style.background]="item.color" [style.width.%]="item.pct"></div>
+            </div>
+            <div class="td-metric-footer">
+              <span class="td-metric-total">{{ 'common.total' | transloco }}: <strong>{{ item.total }}</strong></span>
+              @if (growthTag(item.pct) === 'high') {
+                <span class="td-tag td-tag-green">{{ t('teacherDashboard.highGrowth') }}</span>
+              } @else if (growthTag(item.pct) === 'moderate') {
+                <span class="td-tag td-tag-amber">{{ t('teacherDashboard.moderateGrowth') }}</span>
+              } @else {
+                <span class="td-tag td-tag-gray">{{ t('teacherDashboard.lowGrowth') }}</span>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+    </div>
+  </div>
+  </ng-container>
+}

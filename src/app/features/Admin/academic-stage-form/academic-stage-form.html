@@ -1,0 +1,213 @@
+<!-- academic-stage-form.html -->
+<ng-container *transloco="let t; scope: 'academicStageForm'">
+
+  <!-- ══════════════════════════════════════════════════════════
+       LOADING SCREEN
+  ══════════════════════════════════════════════════════════ -->
+  @if (pageLoading()) {
+    <div class="af-center-screen">
+      <nz-spin nzSize="large"></nz-spin>
+      <p style="color:#6366f1; font-weight:500; margin-top:16px; font-size:13px">
+        {{ t('academicStageForm.loading') }}
+      </p>
+    </div>
+  }
+
+  @else {
+  <!-- ════════════════════════════════════════════════════════
+       MAIN LAYOUT
+  ════════════════════════════════════════════════════════ -->
+  <div class="af-root">
+    <div class="af-bg"></div>
+
+    <!-- ══ Header ══ -->
+    <div class="af-header">
+      <div class="af-brand">
+        <div class="af-logo">
+          <lucide-icon [img]="GraduationCapIcon" [size]="20" style="color:#fff"></lucide-icon>
+        </div>
+        <div>
+          <div class="af-brand-title">
+            {{ isEdit() ? t('academicStageForm.editStage') : t('academicStageForm.addNewStage') }}
+          </div>
+          <div class="af-brand-sub">{{ t('academicStageForm.academicStageForm') }}</div>
+        </div>
+      </div>
+      <button class="af-btn-ghost" (click)="navigateToList()">
+        <lucide-icon [img]="ArrowLeftIcon" [size]="14"></lucide-icon>
+        {{ t('academicStageForm.backToList') }}
+      </button>
+    </div>
+
+    <!-- ══ Body ══ -->
+    <div class="af-rel">
+      <div class="af-body">
+
+        <!-- Breadcrumb -->
+        <div class="af-breadcrumb">
+          <a (click)="navigateToAcademics()">{{ t('academicStageForm.academicManagement') }}</a>
+          <span>›</span>
+          <span>{{ t('academicStageForm.stages') }}</span>
+          <span>›</span>
+          <span style="color: #64748b">{{ isEdit() ? t('academicStageForm.edit') : t('academicStageForm.new') }}</span>
+        </div>
+
+        <!-- Page Title -->
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 4px">
+          <div class="af-page-title">
+            {{ isEdit() ? t('academicStageForm.editStage') : t('academicStageForm.addNewStage') }}
+          </div>
+          <span class="af-mode-badge" [class.edit]="isEdit()" [class.create]="!isEdit()">
+            {{ isEdit() ? t('academicStageForm.editMode') : t('academicStageForm.createMode') }}
+          </span>
+        </div>
+        <div class="af-page-sub">
+          {{ isEdit()
+            ? t('academicStageForm.editStageSubtitle')
+            : t('academicStageForm.addStageSubtitle') }}
+        </div>
+
+        <!-- Alerts -->
+        @if (success()) {
+          <div class="af-alert success">
+            <lucide-icon [img]="CheckCircleIcon" [size]="15"></lucide-icon>
+            <span>
+              {{ isEdit()
+                ? t('academicStageForm.stageUpdatedSuccessfully')
+                : t('academicStageForm.stageCreatedSuccessfully') }}
+            </span>
+          </div>
+        }
+        @if (apiError()) {
+          <div class="af-alert error">
+            <lucide-icon [img]="AlertTriangleIcon" [size]="15"></lucide-icon>
+            <span>{{ apiError() }}</span>
+            <button class="af-alert-close" (click)="apiError.set(null)">
+              <lucide-icon [img]="XIcon" [size]="14"></lucide-icon>
+            </button>
+          </div>
+        }
+        @if (hasErrors() && !apiError()) {
+          <div class="af-alert error">
+            <lucide-icon [img]="AlertTriangleIcon" [size]="15"></lucide-icon>
+            <span>{{ t('academicStageForm.fixErrors') }}</span>
+          </div>
+        }
+
+        <!-- ══ Form ══ -->
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+
+          <!-- Section: Names -->
+          <div class="af-sec">
+            <div class="af-sec-ico">
+              <lucide-icon [img]="GraduationCapIcon" [size]="11"></lucide-icon>
+            </div>
+            {{ t('academicStageForm.stageDetails') }}
+          </div>
+          <div class="af-card">
+            <div class="af-grid2">
+              <!-- English Name -->
+              <div class="af-field">
+                <label class="af-label">
+                  {{ t('academicStageForm.stageNameEn') }} <span class="req">*</span>
+                </label>
+                <input
+                  class="af-input"
+                  [class.error]="hasFieldError('nameInEn')"
+                  formControlName="nameInEn"
+                  [placeholder]="t('academicStageForm.enterStageNameEn')"
+                />
+                @if (hasFieldError('nameInEn')) {
+                  <span class="af-err">
+                    <lucide-icon [img]="AlertTriangleIcon" [size]="12"></lucide-icon>
+                    {{ getFieldError('nameInEn') }}
+                  </span>
+                }
+                <span class="af-hint">{{ t('academicStageForm.stageNameEnHint') }}</span>
+              </div>
+
+              <!-- Arabic Name -->
+              <div class="af-field">
+                <label class="af-label">
+                  {{ t('academicStageForm.stageNameAr') }} <span class="req">*</span>
+                </label>
+                <input
+                  class="af-input"
+                  [class.error]="hasFieldError('nameInAr')"
+                  formControlName="nameInAr"
+                  [placeholder]="t('academicStageForm.enterStageNameAr')"
+                  dir="rtl"
+                />
+                @if (hasFieldError('nameInAr')) {
+                  <span class="af-err">
+                    <lucide-icon [img]="AlertTriangleIcon" [size]="12"></lucide-icon>
+                    {{ getFieldError('nameInAr') }}
+                  </span>
+                }
+                <span class="af-hint">{{ t('academicStageForm.stageNameArHint') }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Preview -->
+          @if (showPreview()) {
+            <div class="af-sec" style="margin-top: 20px">
+              <div class="af-sec-ico">
+                <lucide-icon [img]="GraduationCapIcon" [size]="11"></lucide-icon>
+              </div>
+              {{ t('academicStageForm.preview') }}
+            </div>
+            <div class="af-preview">
+              <div class="af-preview-title">{{ t('academicStageForm.stagePreview') }}</div>
+              <div class="af-preview-grid">
+                <div class="af-preview-item">
+                  <div class="af-preview-item-lbl">{{ t('academicStageForm.nameEn') }}</div>
+                  <div class="af-preview-item-val">
+                    {{ form.get('nameInEn')?.value || '—' }}
+                  </div>
+                </div>
+                <div class="af-preview-item">
+                  <div class="af-preview-item-lbl">{{ t('academicStageForm.nameAr') }}</div>
+                  <div class="af-preview-item-val" dir="rtl">
+                    {{ form.get('nameInAr')?.value || '—' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- Footer -->
+          <div class="af-footer">
+            <button
+              type="button"
+              class="af-btn-cancel"
+              (click)="navigateToList()"
+            >
+              <lucide-icon [img]="ArrowLeftIcon" [size]="14"></lucide-icon>
+              {{ t('academicStageForm.cancel') }}
+            </button>
+            <button
+              type="submit"
+              class="af-btn-save"
+              [class.spinning]="form.disabled"
+              [disabled]="form.invalid"
+            >
+              @if (form.disabled) {
+                <lucide-icon [img]="RefreshCwIcon" [size]="16" class="spin-icon"></lucide-icon>
+                {{ t('academicStageForm.saving') }}
+              } @else {
+                <lucide-icon [img]="SaveIcon" [size]="16"></lucide-icon>
+                {{ isEdit()
+                  ? t('academicStageForm.updateStage')
+                  : t('academicStageForm.createStage') }}
+              }
+            </button>
+          </div>
+        </form>
+
+      </div><!-- /af-body -->
+    </div><!-- /af-rel -->
+  </div><!-- /af-root -->
+  }<!-- /else main -->
+
+</ng-container>

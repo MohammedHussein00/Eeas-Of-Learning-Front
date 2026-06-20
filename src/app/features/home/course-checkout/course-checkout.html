@@ -1,0 +1,435 @@
+<ng-container *transloco="let t; scope: 'checkout'">
+<div #pageRef class="checkout-page" [attr.dir]="isRTL ? 'rtl' : 'ltr'">
+
+  <!-- Ambient background -->
+  <div class="co-bg-orb co-orb-1"></div>
+  <div class="co-bg-orb co-orb-2"></div>
+  <div class="co-bg-orb co-orb-3"></div>
+  <div class="co-grid-overlay"></div>
+
+  <!-- ═══════════════════════════ STATUS OVERLAY ═══════════════════════════ -->
+  @if (step() !== 'review') {
+    <div class="co-overlay">
+      <div class="co-status-card">
+
+        <!-- Enrolling -->
+        @if (step() === 'enrolling') {
+          <div class="co-status-spinner">
+            <div class="co-spinner-ring"></div>
+            <lucide-icon [img]="ZapIcon" [size]="28" class="co-spinner-icon"></lucide-icon>
+          </div>
+          <h3>{{ t('processingEnrollment') }}</h3>
+          <p>
+            @if (course()?.isFree) {
+              {{ t('settingUpFreeAccess') }}
+            } @else {
+              {{ t('preparingPayment') }}
+            }
+          </p>
+        }
+
+        <!-- Redirecting to Payment -->
+        @if (step() === 'redirecting') {
+          <div class="co-status-icon redirecting">
+            <lucide-icon [img]="ExternalLinkIcon" [size]="32"></lucide-icon>
+          </div>
+          <h3>{{ t('redirectingToPayment') }}</h3>
+          <p>
+            {{ t('redirectingDesc') }}
+            <strong>{{ countdown() }}</strong>
+            {{ t('seconds') }}
+          </p>
+          <div class="co-redirect-bar">
+            <div class="co-redirect-fill" style="animation-duration: 5s;"></div>
+          </div>
+          <p class="co-redirect-note">
+            <lucide-icon [img]="LockIcon" [size]="12"></lucide-icon>
+            {{ t('securedByFawaterk') }}
+          </p>
+          <button class="co-btn-go" (click)="goToPaymentNow()" style="margin-top: 16px;">
+            {{ t('goToPaymentNow') }}
+            <lucide-icon [img]="ExternalLinkIcon" [size]="16"></lucide-icon>
+          </button>
+        }
+
+        <!-- Success (free course) -->
+        @if (step() === 'success') {
+          <div class="co-status-icon success">
+            <lucide-icon [img]="CheckCircleIcon" [size]="36"></lucide-icon>
+          </div>
+          <h3>{{ t('enrolledSuccess') }}</h3>
+          <p>{{ t('enrolledDesc') }}</p>
+          <button class="co-btn-go" (click)="goLearn()">
+            {{ t('startLearningNow') }}
+            <lucide-icon [img]="ChevronRightIcon" [size]="16"></lucide-icon>
+          </button>
+        }
+
+        <!-- Error -->
+        @if (step() === 'error') {
+          <div class="co-status-icon error">
+            <lucide-icon [img]="AlertCircleIcon" [size]="36"></lucide-icon>
+          </div>
+          <h3>{{ t('enrollmentFailed') }}</h3>
+          <p>{{ errorMsg() }}</p>
+          <div class="co-status-actions">
+            <button class="co-btn-retry" (click)="retryEnrollment()">
+              <lucide-icon [img]="RefreshCwIcon" [size]="15"></lucide-icon>
+              {{ t('tryAgain') }}
+            </button>
+            <button class="co-btn-ghost" (click)="goBackToCourse()">
+              {{ t('backToCourse') }}
+            </button>
+          </div>
+        }
+
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════════════════════ MAIN CONTENT ═══════════════════════════ -->
+  <div class="co-container">
+
+    <!-- Back button & Breadcrumb -->
+    <div class="co-back-row">
+      <button class="co-btn-back" (click)="goBackToCourse()">
+        <lucide-icon [img]="ArrowLeftIcon" [size]="15"></lucide-icon>
+        {{ t('backToCourse') }}
+      </button>
+      <div class="co-breadcrumb">
+        <span (click)="goToCourses()">{{ t('courses') }}</span>
+        <lucide-icon [img]="ChevronRightIcon" [size]="12"></lucide-icon>
+        <span class="co-breadcrumb-course" (click)="goBackToCourse()">
+          {{ course()?.title }}
+        </span>
+        <lucide-icon [img]="ChevronRightIcon" [size]="12"></lucide-icon>
+        <span class="co-breadcrumb-active">
+          @if (course()?.isFree) {
+            {{ t('enroll') }}
+          } @else {
+            {{ t('checkout') }}
+          }
+        </span>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    @if (loading()) {
+      <div class="co-loading-content">
+        <div class="co-skeleton-main">
+          <div class="co-skel-line" style="width:40%; height:14px; margin-bottom:20px"></div>
+          <div class="co-skel-line" style="width:70%; height:28px; margin-bottom:8px"></div>
+          <div class="co-skel-line" style="width:50%; height:20px; margin-bottom:24px"></div>
+          <div style="display:flex; gap:12px; margin-bottom:24px">
+            <div class="co-skel-line" style="width:90px; height:28px; border-radius:8px"></div>
+            <div class="co-skel-line" style="width:90px; height:28px; border-radius:8px"></div>
+            <div class="co-skel-line" style="width:90px; height:28px; border-radius:8px"></div>
+          </div>
+          <div class="co-skeleton-card">
+            <div class="co-skel-line" style="width:30%; height:20px; margin-bottom:16px"></div>
+            <div class="co-skel-line" style="width:80%; height:16px; margin-bottom:10px"></div>
+            <div class="co-skel-line" style="width:80%; height:16px; margin-bottom:10px"></div>
+            <div class="co-skel-line" style="width:80%; height:16px; margin-bottom:10px"></div>
+          </div>
+        </div>
+        <div class="co-skeleton-sidebar">
+          <div class="co-skel-img" style="width:100%; height:200px; border-radius:16px"></div>
+          <div class="co-skeleton-card" style="margin-top:12px">
+            <div class="co-skel-line" style="width:60%; height:32px; margin-bottom:16px"></div>
+            <div class="co-skel-line" style="width:100%; height:48px; border-radius:12px"></div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Error State (fetch error) -->
+    @if (!loading() && !course() && step() === 'error') {
+      <div class="co-error-fullpage">
+        <div class="co-error-icon-wrap">
+          <lucide-icon [img]="AlertCircleIcon" [size]="40"></lucide-icon>
+        </div>
+        <h2>{{ t('somethingWentWrong') }}</h2>
+        <p>{{ errorMsg() }}</p>
+        <button class="co-btn-primary" (click)="goToCourses()">
+          <lucide-icon [img]="ArrowLeftIcon" [size]="16"></lucide-icon>
+          {{ t('backToCourse') }}
+        </button>
+      </div>
+    }
+
+    <!-- Content -->
+    @if (!loading() && course()) {
+      <ng-container>
+
+        <!-- Page Header -->
+        <div class="co-page-header">
+          <div class="co-page-badge">
+            @if (course()?.isFree) {
+              <lucide-icon [img]="ZapIcon" [size]="14"></lucide-icon>
+              {{ t('freeEnrollment') }}
+            } @else {
+              <lucide-icon [img]="CreditCardIcon" [size]="14"></lucide-icon>
+              {{ t('secureCheckout') }}
+            }
+          </div>
+          <h1 class="co-page-title">
+            @if (course()?.isFree) {
+              {{ t('completeFreeEnrollment') }}
+            } @else {
+              {{ t('completePurchase') }}
+            }
+          </h1>
+          <p class="co-page-subtitle">
+            @if (course()?.isFree) {
+              {{ t('freeEnrollmentDesc') }}
+            } @else {
+              {{ t('checkoutDesc') }}
+            }
+          </p>
+        </div>
+
+        <!-- Two-column layout -->
+        <div class="co-layout">
+
+          <!-- ════ LEFT / MAIN ════ -->
+          <div class="co-main">
+
+            <!-- Course Summary Card -->
+            <div class="co-card co-course-card">
+              <h2 class="co-card-title">
+                <lucide-icon [img]="BookOpenIcon" [size]="18" style="color:#4f46e5"></lucide-icon>
+                {{ t('courseSummary') }}
+              </h2>
+
+              <div class="co-course-row">
+                <div class="co-course-thumb">
+                  <img [src]="imageUrl()" [alt]="course()?.title || ''">
+                </div>
+                <div class="co-course-info">
+                  <div class="co-course-badges">
+                    @if (platform()) {
+                      <span class="co-badge platform">
+                        <lucide-icon [img]="Building2Icon" [size]="11"></lucide-icon>
+                        EOL
+                        <lucide-icon [img]="BadgeCheckIcon" [size]="11"></lucide-icon>
+                      </span>
+                    } @else {
+                      <span class="co-badge instructor">
+                        <lucide-icon [img]="GraduationCapIcon" [size]="11"></lucide-icon>
+                        {{ instructorDisplay() }}
+                      </span>
+                    }
+                    <span class="co-badge level">{{ course()?.level }}</span>
+                  </div>
+                  <h3 class="co-course-title">{{ course()?.title }}</h3>
+                  @if (course()?.subtitle) {
+                    <p class="co-course-subtitle">{{ course()?.subtitle }}</p>
+                  }
+                  <div class="co-course-meta">
+                    @if ((course()?.rating || 0) > 0) {
+                      <span class="co-meta-item">
+                        <lucide-icon [img]="StarIcon" [size]="13" style="color:#f59e0b; fill:#f59e0b"></lucide-icon>
+                        {{ (course()?.rating || 0).toFixed(1) }}
+                        <span class="co-meta-dim">({{ course()?.ratingCount }})</span>
+                      </span>
+                    }
+                    <span class="co-meta-item">
+                      <lucide-icon [img]="UsersIcon" [size]="13"></lucide-icon>
+                      {{ (course()?.studentCount || 0).toLocaleString() }}
+                    </span>
+                    <span class="co-meta-item">
+                      <lucide-icon [img]="ClockIcon" [size]="13"></lucide-icon>
+                      {{ course()?.totalHours }}h
+                    </span>
+                    <span class="co-meta-item">
+                      <lucide-icon [img]="BookOpenIcon" [size]="13"></lucide-icon>
+                      {{ course()?.totalLectures }} {{ t('lectures') }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- What you get -->
+            <div class="co-card">
+              <h2 class="co-card-title">
+                <lucide-icon [img]="CheckCircleIcon" [size]="18" style="color:#059669"></lucide-icon>
+                {{ t('whatYouGet') }}
+              </h2>
+              <div class="co-perks-grid">
+                @for (perk of perks(); track $index) {
+                  <div class="co-perk-item">
+                    <div class="co-perk-icon">
+                      <lucide-icon [img]="perk.icon" [size]="15"></lucide-icon>
+                    </div>
+                    <span>{{ isRTL ? perk.ar : perk.en }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Guarantees (paid only) -->
+            @if (!course()?.isFree) {
+              <div class="co-card co-guarantee-card">
+                <div class="co-guarantee-header">
+                  <div class="co-guarantee-shield">
+                    <lucide-icon [img]="ShieldIcon" [size]="22"></lucide-icon>
+                  </div>
+                  <div>
+                    <h2 class="co-card-title" style="margin-bottom: 2px;">
+                      {{ t('ourGuarantee') }}
+                    </h2>
+                    <p class="co-guarantee-sub">
+                      {{ t('riskFreePurchase') }}
+                    </p>
+                  </div>
+                </div>
+                <ul class="co-guarantee-list">
+                  @for (g of guarantees; track $index) {
+                    <li>
+                      <lucide-icon [img]="CheckCircleIcon" [size]="15"></lucide-icon>
+                      <span>{{ isRTL ? g.ar : g.en }}</span>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+
+            <!-- Trust badges -->
+            <div class="co-trust-row">
+              <div class="co-trust-item">
+                <lucide-icon [img]="LockIcon" [size]="14"></lucide-icon>
+                <span>{{ t('sslSecured') }}</span>
+              </div>
+              <div class="co-trust-item">
+                <lucide-icon [img]="ShieldIcon" [size]="14"></lucide-icon>
+                <span>{{ t('safePayment') }}</span>
+              </div>
+              <div class="co-trust-item">
+                <lucide-icon [img]="BadgeCheckIcon" [size]="14"></lucide-icon>
+                <span>{{ t('verifiedPlatform') }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ════ RIGHT / SIDEBAR ════ -->
+          <div class="co-sidebar">
+
+            <!-- Course image -->
+            <div class="co-sidebar-thumb">
+              <img [src]="imageUrl()" [alt]="course()?.title || ''">
+              @if (course()?.isFree) {
+                <div class="co-free-ribbon">
+                  <lucide-icon [img]="ZapIcon" [size]="12"></lucide-icon>
+                  {{ t('free') }}
+                </div>
+              }
+            </div>
+
+            <!-- Order card -->
+            <div class="co-order-card">
+              <h3 class="co-order-title">
+                @if (course()?.isFree) {
+                  {{ t('yourEnrollment') }}
+                } @else {
+                  {{ t('orderSummary') }}
+                }
+              </h3>
+
+              <!-- Price breakdown -->
+              <div class="co-price-rows">
+                <div class="co-price-row">
+                  <span>{{ t('coursePrice') }}</span>
+                  <span>
+                    @if (course()?.isFree) {
+                      <span class="co-free-tag">{{ t('free') }}</span>
+                    } @else {
+                      EGP {{ (course()?.price || 0).toFixed(2) }}
+                    }
+                  </span>
+                </div>
+                @if (course()?.hasDiscount && !course()?.isFree) {
+                  <div class="co-price-row discount">
+                    <span>{{ t('discount') }}</span>
+                    <span class="co-discount-val">-{{ course()?.discountPercentage }}%</span>
+                  </div>
+                }
+                <div class="co-price-divider"></div>
+                <div class="co-price-row total">
+                  <span>{{ t('total') }}</span>
+                  <span>
+                    @if (course()?.isFree) {
+                      <span class="co-free-total">{{ t('free') }}</span>
+                    } @else {
+                      <strong>EGP {{ displayPrice() }}</strong>
+                    }
+                  </span>
+                </div>
+              </div>
+
+              <!-- CTA Button -->
+              <button
+                class="co-btn-enroll"
+                [class.free]="course()?.isFree"
+                [class.paid]="!course()?.isFree"
+                (click)="handleEnroll()"
+                [disabled]="step() !== 'review'">
+                @if (course()?.isFree) {
+                  <lucide-icon [img]="ZapIcon" [size]="18"></lucide-icon>
+                  {{ t('enrollForFree') }}
+                } @else {
+                  <lucide-icon [img]="LockIcon" [size]="16"></lucide-icon>
+                  {{ t('paySecurely') }} {{ displayPrice() }}
+                }
+              </button>
+
+              <!-- Fine print -->
+              <p class="co-fine-print">
+                @if (course()?.isFree) {
+                  {{ t('freeForever') }}
+                } @else {
+                  {{ t('termsAgreement') }}
+                }
+              </p>
+
+              <!-- Payment powered by -->
+              @if (!course()?.isFree) {
+                <div class="co-powered-by">
+                  <lucide-icon [img]="LockIcon" [size]="11"></lucide-icon>
+                  {{ t('poweredBy') }}
+                  <strong>Fawaterk</strong>
+                </div>
+              }
+            </div>
+
+            <!-- Instructor mini card -->
+            <div class="co-instructor-mini">
+              <div class="co-inst-avatar" [class.platform]="platform()">
+                @if (platform()) {
+                  <lucide-icon [img]="Building2Icon" [size]="18"></lucide-icon>
+                } @else {
+                  {{ instructorDisplay().charAt(0).toUpperCase() }}
+                }
+              </div>
+              <div class="co-inst-info">
+                <span class="co-inst-label">
+                  {{ platform() ? t('platform') : t('instructor') }}
+                </span>
+                <span class="co-inst-name">
+                  @if (platform()) {
+                    <lucide-icon [img]="BadgeCheckIcon" [size]="13"></lucide-icon>
+                  }
+                  {{ instructorDisplay() }}
+                </span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </ng-container>
+    }
+
+  </div>
+</div>
+</ng-container>

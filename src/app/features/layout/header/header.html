@@ -1,0 +1,292 @@
+<!-- shared/components/header/header.html -->
+<header class="main-header" [class.scrolled]="scrolled()" [dir]="isRtl() ? 'rtl' : 'ltr'" role="banner">
+  <div class="header-container">
+    <!-- Logo -->
+    <a class="header-logo" routerLink="/">
+      <div class="logo-icon">
+        <lucide-icon [img]="GraduationCapIcon" [size]="20" color="#fff"></lucide-icon>
+      </div>
+      <span class="logo-text">EOL</span>
+    </a>
+
+    <!-- Desktop Navigation -->
+    <nav class="header-nav" [attr.aria-label]="isRtl() ? 'التنقل الرئيسي' : 'Main navigation'">
+      @for (link of navLinks(); track link.href) {
+        <button
+          class="nav-link"
+          [class.active]="isActive(link.href)"
+          (click)="navigateTo(link.href)"
+          [attr.aria-current]="isActive(link.href) ? 'page' : null">
+          <lucide-icon [img]="link.icon" [size]="14"></lucide-icon>
+          {{ link.label }}
+        </button>
+      }
+    </nav>
+
+    <!-- Right Controls -->
+    <div class="header-actions">
+      <!-- Language Toggle -->
+      <button class="icon-btn lang-toggle" (click)="toggleLanguage()" [attr.aria-label]="isRtl() ? 'تبديل اللغة' : 'Switch language'">
+        <lucide-icon [img]="GlobeIcon" [size]="15"></lucide-icon>
+        <span>{{ isRtl() ? 'English' : 'العربية' }}</span>
+      </button>
+
+      <!-- Notifications -->
+      @if (isAuthenticated()) {
+        <div class="bell-wrapper" clickOutside (clickOutside)="closeNotif()">
+          <button class="icon-btn" (click)="toggleNotif()" [attr.aria-label]="isRtl() ? 'الإشعارات' : 'Notifications'">
+            <lucide-icon [img]="BellIcon" [size]="17"></lucide-icon>
+            @if (unreadCount() > 0) {
+              <span class="bell-badge">{{ unreadCount() > 99 ? '99+' : unreadCount() }}</span>
+            }
+          </button>
+
+          @if (notifOpen()) {
+            <div class="dropdown-panel notification-panel" [style.right]="isRtl() ? null : 0" [style.left]="isRtl() ? 0 : null">
+              <div class="notif-header">
+                <div class="notif-title">
+                  <lucide-icon [img]="BellIcon" [size]="15" color="#4f46e5"></lucide-icon>
+                  {{ isRtl() ? 'الإشعارات' : 'Notifications' }}
+                  @if (totalNotifs() > 0) {
+                    <span class="notif-count">{{ totalNotifs() }}</span>
+                  }
+                </div>
+                @if (unreadCount() > 0) {
+                  <button class="mark-all-btn" (click)="markAllRead()">{{ isRtl() ? 'قراءة الكل' : 'Mark all read' }}</button>
+                }
+              </div>
+
+              <div class="notif-list">
+                @if (notifLoading()) {
+                  @for (i of [1,2,3]; track i) {
+                    <div class="notif-skeleton-row">
+                      <div class="skeleton" style="width:36px;height:36px;border-radius:10px"></div>
+                      <div class="notif-skeleton-body">
+                        <div class="skeleton" style="width:70%;height:12px"></div>
+                        <div class="skeleton" style="width:100%;height:10px"></div>
+                        <div class="skeleton" style="width:40%;height:9px"></div>
+                      </div>
+                    </div>
+                  }
+                } @else if (notifications().length > 0) {
+                  @for (n of notifications(); track n.id) {
+                    <div class="notif-item" [class.unread]="!n.isRead" (click)="onNotificationClick(n)">
+                      <div class="notif-avatar" [class.unread]="!n.isRead">
+                        <lucide-icon [img]="BellIcon" [size]="15"></lucide-icon>
+                        @if (!n.isRead) {
+                          <span class="unread-dot"></span>
+                        }
+                      </div>
+                      <div class="notif-content">
+                        <div class="notif-item-title">{{ n.title }}</div>
+                        <div class="notif-item-body">{{ n.body }}</div>
+                        <div class="notif-meta">
+                          @if (n.isPushSent) {
+                            <lucide-icon [img]="SmartphoneIcon" [size]="10"></lucide-icon>
+                          }
+                          @if (n.isEmailSent) {
+                            <lucide-icon [img]="MailIcon" [size]="10"></lucide-icon>
+                          }
+                          <lucide-icon [img]="ClockIcon" [size]="10"></lucide-icon>
+                          <span>{{ getTimeAgo(n.createdAt) }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  }
+                } @else {
+                  <div class="notif-empty">
+                    <div class="notif-empty-icon">
+                      <lucide-icon [img]="BellIcon" [size]="24"></lucide-icon>
+                    </div>
+                    <div class="notif-empty-title">{{ isRtl() ? 'لا توجد إشعارات' : 'No notifications' }}</div>
+                    <div class="notif-empty-sub">{{ isRtl() ? 'أنت على اطلاع بكل شيء!' : "You're all caught up!" }}</div>
+                  </div>
+                }
+              </div>
+
+              @if (totalNotifs() > 5 && notifications().length > 0) {
+                <div class="notif-footer">
+                  <button class="view-all-btn" (click)="viewAllNotifications()">
+                    {{ isRtl() ? 'عرض كل الإشعارات' : 'View all notifications' }}
+                    <lucide-icon [img]="ArrowRightIcon" [size]="14"></lucide-icon>
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Profile -->
+      @if (isAuthenticated()) {
+        <div style="position: relative" clickOutside (clickOutside)="closeProfile()">
+          @if (profileLoading()) {
+            <div class="hdr-skeleton-profile">
+              <div class="skeleton" style="width:32px;height:32px;border-radius:8px"></div>
+              <div style="display:flex;flex-direction:column;gap:6px;flex:1">
+                <div class="skeleton" style="width:90px;height:12px"></div>
+                <div class="skeleton" style="width:60px;height:10px"></div>
+              </div>
+            </div>
+          } @else {
+            <button class="profile-btn" (click)="toggleProfile()" aria-haspopup="true" [attr.aria-expanded]="profileOpen()">
+              <div class="profile-avatar">
+                @if (avatarSrc()) {
+                  <img [src]="avatarSrc()" [alt]="displayName()" />
+                } @else {
+                  <span>{{ getInitials(displayName()) }}</span>
+                }
+                @if (isVerified()) {
+                  <span class="verified-dot"></span>
+                }
+              </div>
+              <div style="min-width:0;flex:1">
+                <span class="profile-name">{{ displayName() }}</span>
+                <span class="profile-role">{{ displayRole() }}</span>
+              </div>
+              <lucide-icon [img]="ChevronDownIcon" [size]="14" [style.transform]="profileOpen() ? 'rotate(180deg)' : 'rotate(0deg)'" style="color:#94a3b8;flex-shrink:0;transition:transform .2s"></lucide-icon>
+            </button>
+          }
+
+          @if (profileOpen() && !profileLoading()) {
+            <div class="dropdown-panel profile-panel" [style.right]="isRtl() ? null : 0" [style.left]="isRtl() ? 0 : null">
+              <div class="profile-panel-header">
+                <div class="profile-avatar" style="width:44px;height:44px">
+                  @if (avatarSrc()) {
+                    <img [src]="avatarSrc()" [alt]="displayName()" />
+                  } @else {
+                    <span>{{ getInitials(displayName()) }}</span>
+                  }
+                  @if (isVerified()) {
+                    <span class="verified-dot"></span>
+                  }
+                </div>
+                <div style="min-width:0">
+                  <div class="profile-panel-name">{{ displayName() }}</div>
+                  <div class="profile-panel-role">{{ displayRole() }}</div>
+                  @if (isVerified()) {
+                    <span class="verified-badge">
+                      <lucide-icon [img]="CheckCircleIcon" [size]="10"></lucide-icon>
+                      {{ isRtl() ? 'موثَّق' : 'Verified' }}
+                    </span>
+                  }
+                </div>
+              </div>
+
+              @for (item of menuItems(); track item.path) {
+                <button class="menu-item" (click)="navigateTo(item.path)">
+                  <lucide-icon [img]="item.icon" [size]="14"></lucide-icon>
+                  {{ item.label }}
+                </button>
+              }
+
+              <div class="menu-divider"></div>
+
+              <button class="menu-item danger" (click)="logout()">
+                <lucide-icon [img]="LogOutIcon" [size]="14"></lucide-icon>
+                {{ isRtl() ? 'تسجيل الخروج' : 'Logout' }}
+              </button>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Auth buttons -->
+      @if (!isAuthenticated()) {
+        <button class="btn-login" (click)="navigateTo('/login')">
+          <lucide-icon [img]="LogInIcon" [size]="15"></lucide-icon>
+          {{ isRtl() ? 'تسجيل الدخول' : 'Login' }}
+        </button>
+        <button class="btn-register" (click)="navigateTo('/register')">
+          <lucide-icon [img]="UserPlusIcon" [size]="15"></lucide-icon>
+          {{ isRtl() ? 'إنشاء حساب' : 'Register' }}
+        </button>
+      }
+
+      <!-- Hamburger -->
+      <button class="icon-btn mobile-menu-toggle" (click)="openMobileMenu()" [attr.aria-label]="isRtl() ? 'فتح القائمة' : 'Open menu'">
+        <lucide-icon [img]="MenuIcon" [size]="18"></lucide-icon>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- Mobile Drawer -->
+@if (mobileOpen()) {
+  <div class="mobile-overlay" (click)="closeMobileMenu()"></div>
+  <div class="mobile-drawer" [class.rtl]="isRtl()" role="dialog" aria-modal="true">
+    <div class="drawer-band"></div>
+
+    <div class="drawer-header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="logo-icon" style="width:34px;height:34px">
+          <lucide-icon [img]="GraduationCapIcon" [size]="17" color="#fff"></lucide-icon>
+        </div>
+        <span class="logo-text">EOL</span>
+      </div>
+      <button class="icon-btn" (click)="closeMobileMenu()" [attr.aria-label]="isRtl() ? 'إغلاق القائمة' : 'Close menu'">
+        <lucide-icon [img]="XIcon" [size]="18"></lucide-icon>
+      </button>
+    </div>
+
+    @if (isAuthenticated()) {
+      <div class="drawer-user-info">
+        <div class="profile-avatar" style="width:48px;height:48px">
+          @if (avatarSrc()) {
+            <img [src]="avatarSrc()" [alt]="displayName()" />
+          } @else {
+            <span>{{ getInitials(displayName()) }}</span>
+          }
+          @if (isVerified()) {
+            <span class="verified-dot"></span>
+          }
+        </div>
+        <div style="min-width:0">
+          <div class="drawer-user-name">{{ displayName() }}</div>
+          <div class="drawer-user-role">{{ displayRole() }}</div>
+          @if (isVerified()) {
+            <span class="verified-badge" style="margin-top:4px">
+              <lucide-icon [img]="CheckCircleIcon" [size]="10"></lucide-icon>
+              {{ isRtl() ? 'موثَّق' : 'Verified' }}
+            </span>
+          }
+        </div>
+      </div>
+    }
+
+    <nav class="drawer-nav">
+      @for (link of navLinks(); track link.href) {
+        <button class="drawer-nav-item" [class.active]="isActive(link.href)" (click)="navigateTo(link.href); closeMobileMenu()">
+          <lucide-icon [img]="link.icon" [size]="16"></lucide-icon>
+          {{ link.label }}
+        </button>
+      }
+
+      @if (isAuthenticated() && menuItems().length > 0) {
+        <div class="drawer-divider"></div>
+        @for (item of menuItems(); track item.path) {
+          <button class="drawer-nav-item" (click)="navigateTo(item.path); closeMobileMenu()">
+            <lucide-icon [img]="item.icon" [size]="16"></lucide-icon>
+            {{ item.label }}
+          </button>
+        }
+        <div class="drawer-divider"></div>
+        <button class="drawer-nav-item danger" (click)="logout(); closeMobileMenu()">
+          <lucide-icon [img]="LogOutIcon" [size]="15"></lucide-icon>
+          {{ isRtl() ? 'تسجيل الخروج' : 'Logout' }}
+        </button>
+      }
+    </nav>
+
+    @if (!isAuthenticated()) {
+      <div class="drawer-auth">
+        <button class="drawer-auth-btn login" (click)="navigateTo('/login'); closeMobileMenu()">
+          {{ isRtl() ? 'تسجيل الدخول' : 'Login' }}
+        </button>
+        <button class="drawer-auth-btn register" (click)="navigateTo('/register'); closeMobileMenu()">
+          {{ isRtl() ? 'إنشاء حساب' : 'Register' }}
+        </button>
+      </div>
+    }
+  </div>
+}

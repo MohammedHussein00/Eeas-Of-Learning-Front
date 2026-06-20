@@ -1,0 +1,440 @@
+<ng-container *transloco="let t; scope: 'teacherReviews'">
+
+  <!-- ══ Loading State ══ -->
+  @if (loading()) {
+    <div class="tr-center-screen">
+      <nz-spin nzSize="large"></nz-spin>
+      <p class="tr-loading-text">{{ t('teacherReviews.loading_reviews') }}</p>
+    </div>
+  } @else {
+
+  <div class="tr-root" [class.tr-rtl]="isRtl">
+
+    <!-- ══ Header ══ -->
+    <header class="tr-header">
+      <div class="tr-header-left">
+        <button class="tr-back-btn" (click)="goBack()">
+          <lucide-icon [img]="backArrowIcon" [size]="16"></lucide-icon>
+          <span class="tr-back-label">{{ t('teacherReviews.back_to_dashboard') }}</span>
+        </button>
+        <div class="tr-header-divider"></div>
+        <div class="tr-header-info">
+          <p class="tr-header-title">{{ t('teacherReviews.page_title') }}</p>
+          <p class="tr-header-sub">{{ t('teacherReviews.page_subtitle') }}</p>
+        </div>
+      </div>
+
+      <div class="tr-header-right">
+        <nz-tag nzColor="blue" class="tr-tag-count">
+          <lucide-icon [img]="MessageIcon" [size]="12"></lucide-icon>
+          {{ overallStats()?.totalReviews ?? 0 }} {{ t('teacherReviews.reviews') }}
+        </nz-tag>
+        <button class="tr-btn-ghost tr-btn-sm" (click)="onRefresh()">
+          <lucide-icon [img]="RefreshIcon" [size]="14"></lucide-icon>
+          <span class="tr-btn-label">{{ t('teacherReviews.refresh') }}</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="tr-body">
+
+      <!-- ══ Stat Cards ══ -->
+      @if (overallStats()) {
+        <div class="tr-stats-row tr-fade-up">
+          @for (card of statCards(); track card.labelKey) {
+            <div class="tr-stat-card">
+              <div class="tr-stat-icon" [style.background]="card.bg" [style.color]="card.color">
+                <lucide-icon [img]="card.icon" [size]="18"></lucide-icon>
+              </div>
+              <div class="tr-stat-content">
+                <div class="tr-stat-val" [style.color]="card.color">
+                  {{ card.value }}
+                  @if (card.suffix) {
+                    <span class="tr-stat-suffix">{{ card.suffix }}</span>
+                  }
+                </div>
+                <div class="tr-stat-label">{{ t(card.labelKey) }}</div>
+                @if (card.sub) {
+                  <div class="tr-stat-sub">{{ card.sub }}</div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- ══ Main Layout: sidebar + content ══ -->
+      <div class="tr-layout">
+
+        <!-- ── Left Sidebar ── -->
+        <aside class="tr-sidebar tr-fade-up">
+
+          <!-- Rating Distribution -->
+          @if (overallStats()) {
+            <div class="tr-card">
+              <div class="tr-card-header">
+                <div class="tr-card-title">
+                  <div class="tr-card-icon tr-icon-amber">
+                    <lucide-icon [img]="BarChartIcon" [size]="14"></lucide-icon>
+                  </div>
+                  {{ t('teacherReviews.rating_distribution') }}
+                </div>
+                <div class="tr-rating-header-val" [style.color]="ratingColor(overallStats()!.averageRating)">
+                  {{ overallStats()!.averageRating.toFixed(1) }}
+                  <span class="tr-rating-max">{{ t('teacherReviews.out_of_5') }}</span>
+                </div>
+              </div>
+              <div class="tr-card-body">
+                @for (row of ratingDistribution(); track row.stars) {
+                  <div class="tr-rating-row"
+                    role="button"
+                    tabindex="0"
+                    (click)="onRatingRowClick(row.stars)"
+                    (keydown.enter)="onRatingRowClick(row.stars)"
+                    (keydown.space)="onRatingRowClick(row.stars); $event.preventDefault()"
+                    [class.tr-rating-row-active]="selectedRating() === row.stars"
+                    [attr.aria-label]="row.stars + ' ' + t('teacherReviews.reviews') + ': ' + row.count"
+                    [attr.aria-pressed]="selectedRating() === row.stars">
+                    <div class="tr-rating-stars">
+                      @for (s of starsArray(row.stars); track s) {
+                        <lucide-icon [img]="StarIcon" [size]="11" class="tr-star-filled"></lucide-icon>
+                      }
+                      <span class="tr-star-num">{{ row.stars }}</span>
+                    </div>
+                    <div class="tr-rating-bar-wrap">
+                      <div class="tr-rating-bar">
+                        <div class="tr-rating-bar-fill"
+                          [style.width.%]="row.pct || 0"
+                          [style.background]="ratingBarColor(row.stars)">
+                        </div>
+                      </div>
+                    </div>
+                    <span class="tr-rating-count">{{ row.count }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Key Insights -->
+            <div class="tr-card">
+              <div class="tr-card-header">
+                <div class="tr-card-title">
+                  <div class="tr-card-icon tr-icon-green">
+                    <lucide-icon [img]="TrophyIcon" [size]="14"></lucide-icon>
+                  </div>
+                  {{ t('teacherReviews.key_insights') }}
+                </div>
+              </div>
+              <div class="tr-card-body">
+                @for (item of insights(); track item.label) {
+                  <div class="tr-insight-item">
+                    <span class="tr-insight-label">{{ item.label }}</span>
+                    <span class="tr-insight-val" [style.color]="item.color">{{ item.value }}</span>
+                  </div>
+                }
+                @if (overallStats()?.topCourseTitle) {
+                  <div class="tr-top-course">
+                    <div class="tr-top-course-label">{{ t('teacherReviews.top_course') }}</div>
+                    <span class="tr-top-course-title" [nz-tooltip]="overallStats()!.topCourseTitle!">
+                      {{ overallStats()!.topCourseTitle }}
+                    </span>
+                    <nz-tag nzColor="gold" class="tr-tag">
+                      <lucide-icon [img]="StarIcon" [size]="9"></lucide-icon>
+                      {{ (overallStats()!.topCourseRating || 0).toFixed(1) }} / 5
+                    </nz-tag>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="tr-card">
+              <div class="tr-card-header">
+                <div class="tr-card-title">
+                  <div class="tr-card-icon tr-icon-brand">
+                    <lucide-icon [img]="BookIcon" [size]="14"></lucide-icon>
+                  </div>
+                  {{ t('teacherReviews.quick_actions') }}
+                </div>
+              </div>
+              <div class="tr-card-body tr-qa-body">
+                <button class="tr-btn-ghost tr-btn-full" (click)="router.navigate(['/teacher/courses'])">
+                  <lucide-icon [img]="BookIcon" [size]="13"></lucide-icon>
+                  {{ t('teacherReviews.manage_courses') }}
+                </button>
+                <button class="tr-btn-ghost tr-btn-full" (click)="router.navigate(['/teacher/students'])">
+                  <lucide-icon [img]="UsersIcon" [size]="13"></lucide-icon>
+                  {{ t('teacherReviews.view_students') }}
+                </button>
+              </div>
+            </div>
+          }
+
+        </aside><!-- /sidebar -->
+
+        <!-- ── Main Content ── -->
+        <div class="tr-main tr-fade-up">
+
+          <!-- Reviews Card -->
+          <div class="tr-card tr-reviews-card">
+
+            <!-- Filters toolbar -->
+            <div class="tr-filters-bar">
+              <div class="tr-filters-row">
+
+                <!-- Search -->
+                <div class="tr-search-wrap">
+                  <lucide-icon [img]="SearchIcon" [size]="14" class="tr-search-ico"></lucide-icon>
+                  <input
+                    class="tr-search-input"
+                    type="search"
+                    [placeholder]="t('teacherReviews.search_placeholder')"
+                    [ngModel]="searchText()"
+                    (ngModelChange)="onSearchChange($event)"
+                    [attr.aria-label]="t('teacherReviews.search_placeholder')" />
+                  @if (searchText()) {
+                    <button class="tr-search-clear" (click)="onSearchChange('')" [attr.aria-label]="'Clear search'">
+                      <lucide-icon [img]="XIcon" [size]="12" class="tr-icon-flip"></lucide-icon>
+                    </button>
+                  }
+                </div>
+
+                <!-- Course filter -->
+                <nz-select
+                  class="tr-filter-select"
+                  nzAllowClear
+                  [nzPlaceHolder]="t('teacherReviews.all_courses')"
+                  [ngModel]="selectedCourse()"
+                  (ngModelChange)="onCourseChange($event)">
+                  @for (c of courses(); track c.id) {
+                    <nz-option [nzValue]="c.id" [nzLabel]="c.title"></nz-option>
+                  }
+                </nz-select>
+
+                <!-- Sort -->
+                <nz-select
+                  class="tr-filter-select tr-filter-sort"
+                  [ngModel]="sortBy()"
+                  (ngModelChange)="onSortChange($event)">
+                  <nz-option nzValue="newest"  [nzLabel]="t('teacherReviews.newest_first')"></nz-option>
+                  <nz-option nzValue="oldest"  [nzLabel]="t('teacherReviews.oldest_first')"></nz-option>
+                  <nz-option nzValue="highest" [nzLabel]="t('teacherReviews.highest_rating')"></nz-option>
+                  <nz-option nzValue="lowest"  [nzLabel]="t('teacherReviews.lowest_rating')"></nz-option>
+                </nz-select>
+
+                <!-- Reset -->
+                @if (searchText() || selectedCourse() || selectedRating()) {
+                  <button class="tr-btn-reset" (click)="resetFilters()">
+                    <lucide-icon [img]="XIcon" [size]="12" class="tr-icon-flip"></lucide-icon>
+                    {{ t('teacherReviews.reset') }}
+                  </button>
+                }
+
+              </div><!-- /filters-row -->
+
+              <!-- Active filter pills -->
+              @if (selectedRating()) {
+                <div class="tr-active-filters">
+                  <span class="tr-filter-pill">
+                    {{ selectedRating() }} ★ {{ t('teacherReviews.reviews') }}
+                    <button class="tr-pill-remove" (click)="onRatingChange(null)" [attr.aria-label]="'Remove rating filter'">
+                      <lucide-icon [img]="XIcon" [size]="10" class="tr-icon-flip"></lucide-icon>
+                    </button>
+                  </span>
+                </div>
+              }
+
+            </div><!-- /filters-bar -->
+
+            <!-- Reviews list body -->
+            <div class="tr-reviews-body">
+
+              <!-- Loading state -->
+              @if (reviewsLoading()) {
+                <div class="tr-loading-spin">
+                  <nz-spin nzSize="large"></nz-spin>
+                </div>
+              }
+
+              <!-- Empty state -->
+              @else if (filteredReviews().length === 0) {
+                <div class="tr-empty">
+                  <div class="tr-empty-ico">
+                    <lucide-icon [img]="MessageIcon" [size]="28"></lucide-icon>
+                  </div>
+                  <p class="tr-empty-title">{{ t('teacherReviews.no_reviews_found') }}</p>
+                  @if (searchText() || selectedCourse() || selectedRating()) {
+                    <button class="tr-btn-primary" (click)="resetFilters()">
+                      {{ t('teacherReviews.clear_filters') }}
+                    </button>
+                  }
+                </div>
+              }
+
+              <!-- Reviews list -->
+              @else {
+                <div class="tr-reviews-list">
+                  @for (review of paginatedReviews(); track review.id) {
+                    <div class="tr-review-card">
+
+                      <!-- Avatar -->
+                      <div class="tr-avatar" [attr.aria-label]="'Avatar for ' + review.userName">
+                        {{ initial(review.userName) }}
+                      </div>
+
+                      <!-- Review body -->
+                      <div class="tr-review-body">
+
+                        <!-- Top row: name + date + actions -->
+                        <div class="tr-review-top">
+                          <div class="tr-review-meta">
+                            <span class="tr-user-name">{{ review.userName }}</span>
+                            @if (review.isVerifiedPurchase) {
+                              <nz-tag nzColor="green" class="tr-verified-tag tr-tag">
+                                <lucide-icon [img]="CheckIcon" [size]="9"></lucide-icon>
+                                {{ t('teacherReviews.verified') }}
+                              </nz-tag>
+                            }
+                          </div>
+                          <div class="tr-review-right">
+                            <div class="tr-review-date">
+                              <lucide-icon [img]="ClockIcon" [size]="10"></lucide-icon>
+                              {{ formatDate(review.createdAt) }}
+                            </div>
+                            <button class="tr-icon-btn"
+                              [nz-tooltip]="t('teacherReviews.view_details')"
+                              [attr.aria-label]="'View details for review by ' + review.userName"
+                              (click)="openDetail(review)">
+                              <lucide-icon [img]="EyeIcon" [size]="13"></lucide-icon>
+                            </button>
+                          </div>
+                        </div>
+
+                        <!-- Stars + course row -->
+                        <div class="tr-review-subrow">
+                          <div class="tr-stars-row">
+                            @for (s of starsArray(review.rating); track s) {
+                              <lucide-icon [img]="StarIcon" [size]="13" class="tr-star-filled"></lucide-icon>
+                            }
+                            <nz-tag
+                              class="tr-rating-tag tr-tag"
+                              [nzColor]="review.rating >= 4 ? 'green' : review.rating >= 3 ? 'blue' : 'orange'">
+                              {{ review.rating }}.0
+                            </nz-tag>
+                          </div>
+                          <div class="tr-review-course">
+                            <lucide-icon [img]="BookIcon" [size]="10"></lucide-icon>
+                            {{ review.courseTitle }}
+                          </div>
+                        </div>
+
+                        <!-- Comment -->
+                        @if (review.comment) {
+                          <p class="tr-review-comment">{{ review.comment }}</p>
+                        }
+
+                      </div><!-- /review-body -->
+                    </div><!-- /review-card -->
+                  }
+                </div><!-- /reviews-list -->
+
+                <!-- Pagination -->
+                <div class="tr-pagination-row">
+                  <span class="tr-sort-count">{{ getPaginationRange() }}</span>
+                  <nz-pagination
+                    [nzPageIndex]="currentPage()"
+                    [nzPageSize]="pageSize()"
+                    [nzTotal]="filteredReviews().length"
+                    nzShowSizeChanger
+                    [nzPageSizeOptions]="[10, 20, 50]"
+                    (nzPageIndexChange)="onPageChange($event)"
+                    (nzPageSizeChange)="onPageSizeChange($event)">
+                  </nz-pagination>
+                </div>
+              }
+
+            </div><!-- /reviews-body -->
+          </div><!-- /reviews-card -->
+
+        </div><!-- /main -->
+      </div><!-- /layout -->
+    </div><!-- /body -->
+  </div><!-- /root -->
+
+  <!-- ══ Review Detail Modal ══ -->
+  <nz-modal
+    [nzVisible]="detailVisible()"
+    [nzWidth]="560"
+    nzCentered
+    [nzTitle]="detailModalTitle"
+    [nzFooter]="detailModalFooter"
+    (nzOnCancel)="closeDetail()"
+    nzClassName="tr-modal">
+
+    <ng-template #detailModalTitle>
+      <div class="tr-modal-title">
+        <div class="tr-modal-icon">
+          <lucide-icon [img]="EyeIcon" [size]="16"></lucide-icon>
+        </div>
+        <div class="tr-modal-title-text">
+          <div class="tr-modal-title-main">{{ t('teacherReviews.review_details') }}</div>
+          <div class="tr-modal-title-sub">{{ selectedReview()?.courseTitle }}</div>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-container *nzModalContent>
+      @if (selectedReview(); as rev) {
+        <div class="tr-detail-content">
+
+          <!-- Reviewer info -->
+          <div class="tr-detail-reviewer">
+            <div class="tr-avatar tr-avatar-lg">{{ initial(rev.userName) }}</div>
+            <div class="tr-detail-info">
+              <div class="tr-detail-name">
+                {{ rev.userName }}
+                @if (rev.isVerifiedPurchase) {
+                  <nz-tag nzColor="green" class="tr-tag">{{ t('teacherReviews.verified') }}</nz-tag>
+                }
+              </div>
+              <div class="tr-detail-meta">
+                <lucide-icon [img]="ClockIcon" [size]="10"></lucide-icon>
+                {{ formatDateTime(rev.createdAt) }}
+              </div>
+              <nz-tag nzColor="blue" class="tr-tag">
+                <lucide-icon [img]="BookIcon" [size]="9"></lucide-icon>
+                {{ rev.courseTitle }}
+              </nz-tag>
+              <div class="tr-detail-stars">
+                @for (s of starsArray(rev.rating); track s) {
+                  <lucide-icon [img]="StarIcon" [size]="14" class="tr-star-filled"></lucide-icon>
+                }
+                <span class="tr-detail-rating-num" [style.color]="ratingColor(rev.rating)">
+                  {{ rev.rating }}.0
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Comment -->
+          @if (rev.comment) {
+            <div class="tr-detail-section">
+              <div class="tr-detail-section-label">{{ t('teacherReviews.review') }}</div>
+              <p class="tr-detail-comment">{{ rev.comment }}</p>
+            </div>
+          }
+
+        </div>
+      }
+    </ng-container>
+
+    <ng-template #detailModalFooter>
+      <button class="tr-btn-ghost" (click)="closeDetail()">
+        {{ t('teacherReviews.close') }}
+      </button>
+    </ng-template>
+
+  </nz-modal>
+
+  }<!-- /else not loading -->
+</ng-container>

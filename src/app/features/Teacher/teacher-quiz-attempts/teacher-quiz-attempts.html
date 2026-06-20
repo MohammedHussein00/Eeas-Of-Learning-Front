@@ -1,0 +1,477 @@
+<ng-container *transloco="let t; scope: 'teacherQuizAttempts'">
+
+  <!-- ══ Loading ══ -->
+  @if (loading()) {
+    <div class="qatt-loader">
+      <nz-spin nzSize="large"></nz-spin>
+    </div>
+  }
+
+  <!-- ══ Quiz not found ══ -->
+  @else if (!quiz()) {
+    <div class="qatt-loader">
+      <nz-result
+        nzStatus="error"
+        [nzTitle]="t('teacherQuizAttempts.quiz_not_found')">
+        <div nz-result-extra>
+          <button class="qatt-btn-ghost" (click)="router.navigate(['/teacher/quizzes'])">
+            {{ t('teacherQuizAttempts.back') }}
+          </button>
+        </div>
+      </nz-result>
+    </div>
+  }
+
+  <!-- ══ MAIN ══ -->
+  @else {
+    <div class="qatt-root">
+
+      <!-- ── Header ── -->
+      <header class="qatt-header">
+        <div class="qatt-header-left">
+          <button class="qatt-back-btn" (click)="router.navigate(['/teacher/quizzes'])">
+            <lucide-icon [img]="ArrowLeftIcon" [size]="16"></lucide-icon>
+            <span>{{ t('teacherQuizAttempts.back') }}</span>
+          </button>
+          <div class="qatt-header-sep"></div>
+          <div>
+            <h1 class="qatt-header-title">{{ t('teacherQuizAttempts.attempts_title') }}</h1>
+            <p class="qatt-header-sub">{{ quiz()!.title }}</p>
+          </div>
+        </div>
+        <div class="qatt-header-right">
+          <nz-tag [nzColor]="'blue'" style="border-radius: 6px">
+            {{ getQuizTypeLabel(quiz()!.type) }}
+          </nz-tag>
+          <button class="qatt-btn-ghost" (click)="router.navigate(['/teacher/quiz-manager', quizId])">
+            <lucide-icon [img]="FileTextIcon" [size]="14"></lucide-icon>
+            {{ t('teacherQuizAttempts.manage_questions') }}
+          </button>
+        </div>
+      </header>
+
+      <div class="qatt-body">
+
+        <!-- ── Hero ── -->
+        <div class="qatt-hero">
+          <div class="qatt-hero-band"></div>
+          <div class="qatt-hero-body">
+            <div class="qatt-hero-title">{{ quiz()!.title }}</div>
+            @if (quiz()!.description) {
+              <div class="qatt-hero-desc">{{ quiz()!.description }}</div>
+            }
+            <div class="qatt-hero-tags">
+              <nz-tag [nzColor]="'blue'" style="border-radius: 6px">{{ getQuizTypeLabel(quiz()!.type) }}</nz-tag>
+              <nz-tag style="border-radius: 6px">{{ t('teacherQuizAttempts.passing_score') }}: {{ quiz()!.passingScore }}%</nz-tag>
+              <nz-tag style="border-radius: 6px">{{ stats().total }} {{ t('teacherQuizAttempts.attempts') }}</nz-tag>
+              @if (quiz()!.timeLimitMinutes) {
+                <nz-tag style="border-radius: 6px">{{ quiz()!.timeLimitMinutes }} min</nz-tag>
+              }
+              <nz-tag [nzColor]="stats().passed > 0 ? 'success' : 'default'" style="border-radius: 6px">
+                {{ stats().passed }} {{ t('teacherQuizAttempts.passed') }}
+              </nz-tag>
+              <nz-tag [nzColor]="stats().failed > 0 ? 'error' : 'default'" style="border-radius: 6px">
+                {{ stats().failed }} {{ t('teacherQuizAttempts.failed') }}
+              </nz-tag>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Stats ── -->
+        <div class="qatt-stats-row">
+          <div class="qatt-stat">
+            <div class="qatt-stat-icon" style="background: #eef0ff; color: #3d5af1">
+              <lucide-icon [img]="UsersIcon" [size]="18"></lucide-icon>
+            </div>
+            <div>
+              <div class="qatt-stat-val" style="color: #3d5af1">{{ stats().total }}</div>
+              <div class="qatt-stat-label">{{ t('teacherQuizAttempts.total_attempts') }}</div>
+            </div>
+          </div>
+          <div class="qatt-stat">
+            <div class="qatt-stat-icon" style="background: #e8faf0; color: #27ae60">
+              <lucide-icon [img]="TrophyIcon" [size]="18"></lucide-icon>
+            </div>
+            <div>
+              <div class="qatt-stat-val" style="color: #27ae60">{{ stats().passRate }}%</div>
+              <div class="qatt-stat-label">{{ t('teacherQuizAttempts.pass_rate') }}</div>
+            </div>
+          </div>
+          <div class="qatt-stat">
+            <div class="qatt-stat-icon" style="background: #ecfeff; color: #0891b2">
+              <lucide-icon [img]="TrendingUpIcon" [size]="18"></lucide-icon>
+            </div>
+            <div>
+              <div class="qatt-stat-val" style="color: #0891b2">{{ Math.round(stats().avgScore) }}%</div>
+              <div class="qatt-stat-label">{{ t('teacherQuizAttempts.avg_score') }}</div>
+            </div>
+          </div>
+          <div class="qatt-stat">
+            <div class="qatt-stat-icon" style="background: #fff7ed; color: #e67e22">
+              <lucide-icon [img]="XCircleIcon" [size]="18"></lucide-icon>
+            </div>
+            <div>
+              <div class="qatt-stat-val" style="color: #e67e22">{{ stats().failed }}</div>
+              <div class="qatt-stat-label">{{ t('teacherQuizAttempts.failed_count') }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Table Card ── -->
+        <div class="qatt-card">
+          <div class="qatt-card-header">
+            <div class="qatt-card-title">
+              <div class="qatt-card-icon"><lucide-icon [img]="UsersIcon" [size]="14"></lucide-icon></div>
+              {{ t('teacherQuizAttempts.student_attempts') }}
+              <nz-badge [nzCount]="filtered().length" style="background-color: #3d5af1; margin-left: 4px"></nz-badge>
+            </div>
+          </div>
+          <div class="qatt-card-body">
+            <!-- Filters -->
+            <div class="qatt-filters">
+              <div class="qatt-filter-search">
+                <nz-input-group [nzPrefix]="searchPrefix">
+                  <input
+                    nz-input
+                    [placeholder]="t('teacherQuizAttempts.search_students')"
+                    [ngModel]="search()"
+                    (ngModelChange)="onSearchChange($event)"
+                  />
+                </nz-input-group>
+                <ng-template #searchPrefix>
+                  <lucide-icon [img]="SearchIcon" [size]="14" style="color: #8a94b2"></lucide-icon>
+                </ng-template>
+              </div>
+              <nz-select
+                [ngModel]="filter()"
+                (ngModelChange)="onFilterChange($event)"
+                style="width: 160px">
+                <nz-option nzValue="all" [nzLabel]="t('teacherQuizAttempts.all_attempts')"></nz-option>
+                <nz-option nzValue="passed" [nzLabel]="t('teacherQuizAttempts.passed_only')"></nz-option>
+                <nz-option nzValue="failed" [nzLabel]="t('teacherQuizAttempts.failed_only')"></nz-option>
+              </nz-select>
+              <nz-select
+                [ngModel]="sortBy()"
+                (ngModelChange)="onSortChange($event)"
+                style="width: 160px">
+                <nz-option nzValue="date" [nzLabel]="t('teacherQuizAttempts.sort_recent')"></nz-option>
+                <nz-option nzValue="score_desc" [nzLabel]="t('teacherQuizAttempts.sort_score_high')"></nz-option>
+                <nz-option nzValue="score_asc" [nzLabel]="t('teacherQuizAttempts.sort_score_low')"></nz-option>
+                <nz-option nzValue="name" [nzLabel]="t('teacherQuizAttempts.sort_name')"></nz-option>
+              </nz-select>
+            </div>
+
+            <!-- Empty -->
+            @if (filtered().length === 0) {
+              <nz-empty
+                [nzNotFoundContent]="attempts().length === 0 ? t('teacherQuizAttempts.no_attempts_yet') : t('teacherQuizAttempts.no_results')"
+                style="padding: 40px 0">
+              </nz-empty>
+            }
+
+            <!-- Rows -->
+            @for (row of filtered(); track row.attemptId) {
+              <div
+                class="qatt-row"
+                [class.qatt-row-pass]="row.isPassed"
+                [class.qatt-row-fail]="!row.isPassed"
+                (click)="openDetail(row)">
+                <nz-avatar
+                  [nzSize]="40"
+                  [nzSrc]="avatarUrl(row.profileImagePath)"
+                  [ngStyle]="{ background: avatarColor(row.userId), fontSize: '13px', fontWeight: 700 }">
+                  {{ initials(row.name, row.userEmail) }}
+                </nz-avatar>
+                <div class="qatt-row-info">
+                  <div class="qatt-row-name">{{ row.name || t('teacherQuizAttempts.unknown_student') }}</div>
+                  <div class="qatt-row-email">{{ row.userEmail }}</div>
+                </div>
+                <div class="qatt-row-score">
+                  <span
+                    class="qatt-score-pill"
+                    [ngStyle]="{
+                      background: row.percentage >= (quiz()?.passingScore || 0) ? '#dcfce7' : '#fee2e2',
+                      color: row.percentage >= (quiz()?.passingScore || 0) ? '#15803d' : '#dc2626'
+                    }">
+                    {{ Math.round(row.percentage) }}%
+                  </span>
+                </div>
+                <div class="qatt-row-points">
+                  <div class="qatt-points-val">{{ row.score }}/{{ row.maxScore }}</div>
+                  <div class="qatt-points-label">{{ t('teacherQuizAttempts.points') }}</div>
+                </div>
+                <div class="qatt-row-status">
+                  <span [class]="row.isPassed ? 'qatt-badge-pass' : 'qatt-badge-fail'">
+                    @if (row.isPassed) {
+                      <lucide-icon [img]="CheckIcon" [size]="10"></lucide-icon>
+                      {{ t('teacherQuizAttempts.passed') }}
+                    } @else {
+                      <lucide-icon [img]="XIcon" [size]="10"></lucide-icon>
+                      {{ t('teacherQuizAttempts.failed') }}
+                    }
+                  </span>
+                </div>
+                <div class="qatt-row-date">
+                  <div>{{ fmtDate(row.completedAt) }}</div>
+                  <div class="qatt-row-time">
+                    <lucide-icon [img]="ClockIcon" [size]="10"></lucide-icon>
+                    {{ fmtTime(row.timeSpentSeconds) }}
+                  </div>
+                </div>
+                <button class="qatt-icon-btn" (click)="$event.stopPropagation(); openDetail(row)">
+                  <lucide-icon [img]="EyeIcon" [size]="13"></lucide-icon>
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Detail Modal ── -->
+      <nz-modal
+        [nzVisible]="detailModalVisible()"
+        [nzWidth]="780"
+        nzCentered
+        [nzFooter]="null"
+        (nzOnCancel)="closeDetail()"
+        nzClassName="qatt-modal">
+        <ng-container *nzModalContent>
+          @if (detailModalLoading()) {
+            <div class="qatt-modal-loading">
+              <nz-spin nzSize="large"></nz-spin>
+            </div>
+          } @else if (detailData()) {
+            @let d = detailData()!;
+            @let correct = d.questionResults.filter(q => q.isCorrect).length;
+            @let wrong = d.questionResults.filter(q => !q.isCorrect).length;
+            
+            <!-- Modal Title -->
+            <div class="qatt-modal-title">
+              <div class="qatt-modal-title-icon">
+                <lucide-icon [img]="EyeIcon" [size]="16"></lucide-icon>
+              </div>
+              <div>
+                <div class="qatt-modal-title-text">{{ t('teacherQuizAttempts.attempt_detail') }}</div>
+                <div class="qatt-modal-title-sub">{{ d.quizTitle }}</div>
+              </div>
+            </div>
+
+            <!-- Score Summary -->
+            <div class="qatt-summary-strip">
+              <div class="qatt-summary-grid">
+                <div class="qatt-summary-item" style="background: d.isPassed ? '#dcfce7' : '#fee2e2'">
+                  <div class="qatt-summary-val" [style.color]="d.isPassed ? '#15803d' : '#dc2626'">
+                    {{ Math.round(d.percentage) }}%
+                  </div>
+                  <div class="qatt-summary-label">{{ t('teacherQuizAttempts.score') }}</div>
+                </div>
+                <div class="qatt-summary-item" style="background: #f0f3fa">
+                  <div class="qatt-summary-val" style="color: #1a2342">{{ d.score }}/{{ d.maxScore }}</div>
+                  <div class="qatt-summary-label">{{ t('teacherQuizAttempts.points') }}</div>
+                </div>
+                <div class="qatt-summary-item" style="background: #dcfce7">
+                  <div class="qatt-summary-val" style="color: #15803d">{{ correct }}</div>
+                  <div class="qatt-summary-label">{{ t('teacherQuizAttempts.correct_answers') }}</div>
+                </div>
+                <div class="qatt-summary-item" style="background: #fee2e2">
+                  <div class="qatt-summary-val" style="color: #dc2626">{{ wrong }}</div>
+                  <div class="qatt-summary-label">{{ t('teacherQuizAttempts.wrong_answers') }}</div>
+                </div>
+                <div class="qatt-summary-item" style="background: #ecfeff">
+                  <div class="qatt-summary-val" style="color: #0891b2">{{ fmtTime(d.timeSpentSeconds) }}</div>
+                  <div class="qatt-summary-label">{{ t('teacherQuizAttempts.time_spent') }}</div>
+                </div>
+              </div>
+              <nz-progress
+                [nzPercent]="Math.round(d.percentage)"
+                [nzStrokeColor]="d.isPassed ? '#27ae60' : '#ff4d4f'"
+                nzStrokeColor="#eaecf5"
+                nzSize="small">
+              </nz-progress>
+              <div class="qatt-summary-tags">
+                <span [class]="d.isPassed ? 'qatt-badge-pass' : 'qatt-badge-fail'" style="font-size: 12px">
+                  @if (d.isPassed) {
+                    <lucide-icon [img]="CheckIcon" [size]="12"></lucide-icon>
+                    {{ t('teacherQuizAttempts.passed') }}
+                  } @else {
+                    <lucide-icon [img]="XIcon" [size]="12"></lucide-icon>
+                    {{ t('teacherQuizAttempts.failed') }}
+                  }
+                </span>
+                <nz-tag style="border-radius: 6px; font-size: 11px">
+                  <lucide-icon [img]="ClockIcon" [size]="12" style="margin-right: 4px"></lucide-icon>
+                  {{ fmtDateTime(d.completedAt) }}
+                </nz-tag>
+                <nz-tag style="border-radius: 6px; font-size: 11px">
+                  {{ t('teacherQuizAttempts.passing_threshold') }}: {{ quiz()?.passingScore }}%
+                </nz-tag>
+              </div>
+            </div>
+
+            <!-- Questions -->
+            <div class="qatt-questions">
+              <div class="qatt-questions-header">
+                {{ t('teacherQuizAttempts.question_results') }} ({{ d.questionResults.length }})
+              </div>
+              @for (qr of d.questionResults; track qr.questionId; let idx = $index) {
+                <div class="qatt-q-block" [class]="getQuestionBlockClass(qr)">
+                  <!-- Question Header -->
+                  <div class="qatt-q-header">
+                    <div class="qatt-q-status"
+                      [ngStyle]="{
+                        background: isManualGrade(qr.type) && qr.pointsEarned === 0 && !qr.isCorrect ? '#f0f3fa' :
+                          qr.isCorrect ? '#dcfce7' : isPartial(qr) ? '#fef9c3' : '#fee2e2',
+                        color: isManualGrade(qr.type) && qr.pointsEarned === 0 && !qr.isCorrect ? '#8a94b2' :
+                          qr.isCorrect ? '#15803d' : isPartial(qr) ? '#a16207' : '#dc2626'
+                      }">
+                      @if (isManualGrade(qr.type) && qr.pointsEarned === 0 && !qr.isCorrect) {
+                        <lucide-icon [img]="HelpCircleIcon" [size]="13"></lucide-icon>
+                      } @else if (qr.isCorrect) {
+                        <lucide-icon [img]="CheckIcon" [size]="13"></lucide-icon>
+                      } @else if (isPartial(qr)) {
+                        ~
+                      } @else {
+                        <lucide-icon [img]="XIcon" [size]="13"></lucide-icon>
+                      }
+                    </div>
+                    <div class="qatt-q-meta">
+                      <div class="qatt-q-badges">
+                        <span class="qatt-q-num">Q{{ idx + 1 }}</span>
+                        <nz-tag [nzColor]="getTypeColor(qr.type)" style="font-size: 10px; border-radius: 5px; margin: 0">
+                          {{ getTypeLabel(qr.type) }}
+                        </nz-tag>
+                        <span class="qatt-q-points"
+                          [style.color]="qr.isCorrect ? '#15803d' : isPartial(qr) ? '#a16207' : isManualGrade(qr.type) && qr.pointsEarned === 0 && !qr.isCorrect ? '#8a94b2' : '#dc2626'">
+                          {{ qr.pointsEarned }}/{{ qr.maxPoints }} pts
+                        </span>
+                      </div>
+                      <div class="qatt-q-text">{{ qr.questionText }}</div>
+                    </div>
+                  </div>
+
+                  <!-- Matching -->
+                  @if (getTypeStr(qr.type) === 'Matching') {
+                    @let matchingData = parseMatchingAnswers(qr.correctAnswers);
+                    @let userMap = buildUserMatchingMap(qr.userAnswers);
+                    @if (matchingData) {
+                      <div class="qatt-q-matching">
+                        <div class="qatt-matching-label">{{ t('teacherQuizAttempts.answer_pairs') }}</div>
+                        @for (aText of matchingData.colA; track $index; let aIdx = $index) {
+                          @let bIdx = matchingData.map[aIdx];
+                          @let correctB = matchingData.colB[bIdx];
+                          @let userB = userMap[aText];
+                          @let pairCorrect = userB && correctB && userB.toLowerCase() === correctB.toLowerCase();
+                          <div class="qatt-matching-pair" [class.pair-correct]="pairCorrect" [class.pair-wrong]="!pairCorrect">
+                            <div class="qatt-matching-text">{{ aText }}</div>
+                            <div class="qatt-matching-icon">
+                              @if (pairCorrect) {
+                                <lucide-icon [img]="CheckIcon" [size]="12" style="color: #15803d"></lucide-icon>
+                              } @else {
+                                <lucide-icon [img]="XIcon" [size]="12" style="color: #dc2626"></lucide-icon>
+                              }
+                            </div>
+                            <div class="qatt-matching-answer">
+                              @if (userB) {
+                                <span [style.color]="pairCorrect ? '#15803d' : '#dc2626'">{{ userB }}</span>
+                              } @else {
+                                <span style="color: #8a94b2; font-style: italic">—</span>
+                              }
+                              @if (!pairCorrect && correctB) {
+                                <span class="qatt-matching-expected">({{ t('teacherQuizAttempts.expected') }}: {{ correctB }})</span>
+                              }
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    }
+                  }
+
+                  <!-- Multiple Choice / TrueFalse -->
+                  @if (['MultipleChoice', 'MultipleCorrect', 'TrueFalse'].includes(getTypeStr(qr.type)) && (qr.options?.length ?? 0) > 0) {
+                    <div class="qatt-q-options">
+                      @for (o of qr.options; track o.id) {
+                        @let userPicked = qr.userAnswers.some(a => a.toLowerCase() === o.optionText.toLowerCase() || a === o.id);
+                        @let isOptCorrect = o.isCorrect;
+                        @let optBg = userPicked && isOptCorrect ? '#dcfce7' : userPicked && !isOptCorrect ? '#fee2e2' : !userPicked && isOptCorrect ? '#dbeafe' : '#fafbff';
+                        @let optBorder = userPicked && isOptCorrect ? '#86efac' : userPicked && !isOptCorrect ? '#fca5a5' : !userPicked && isOptCorrect ? '#93c5fd' : '#eaecf5';
+                        @let optTxt = userPicked && isOptCorrect ? '#15803d' : userPicked && !isOptCorrect ? '#dc2626' : !userPicked && isOptCorrect ? '#1d4ed8' : '#3a3f5c';
+                        <div class="qatt-option" [ngStyle]="{ background: optBg, borderColor: optBorder }">
+                          @if (userPicked && isOptCorrect) {
+                            <lucide-icon [img]="CheckIcon" [size]="12" style="color: #15803d"></lucide-icon>
+                          } @else if (userPicked && !isOptCorrect) {
+                            <lucide-icon [img]="XIcon" [size]="12" style="color: #dc2626"></lucide-icon>
+                          } @else if (isOptCorrect) {
+                            <lucide-icon [img]="CheckCircleIcon" [size]="12" style="color: #1d4ed8"></lucide-icon>
+                          } @else {
+                            <div style="width: 12px"></div>
+                          }
+                          <span [ngStyle]="{ color: optTxt, fontWeight: (userPicked || isOptCorrect) ? 600 : 400 }">{{ o.optionText }}</span>
+                          @if (userPicked) {
+                            <nz-tag [nzColor]="isOptCorrect ? 'success' : 'error'" style="font-size: 10px; margin: 0 0 0 auto">
+                              {{ isOptCorrect ? t('teacherQuizAttempts.your_answer') : t('teacherQuizAttempts.wrong') }}
+                            </nz-tag>
+                          } @else if (isOptCorrect) {
+                            <nz-tag nzColor="blue" style="font-size: 10px; margin: 0 0 0 auto">
+                              {{ t('teacherQuizAttempts.correct_answer') }}
+                            </nz-tag>
+                          }
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  <!-- Short Answer / Fill Blank / Definition -->
+                  @if (['ShortAnswer', 'FillBlank', 'Definition'].includes(getTypeStr(qr.type))) {
+                    <div class="qatt-q-answers">
+                      <div>
+                        <div class="qatt-answer-label">{{ t('teacherQuizAttempts.your_answer') }}</div>
+                        <span class="qatt-answer-chip"
+                          [class.user-correct]="qr.isCorrect"
+                          [class.user-wrong]="!qr.isCorrect && !isPartial(qr)"
+                          [class.user-partial]="isPartial(qr)">
+                          {{ qr.userAnswers[0] || ('teacherQuizAttempts.no_answer' | transloco) }}
+                        </span>
+                      </div>
+                      @if (!qr.isCorrect && qr.correctAnswers[0]) {
+                        <div>
+                          <div class="qatt-answer-label">{{ t('teacherQuizAttempts.correct_answer') }}</div>
+                          <span class="qatt-answer-chip expected">{{ qr.correctAnswers[0] }}</span>
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  <!-- Essay / Long Answer -->
+                  @if (['Essay', 'LongAnswer'].includes(getTypeStr(qr.type))) {
+                    <div class="qatt-q-essay">
+                      <div class="qatt-answer-label">{{ t('teacherQuizAttempts.student_response') }}</div>
+                      <div class="qatt-essay-text" [class.empty]="!qr.userAnswers[0]">
+                        {{ qr.userAnswers[0] || t('teacherQuizAttempts.no_answer') }}
+                      </div>
+                      @if (qr.correctAnswers[0]) {
+                        <div style="margin-top: 10px">
+                          <div class="qatt-answer-label">{{ t('teacherQuizAttempts.grading_rubric') }}</div>
+                          <div class="qatt-rubric">{{ qr.correctAnswers[0] }}</div>
+                        </div>
+                      }
+                      <div style="margin-top: 8px">
+                        <nz-tag nzColor="warning" style="font-size: 11px">{{ t('teacherQuizAttempts.pending_manual_grading') }}</nz-tag>
+                      </div>
+                    </div>
+                  }
+
+                  <!-- Explanation -->
+                  @if (qr.explanation && !['Essay', 'LongAnswer'].includes(getTypeStr(qr.type))) {
+                    <div class="qatt-explanation">{{ qr.explanation }}</div>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </ng-container>
+      </nz-modal>
+
+    </div>
+  }
+
+</ng-container>

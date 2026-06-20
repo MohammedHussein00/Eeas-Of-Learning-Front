@@ -1,0 +1,321 @@
+<ng-container *transloco="let t; scope: 'teacherNotifications'">
+
+  <div class="tnb-container">
+
+    <!-- ══ Header ══ -->
+    <header class="tnb-header">
+      <div class="tnb-header-left">
+        <button class="tnb-back-btn" (click)="goBack()">
+          <lucide-icon [img]="ArrowLeftIcon" [size]="16"></lucide-icon>
+          <span class="tnb-back-label">{{ t('back_to_dashboard') }}</span>
+        </button>
+        <div class="tnb-header-divider"></div>
+        <div class="tnb-header-info">
+          <h1 class="tnb-header-title">{{ t('notifications') }}</h1>
+          <p class="tnb-header-sub">{{ t('manage_notifications') }}</p>
+        </div>
+      </div>
+
+      <div class="tnb-header-right">
+        @if (hasUnread()) {
+          <button class="tnb-btn" (click)="markAllRead()">
+            <lucide-icon [img]="ReadIcon" [size]="14"></lucide-icon>
+            <span class="tnb-btn-label">{{ t('mark_all_read') }}</span>
+          </button>
+        }
+        <button class="tnb-btn tnb-btn-icon-only" (click)="onRefresh()">
+          <lucide-icon [img]="RefreshIcon" [size]="16"></lucide-icon>
+        </button>
+      </div>
+    </header>
+
+    <div class="tnb-body">
+
+      <!-- ══ Stat Cards ══ -->
+      <div class="tnb-stats-row">
+        @for (stat of stats(); track stat.label) {
+          <div class="tnb-stat-card">
+            <div class="tnb-stat-icon" [style.background]="stat.bg" [style.color]="stat.color">
+              <lucide-icon [img]="stat.icon" [size]="22"></lucide-icon>
+            </div>
+            <div class="tnb-stat-text">
+              <div class="tnb-stat-value" [style.color]="stat.color">{{ stat.value }}</div>
+              <div class="tnb-stat-label">{{ stat.label }}</div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- ══ Filter Bar ══ -->
+      <div class="tnb-filter-bar">
+        <div class="tnb-filter-tabs">
+          <button
+            class="tnb-filter-btn"
+            [class.active]="filter() === 'all'"
+            (click)="filter.set('all')">
+            {{ t('all') }} ({{ totalCounts().total }})
+          </button>
+          <button
+            class="tnb-filter-btn"
+            [class.active]="filter() === 'unread'"
+            (click)="filter.set('unread')">
+            {{ t('unread') }} ({{ totalCounts().unread }})
+          </button>
+          <button
+            class="tnb-filter-btn"
+            [class.active]="filter() === 'read'"
+            (click)="filter.set('read')">
+            {{ t('read') }} ({{ totalCounts().read }})
+          </button>
+        </div>
+
+        @if (hasRead()) {
+          <button class="tnb-btn tnb-btn-danger" (click)="deleteAllRead()">
+            <lucide-icon [img]="DeleteIcon" [size]="13"></lucide-icon>
+            {{ t('delete_all_read') }}
+          </button>
+        }
+      </div>
+
+      <!-- ══ Notification List ══ -->
+      <div class="tnb-notification-list">
+
+        <!-- Loading -->
+        @if (loading()) {
+          <div class="tnb-loading">
+            <nz-spin nzSize="large"></nz-spin>
+            <p class="tnb-loading-text">{{ t('loading_notifications') }}</p>
+          </div>
+        }
+
+        <!-- Empty -->
+        @else if (filteredNotifications().length === 0) {
+          <div class="tnb-empty">
+            <nz-empty [nzNotFoundContent]="emptyContent"></nz-empty>
+            <ng-template #emptyContent>
+              <div class="tnb-empty-content">
+                <div class="tnb-empty-icon">
+                  <lucide-icon [img]="BellIcon" [size]="48"></lucide-icon>
+                </div>
+                <p class="tnb-empty-title">
+                  @if (filter() === 'unread') {
+                    {{ t('no_unread_notifications') }}
+                  } @else if (filter() === 'read') {
+                    {{ t('no_read_notifications') }}
+                  } @else {
+                    {{ t('no_notifications') }}
+                  }
+                </p>
+                <div class="tnb-empty-actions">
+                  @if (filter() !== 'all') {
+                    <button class="tnb-btn tnb-btn-primary" (click)="filter.set('all')">
+                      {{ t('view_all_notifications') }}
+                    </button>
+                  }
+                  <button class="tnb-btn" (click)="onRefresh()">
+                    {{ t('refresh') }}
+                  </button>
+                </div>
+              </div>
+            </ng-template>
+          </div>
+        }
+
+        <!-- List -->
+        @else {
+          @for (notification of filteredNotifications(); track notification.id) {
+            <div
+              class="tnb-notification-item"
+              [class.unread]="!notification.isRead"
+              (click)="openDetail(notification)">
+              
+              <!-- Icon -->
+              <div class="tnb-notification-avatar">
+                <lucide-icon
+                  [img]="BellIcon"
+                  [size]="18"
+                  [style.color]="notification.isRead ? '#8c8c8c' : '#1890ff'">
+                </lucide-icon>
+              </div>
+
+              <!-- Content -->
+              <div class="tnb-notification-content">
+                <div class="tnb-notification-title">{{ notification.title }}</div>
+                <div class="tnb-notification-body">{{ notification.body }}</div>
+                <div class="tnb-notification-meta">
+                  <span class="tnb-notification-time">
+                    <lucide-icon [img]="ClockIcon" [size]="11"></lucide-icon>
+                    {{ formatTime(notification.createdAt) }}
+                  </span>
+                  @if (notification.priority) {
+                    <nz-tag [nzColor]="priorityColor(notification.priority)">
+                      {{ notification.priority }}
+                    </nz-tag>
+                  }
+                  @if (getRedirectPath(notification)) {
+                    <nz-tag nzColor="purple">
+                      <lucide-icon [img]="GlobeIcon" [size]="9"></lucide-icon>
+                      Web
+                    </nz-tag>
+                  }
+                  <span class="tnb-channel-icons">
+                    @if (notification.isPushSent) {
+                      <lucide-icon [img]="PhoneIcon" [size]="10" nz-tooltip="Push"></lucide-icon>
+                    }
+                    @if (notification.isEmailSent) {
+                      <lucide-icon [img]="MailIcon" [size]="10" nz-tooltip="Email"></lucide-icon>
+                    }
+                    @if (notification.isSmsSent) {
+                      <lucide-icon [img]="MessageIcon" [size]="10" nz-tooltip="SMS"></lucide-icon>
+                    }
+                  </span>
+                </div>
+              </div>
+
+              <!-- Actions -->
+              <div class="tnb-notification-actions" (click)="$event.stopPropagation()">
+                <button
+                  class="tnb-icon-btn"
+                  [nz-tooltip]="t('view_details')"
+                  (click)="openDetail(notification)">
+                  <lucide-icon [img]="EyeIcon" [size]="13"></lucide-icon>
+                </button>
+                @if (!notification.isRead) {
+                  <button
+                    class="tnb-icon-btn"
+                    [nz-tooltip]="t('mark_as_read')"
+                    (click)="markAsRead(notification.id)">
+                    <lucide-icon [img]="CheckIcon" [size]="13"></lucide-icon>
+                  </button>
+                }
+                <button
+                  class="tnb-icon-btn danger"
+                  [nz-tooltip]="t('delete')"
+                  (click)="openDeleteModal(notification.id)">
+                  <lucide-icon [img]="DeleteIcon" [size]="13"></lucide-icon>
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- Pagination -->
+          @if (pagination().total > pagination().pageSize) {
+            <div class="tnb-pagination">
+              <nz-pagination
+                [nzPageIndex]="pagination().current"
+                [nzPageSize]="pagination().pageSize"
+                [nzTotal]="pagination().total"
+                [nzShowSizeChanger]="true"
+                [nzShowQuickJumper]="true"
+                [nzShowTotal]="totalTemplate"
+                (nzPageIndexChange)="onPageChange($event)"
+                (nzPageSizeChange)="onPageSizeChange($event)">
+              </nz-pagination>
+              <ng-template #totalTemplate let-total>
+                {{ total }} {{ t('notifications') }}
+              </ng-template>
+            </div>
+          }
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Detail Modal ══ -->
+  <nz-modal
+    [nzVisible]="detailModalVisible()"
+    [nzWidth]="500"
+    nzCentered
+    [nzTitle]="detailTitle"
+    [nzFooter]="null"
+    (nzOnCancel)="closeDetail()"
+    nzClassName="tnb-modal">
+
+    <ng-template #detailTitle>
+      @if (selectedNotification(); as n) {
+        <div class="tnb-detail-header">
+          <div class="tnb-detail-icon" [class.read]="n.isRead">
+            <lucide-icon [img]="BellIcon" [size]="20" color="#1890ff"></lucide-icon>
+          </div>
+          <div class="tnb-detail-title-wrap">
+            <div class="tnb-detail-title">{{ n.title }}</div>
+            <div class="tnb-detail-tags">
+              <nz-tag [nzColor]="n.isRead ? 'default' : 'processing'">
+                {{ n.isRead ? t('read') : t('unread') }}
+              </nz-tag>
+              @if (n.priority) {
+                <nz-tag [nzColor]="priorityColor(n.priority)">{{ n.priority }}</nz-tag>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </ng-template>
+
+    <ng-container *nzModalContent>
+      @if (selectedNotification(); as n) {
+        <div class="tnb-detail-body">
+          <p class="tnb-detail-text">{{ n.body }}</p>
+        </div>
+
+        <div class="tnb-detail-meta-box">
+          <div class="tnb-detail-time">
+            <lucide-icon [img]="ClockIcon" [size]="13"></lucide-icon>
+            {{ formatDateTime(n.createdAt) }}
+            <span class="tnb-detail-relative">({{ formatTime(n.createdAt) }})</span>
+          </div>
+          <div class="tnb-detail-channels">
+            @if (n.isPushSent) {
+              <nz-tag><lucide-icon [img]="PhoneIcon" [size]="9"></lucide-icon> Push</nz-tag>
+            }
+            @if (n.isEmailSent) {
+              <nz-tag><lucide-icon [img]="MailIcon" [size]="9"></lucide-icon> Email</nz-tag>
+            }
+            @if (n.isSmsSent) {
+              <nz-tag><lucide-icon [img]="MessageIcon" [size]="9"></lucide-icon> SMS</nz-tag>
+            }
+          </div>
+        </div>
+
+        @if (getRedirectPath(n)) {
+          <div class="tnb-navigate-section">
+            <button class="tnb-navigate-btn" (click)="navigateToRedirect(n)">
+              <lucide-icon [img]="GlobeIcon" [size]="14"></lucide-icon>
+              {{ t('navigate') }}
+            </button>
+          </div>
+        }
+
+        <div class="tnb-detail-footer">
+          @if (!n.isRead) {
+            <button class="tnb-btn tnb-btn-primary" (click)="handleMarkReadInDetail(n.id)">
+              <lucide-icon [img]="CheckIcon" [size]="13"></lucide-icon>
+              {{ t('mark_as_read') }}
+            </button>
+          }
+          <button class="tnb-btn tnb-btn-danger" (click)="handleDeleteInDetail(n.id)">
+            <lucide-icon [img]="DeleteIcon" [size]="13"></lucide-icon>
+            {{ t('delete') }}
+          </button>
+          <button class="tnb-btn" (click)="closeDetail()">
+            {{ t('close') }}
+          </button>
+        </div>
+      }
+    </ng-container>
+  </nz-modal>
+
+  <!-- ══ Delete Confirmation Modal ══ -->
+  <nz-modal
+    [nzVisible]="deleteModalVisible()"
+    [nzTitle]="t('delete_notification_title')"
+    [nzOkText]="t('delete')"
+    [nzCancelText]="t('cancel')"
+    [nzOkDanger]="true"
+    (nzOnOk)="deleteNotification()"
+    (nzOnCancel)="closeDeleteModal()"
+    nzClassName="tnb-modal">
+    <p>{{ t('delete_notification_confirm') }}</p>
+  </nz-modal>
+
+</ng-container>

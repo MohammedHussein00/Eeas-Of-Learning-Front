@@ -1,0 +1,703 @@
+<ng-container *transloco="let t; scope: 'teacherPrivateChat'">
+
+  <!-- ══ Loading ══ -->
+  @if (loading()) {
+    <div class="tcp-center-screen">
+      <nz-spin nzSize="large"></nz-spin>
+      <p class="tcp-loading-text">{{ t('teacherPrivateChat.loading_conversations') }}</p>
+    </div>
+  } @else {
+
+  <div class="tcp-root">
+
+    <!-- ══ Header ══ -->
+    <header class="tcp-header">
+      <div class="tcp-header-left">
+        <button class="tcp-icon-btn tcp-mobile-only" (click)="siderOpen.set(!siderOpen())">
+          <lucide-icon [img]="MenuIcon" [size]="18"></lucide-icon>
+        </button>
+        <button class="tcp-back-btn" (click)="router.navigate(['/teacher'])">
+          <lucide-icon [img]="ArrowLeftIcon" [size]="16"></lucide-icon>
+          <span class="tcp-back-label">{{ t('teacherPrivateChat.back') }}</span>
+        </button>
+        <div class="tcp-header-divider"></div>
+        <div>
+          <p class="tcp-header-title">{{ t('teacherPrivateChat.private_messages') }}</p>
+          <p class="tcp-header-sub">{{ t('teacherPrivateChat.page_subtitle') }}</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- ══ Body ══ -->
+    <div class="tcp-body">
+
+      <!-- Overlay for mobile sidebar -->
+      @if (siderOpen()) {
+        <div class="tcp-sider-overlay visible" (click)="siderOpen.set(false)"></div>
+      }
+
+      <!-- ── Sidebar ── -->
+      <aside class="tcp-sider" [class.open]="siderOpen()">
+        <div class="tcp-sider-header">
+          <div class="tcp-sider-title">
+            <lucide-icon [img]="MessageSquareIcon" [size]="14" style="color:var(--brand)"></lucide-icon>
+            {{ t('teacherPrivateChat.conversations') }}
+            <nz-badge [nzCount]="conversations().length" [nzStyle]="{ backgroundColor: 'var(--brand)' }"></nz-badge>
+          </div>
+          <button class="tcp-icon-btn tcp-mobile-only" (click)="siderOpen.set(false)">
+            <lucide-icon [img]="XIcon" [size]="16"></lucide-icon>
+          </button>
+        </div>
+
+        <div class="tcp-conv-list">
+          @if (conversations().length === 0) {
+            <div class="tcp-conv-empty">
+              <nz-empty nzNotFoundImage="simple"
+                [nzNotFoundContent]="t('teacherPrivateChat.no_conversations')">
+              </nz-empty>
+            </div>
+          } @else {
+            @for (conv of conversations(); track conv.id) {
+              <div
+                class="tcp-conv-item"
+                [class.active]="activeConv()?.id === conv.id"
+                (click)="selectConv(conv)">
+                <div class="tcp-conv-avatar">{{ avatarLetter(conv.otherPartyName) }}</div>
+                <div class="tcp-conv-info">
+                  <div class="tcp-conv-name">{{ conv.otherPartyName }}</div>
+                  <div class="tcp-conv-sub">
+                    {{ (conv.lastMessage ?? '') | slice:0:40 }}{{ (conv.lastMessage?.length ?? 0) > 40 ? '…' : '' }}
+                  </div>
+                </div>
+                @if (conv.unreadCount > 0) {
+                  <nz-badge
+                    [nzCount]="conv.unreadCount"
+                    [nzStyle]="{ backgroundColor: 'var(--brand)' }"
+                    class="tcp-conv-badge">
+                  </nz-badge>
+                }
+              </div>
+            }
+          }
+        </div>
+      </aside>
+
+      <!-- ── Chat Panel ── -->
+      <div class="tcp-content">
+
+        @if (!activeConv()) {
+          <!-- Empty state -->
+          <div class="tcp-empty-state">
+            <div class="tcp-empty-icon">💬</div>
+            <div class="tcp-empty-title">{{ t('teacherPrivateChat.select_conversation') }}</div>
+            <div class="tcp-empty-sub">{{ t('teacherPrivateChat.select_conversation_hint') }}</div>
+          </div>
+
+        } @else {
+
+          <!-- Chat header -->
+          <div class="tcp-chat-header">
+            <div class="tcp-chat-header-left">
+              <button class="tcp-icon-btn tcp-mobile-only" (click)="siderOpen.set(true)">
+                <lucide-icon [img]="ArrowLeftIcon" [size]="16"></lucide-icon>
+              </button>
+              <div class="tcp-conv-avatar tcp-conv-avatar-sm">
+                {{ avatarLetter(activeConv()!.otherPartyName) }}
+              </div>
+              <div style="min-width:0">
+                <div class="tcp-chat-name">{{ activeConv()!.otherPartyName }}</div>
+                <div class="tcp-chat-sub">
+                  {{ activeConv()!.id ? activeConv()!.otherPartyRole : t('teacherPrivateChat.new_conversation') }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Error banner ── -->
+          @if (errorMessage()) {
+            <div class="tcp-banner tcp-banner-danger">
+              <lucide-icon [img]="AlertCircleIcon" [size]="14"></lucide-icon>
+              <span style="flex:1">{{ errorMessage() }}</span>
+              <button class="tcp-icon-btn" style="color:inherit;margin-left:8px" (click)="errorMessage.set(null)">
+                <lucide-icon [img]="XIcon" [size]="13"></lucide-icon>
+              </button>
+            </div>
+          }
+
+          <!-- Messages wrapper -->
+          <div class="tcp-messages-wrapper">
+            <div
+              class="tcp-messages"
+              #messagesContainer
+              (scroll)="onScroll()">
+
+              @if (!activeConv()!.id) {
+                <!-- New conversation placeholder -->
+                <div class="tcp-msgs-empty">
+                  <div style="font-size:36px;margin-bottom:12px">👋</div>
+                  <div class="tcp-msgs-empty-title">{{ t('teacherPrivateChat.start_conversation') }}</div>
+                  <div class="tcp-msgs-empty-sub">
+                    {{ t('teacherPrivateChat.start_conversation_hint') }} {{ activeConv()!.otherPartyName }}
+                  </div>
+                </div>
+
+              } @else if (messagesLoading()) {
+                <div class="tcp-load-more-indicator">
+                  <nz-spin nzSize="small"></nz-spin>
+                  <span>{{ t('teacherPrivateChat.loading_messages') }}</span>
+                </div>
+
+              } @else if (messages().length === 0) {
+                <div class="tcp-msgs-empty">
+                  <div style="font-size:36px;margin-bottom:12px">👋</div>
+                  <div class="tcp-msgs-empty-title">{{ t('teacherPrivateChat.no_messages') }}</div>
+                  <div class="tcp-msgs-empty-sub">{{ t('teacherPrivateChat.start_the_conversation') }}</div>
+                </div>
+
+              } @else {
+                <!-- Date groups -->
+                @for (item of groupedMessages(); track item.key) {
+
+                  @if (item.type === 'separator') {
+                    <div class="tcp-date-sep">{{ item.label }}</div>
+                  }
+
+                  @if (item.type === 'message') {
+                    <!-- Deleted message -->
+                    @if (item.msg!.isDeleted) {
+                      <div class="tcp-msg deleted">
+                        <span class="tcp-deleted-text">{{ t('teacherPrivateChat.message_deleted') }}</span>
+                      </div>
+                    }
+
+                    <!-- Normal message -->
+                    @if (!item.msg!.isDeleted) {
+                      <div
+                        class="tcp-msg"
+                        [class.me]="isOwn(item.msg!)"
+                        [class.other]="!isOwn(item.msg!)"
+                        [class.pending]="item.msg!._pending"
+                        [class.failed]="item.msg!._failed"
+                        [attr.data-msg-id]="item.msg!.id">
+
+                        <!-- Avatar (other party only) -->
+                        @if (!isOwn(item.msg!)) {
+                          <nz-avatar
+                            [nzSize]="34"
+                            [nzSrc]="item.msg!.senderAvatar ? buildUrl('/' + item.msg!.senderAvatar) : ''"
+                            [nzText]="avatarLetter(item.msg!.senderName)"
+                            [ngStyle]="{ 'flex-shrink': '0', background: 'linear-gradient(135deg,#3d5af1,#5b78ff)' }">
+                          </nz-avatar>
+                        }
+
+                        <div class="tcp-msg-body">
+
+                          <!-- Reply preview -->
+                          @if (item.msg!.replyTo) {
+                            <div class="tcp-msg-reply">
+                              <div class="tcp-msg-reply-name">{{ item.msg!.replyTo.senderName }}</div>
+                              <div class="tcp-msg-reply-content">{{ item.msg!.replyTo.content ?? '[file]' }}</div>
+                            </div>
+                          }
+
+                          <!-- Bubble -->
+                          <div class="tcp-msg-bubble">
+
+                            <!-- File type badge (only for non-image / non-audio files) -->
+                            <ng-container *ngIf="getFileTypeBadge(item.msg!) as badge">
+                              <div class="tcp-file-badge"
+                                [style.background]="badge.bg"
+                                [style.color]="badge.color">
+                                @if (badge.icon) {
+                                  <lucide-icon [img]="badge.icon" [size]="12"></lucide-icon>
+                                }
+                                <span>{{ badge.label }}</span>
+                              </div>
+                            </ng-container>
+
+                            <!-- Image -->
+                            @if (item.msg!.contentType === CT.Image && item.msg!.attachmentUrl) {
+                              <img
+                                [src]="item.msg!._pending ? item.msg!.attachmentUrl : buildUrl(item.msg!.attachmentUrl)"
+                                [alt]="item.msg!.attachmentName || ''"
+                                class="tcp-msg-image tcp-msg-image-clickable"
+                                (click)="openImagePreview(item.msg!)" />
+                            }
+
+                            <!-- Audio / Voice -->
+                            @if (item.msg!.contentType === CT.Audio && item.msg!.attachmentUrl) {
+                              <div class="tcp-msg-audio">
+                                <lucide-icon [img]="AudioIcon" [size]="16"
+                                  [style.color]="isOwn(item.msg!) ? '#fff' : 'var(--brand)'">
+                                </lucide-icon>
+                                <audio controls
+                                  [attr.src]="buildUrl(item.msg!.attachmentUrl)"
+                                  style="height:32px;flex:1"
+                                  preload="metadata">
+                                </audio>
+                              </div>
+                            }
+
+                            <!-- File (WhatsApp-style card) -->
+                            @if (item.msg!.contentType === CT.File && item.msg!.attachmentName) {
+                              <div
+                                class="tcp-file-card"
+                                [class.clickable]="!!item.msg!.attachmentUrl"
+                                [class.pending]="!item.msg!.attachmentUrl"
+                                (click)="item.msg!.attachmentUrl ? downloadFile(item.msg!) : null">
+                                <div class="tcp-file-card-icon"
+                                  [style.background]="getFilePreviewColor(item.msg!).bg">
+                                  <lucide-icon
+                                    [img]="getFilePreviewIcon(item.msg!)"
+                                    [size]="22"
+                                    [style.color]="getFilePreviewColor(item.msg!).color">
+                                  </lucide-icon>
+                                </div>
+                                <div class="tcp-file-card-info">
+                                  <div class="tcp-file-card-name" [title]="item.msg!.attachmentName">
+                                    {{ item.msg!.attachmentName }}
+                                  </div>
+                                  <div class="tcp-file-card-meta">
+                                    @if (item.msg!.attachmentSize) {
+                                      <span class="tcp-file-card-size">{{ item.msg!.attachmentSize }}</span>
+                                    }
+                                    <span class="tcp-file-card-ext">{{ getFileExt(item.msg!.attachmentName) }}</span>
+                                  </div>
+                                </div>
+                                @if (item.msg!.attachmentUrl) {
+                                  <div class="tcp-file-card-arrow">
+                                    <lucide-icon [img]="DownloadIcon" [size]="16"
+                                      [style.color]="isOwn(item.msg!) ? 'rgba(255,255,255,.7)' : 'var(--text-3)'">
+                                    </lucide-icon>
+                                  </div>
+                                }
+                                @if (!item.msg!.attachmentUrl) {
+                                  <div class="tcp-file-card-pending">
+                                    <nz-spin nzSize="small"></nz-spin>
+                                  </div>
+                                }
+                              </div>
+                            }
+
+                            <!-- Text -->
+                            @if (item.msg!.message) {
+                              <span [style.color]="isOwn(item.msg!) ? '#fff' : '#1a2342'">
+                                {{ item.msg!.message }}
+                              </span>
+                            }
+
+                          </div><!-- /tcp-msg-bubble -->
+
+                          <!-- Send status (own messages only) -->
+                          @if (isOwn(item.msg!)) {
+                            <div class="tcp-msg-status">
+                              @if (item.msg!._pending && !item.msg!._failed) {
+                                <span class="tcp-status-chip tcp-status-pending"
+                                  nz-tooltip [nzTooltipTitle]="t('teacherPrivateChat.sending')">
+                                  <lucide-icon [img]="ClockIcon" [size]="12"></lucide-icon>
+                                  <span class="tcp-status-label">{{ t('teacherPrivateChat.sending') }}</span>
+                                </span>
+                              }
+                              @if (item.msg!._failed) {
+                                <span class="tcp-status-chip tcp-status-failed"
+                                  (click)="retryMessage(item.msg!)"
+                                  nz-tooltip [nzTooltipTitle]="t('teacherPrivateChat.tap_to_retry')">
+                                  <lucide-icon [img]="XCircleIcon" [size]="12"></lucide-icon>
+                                  <span class="tcp-status-label">
+                                    {{ t('teacherPrivateChat.failed') }} · {{ t('teacherPrivateChat.tap_to_retry') }}
+                                  </span>
+                                </span>
+                              }
+                              @if (!item.msg!._pending && !item.msg!._failed) {
+                                <span class="tcp-status-chip tcp-status-sent"
+                                  nz-tooltip [nzTooltipTitle]="t('teacherPrivateChat.sent')">
+                                  <lucide-icon [img]="CheckCheckIcon" [size]="12"></lucide-icon>
+                                </span>
+                              }
+                            </div>
+                          }
+
+                          <!-- Reactions -->
+                          @if (item.msg!._reactionGroups && item.msg!._reactionGroups!.length > 0) {
+                            <div class="tcp-msg-reactions">
+                              @for (g of item.msg!._reactionGroups!; track g.emoji) {
+                                <nz-tag
+                                  nz-popover
+                                  [nzPopoverContent]="reactionPopTpl"
+                                  nzPopoverTrigger="click"
+                                  nzPopoverPlacement="top"
+                                  style="cursor:pointer;border-radius:12px;font-size:12px"
+                                  [style.background]="g.myReaction ? '#3d5af1' : ''"
+                                  [style.color]="g.myReaction ? '#fff' : ''"
+                                  [style.border-color]="g.myReaction ? '#3d5af1' : ''">
+                                  {{ g.emoji }} {{ g.count }}
+                                </nz-tag>
+                                <ng-template #reactionPopTpl>
+                                  <div class="tcp-react-pop">
+                                    <div class="tcp-react-pop-title">
+                                      {{ g.emoji }} {{ g.count }} reaction{{ g.count !== 1 ? 's' : '' }}
+                                    </div>
+                                    @for (r of g.reactors; track r.userId) {
+                                      <div class="tcp-react-user-row">
+                                        <nz-avatar
+                                          [nzSrc]="r.profileImageUrl || undefined"
+                                          [nzText]="r.userName?.charAt(0)"
+                                          [nzSize]="22">
+                                        </nz-avatar>
+                                        <span [class.tcp-react-me]="isSameUser(r.userId)">
+                                          {{ isSameUser(r.userId) ? t('teacherPrivateChat.you') : r.userName }}
+                                        </span>
+                                      </div>
+                                    }
+                                    @if (g.myReaction) {
+                                      <button class="tcp-react-remove-btn"
+                                        (click)="removeReaction(item.msg!, g.emoji)">
+                                        <lucide-icon [img]="XIcon" [size]="11"></lucide-icon>
+                                        {{ t('teacherPrivateChat.remove_reaction') }}
+                                      </button>
+                                    }
+                                  </div>
+                                </ng-template>
+                              }
+                            </div>
+                          }
+
+                          <div class="tcp-msg-time" [class.me]="isOwn(item.msg!)">
+                            {{ fmtTime(item.msg!.createdAt) }}
+                          </div>
+
+                        </div><!-- /tcp-msg-body -->
+
+                        <!-- Context menu (non-pending messages only) -->
+                        @if (!item.msg!._pending && !item.msg!._failed) {
+                          <div class="tcp-ctx-wrap" style="align-self:center;flex-shrink:0;position:relative">
+                            <button class="tcp-ctx-trigger" (click)="toggleCtx(item.msg!)">
+                              <lucide-icon [img]="MoreHorizontalIcon" [size]="15"></lucide-icon>
+                            </button>
+                            @if (item.msg!._ctxOpen) {
+                              <div class="tcp-ctx-menu"
+                                [style.right]="isOwn(item.msg!) ? '0' : 'auto'"
+                                [style.left]="isOwn(item.msg!) ? 'auto' : '0'">
+                                @if (isOwn(item.msg!)) {
+                                  <button class="tcp-ctx-item danger"
+                                    (click)="deleteMessage(item.msg!); closeCtx()">
+                                    <lucide-icon [img]="TrashIcon" [size]="13"></lucide-icon>
+                                    {{ t('teacherPrivateChat.delete') }}
+                                  </button>
+                                }
+                                <button class="tcp-ctx-item" (click)="startReply(item.msg!); closeCtx()">
+                                  <lucide-icon [img]="MessageSquareIcon" [size]="13"></lucide-icon>
+                                  {{ t('teacherPrivateChat.reply') }}
+                                </button>
+                                <button class="tcp-ctx-item tcp-emoji-trigger"
+                                  (click)="toggleEmojiPicker(item.msg!, $event)">
+                                  <lucide-icon [img]="SmileIcon" [size]="13"></lucide-icon>
+                                  {{ t('teacherPrivateChat.react') }}
+                                </button>
+                              </div>
+                            }
+                          </div>
+                        }
+
+                      </div><!-- /tcp-msg -->
+                    }
+                  }
+                }
+              }
+
+              <!-- Bottom anchor -->
+              <div #endRef style="height:1px;flex-shrink:0"></div>
+
+            </div><!-- /tcp-messages -->
+
+            <!-- Scroll-to-bottom FAB -->
+            <button class="tcp-scroll-fab" [class.visible]="!isAtBottom()" (click)="scrollFabClick()">
+              @if (unreadCount() > 0) {
+                <span class="tcp-fab-badge">{{ unreadCount() > 99 ? '99+' : unreadCount() }}</span>
+              }
+              <lucide-icon [img]="ChevronDownIcon" [size]="18"></lucide-icon>
+            </button>
+
+          </div><!-- /tcp-messages-wrapper -->
+
+          <!-- Reply bar -->
+          @if (replyingTo()) {
+            <div class="tcp-bar">
+              <div>
+                <div class="tcp-bar-title">
+                  {{ t('teacherPrivateChat.replying_to') }} {{ replyingTo()!.senderName }}
+                </div>
+                <div class="tcp-bar-content">{{ replyingTo()!.message ?? '[file]' }}</div>
+              </div>
+              <button class="tcp-icon-btn" (click)="cancelReply()">
+                <lucide-icon [img]="XIcon" [size]="15"></lucide-icon>
+              </button>
+            </div>
+          }
+
+          <!-- ── Input Area ── -->
+          <div class="tcp-input-area">
+
+            <!-- Hidden file inputs -->
+            <input type="file"
+              accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/bmp,image/svg+xml"
+              #imageInput style="display:none"
+              (change)="onImageSelected($event)" />
+            <input type="file" #fileInput style="display:none"
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.7z,.tar,.gz,.txt,.csv,.mp3,.mp4,.mov,.avi,.mkv,.wav,.ogg,.webm"
+              (change)="onFileSelected($event)" />
+
+            @if (showVoice()) {
+              <!-- Voice recorder row -->
+              <div class="tcp-input-row tcp-voice-row">
+                @if (voiceState() === 'idle') {
+                  <nz-spin nzSize="small"></nz-spin>
+                }
+                @if (voiceState() === 'recording') {
+                  <div class="tcp-voice-dot"></div>
+                  <span class="tcp-voice-timer">{{ fmtDur(voiceElapsed()) }}</span>
+                  <button class="tcp-btn-stop" (click)="stopRecording()">
+                    <lucide-icon [img]="CheckCircleIcon" [size]="15"></lucide-icon>
+                    {{ t('teacherPrivateChat.stop') }}
+                  </button>
+                }
+                @if (voiceState() === 'stopped' && voiceAudioUrl()) {
+                  <audio controls [src]="voiceAudioUrl()!" style="height:32px;flex:1"></audio>
+                  <span style="font-size:11px;color:#8a94b2">{{ fmtDur(voiceElapsed()) }}</span>
+                  <button class="tcp-btn-primary"
+                    style="height:36px;padding:0 14px"
+                    [disabled]="sending()"
+                    (click)="sendVoice()">
+                    @if (sending()) { <nz-spin nzSize="small"></nz-spin> }
+                    @if (!sending()) { <lucide-icon [img]="SendIcon" [size]="14"></lucide-icon> }
+                    {{ t('teacherPrivateChat.send') }}
+                  </button>
+                }
+                <button class="tcp-icon-btn" style="color:#ff4d4f" (click)="cancelVoice()">
+                  <lucide-icon [img]="XIcon" [size]="15"></lucide-icon>
+                </button>
+              </div>
+
+            } @else {
+              <!-- Normal input row -->
+              <div class="tcp-input-row">
+                <button class="tcp-icon-btn"
+                  [nz-tooltip]="t('teacherPrivateChat.send_image')"
+                  (click)="triggerImagePicker()">
+                  <lucide-icon [img]="CameraIcon" [size]="17"></lucide-icon>
+                </button>
+                <button class="tcp-icon-btn"
+                  [nz-tooltip]="t('teacherPrivateChat.send_file')"
+                  (click)="triggerFilePicker()">
+                  <lucide-icon [img]="PaperclipIcon" [size]="17"></lucide-icon>
+                </button>
+                <button class="tcp-icon-btn"
+                  [nz-tooltip]="t('teacherPrivateChat.record_voice')"
+                  (click)="startVoiceRecorder()">
+                  <lucide-icon [img]="MicIcon" [size]="17"></lucide-icon>
+                </button>
+                <input
+                  nz-input
+                  style="flex:1;border-radius:12px"
+                  [placeholder]="t('teacherPrivateChat.type_message')"
+                  [ngModel]="text()"
+                  (ngModelChange)="text.set($event)"
+                  (keydown)="onKeyDown($event)" />
+                <button
+                  class="tcp-btn-primary"
+                  style="height:36px;padding:0 16px;color:white;"
+                  (click)="sendText()"
+                  [disabled]="!text().trim() || sending()">
+                  @if (sending()) { <nz-spin nzSize="small"></nz-spin> }
+                  @if (!sending()) { <lucide-icon [img]="SendIcon" [size]="15"></lucide-icon> }
+                </button>
+              </div>
+            }
+
+          </div><!-- /tcp-input-area -->
+        }
+      </div><!-- /tcp-content -->
+    </div><!-- /tcp-body -->
+  </div><!-- /tcp-root -->
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       ── Image SEND preview modal (before sending)
+  ══════════════════════════════════════════════════════════════════ -->
+  <nz-modal
+    [nzVisible]="!!previewFile()"
+    [nzWidth]="520"
+    nzCentered
+    [nzTitle]="t('teacherPrivateChat.image_preview')"
+    [nzFooter]="imagePreviewFooter"
+    (nzOnCancel)="cancelPreview()"
+    nzClassName="tcp-modal tcp-img-preview-modal"
+    nzDestroyOnClose>
+    <ng-container *nzModalContent>
+      @if (previewUrl()) {
+        <div class="tcp-img-preview-body">
+          <div class="tcp-img-preview-img-wrap">
+            <img [src]="previewUrl()!" alt="preview" class="tcp-img-preview-img" />
+          </div>
+          @if (previewFile()) {
+            <div class="tcp-img-preview-meta">
+              <lucide-icon [img]="ImageIcon" [size]="14" class="tcp-img-preview-icon"></lucide-icon>
+              <span class="tcp-img-preview-name">{{ previewFile()!.name }}</span>
+              <span class="tcp-img-preview-size">· {{ fmtSize(previewFile()!.size) }}</span>
+            </div>
+          }
+          <textarea
+            class="tcp-img-preview-caption"
+            rows="2"
+            [placeholder]="t('teacherPrivateChat.add_caption')"
+            [ngModel]="previewCaption()"
+            (ngModelChange)="previewCaption.set($event)"
+            (keydown.enter)="$event.preventDefault(); sendPreviewImage()">
+          </textarea>
+        </div>
+      }
+    </ng-container>
+    <ng-template #imagePreviewFooter>
+      <button class="tcp-btn-ghost" (click)="cancelPreview()">
+        <lucide-icon [img]="XIcon" [size]="13"></lucide-icon>
+        {{ t('teacherPrivateChat.cancel') }}
+      </button>
+      <button class="tcp-btn-primary" style="margin:0 10px;" (click)="sendPreviewImage()" [disabled]="sending()">
+        @if (sending()) { <nz-spin nzSize="small"></nz-spin> }
+        @if (!sending()) { <lucide-icon [img]="SendIcon" [size]="13"></lucide-icon> }
+        {{ t('teacherPrivateChat.send') }}
+      </button>
+    </ng-template>
+  </nz-modal>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       ── File SEND preview modal (before sending)
+  ══════════════════════════════════════════════════════════════════ -->
+  <nz-modal
+    [(nzVisible)]="fileSendPreviewModalVisible"
+    [nzWidth]="520"
+    nzCentered
+    [nzTitle]="t('teacherPrivateChat.file_preview')"
+    [nzFooter]="fileSendPreviewFooter"
+    (nzOnCancel)="cancelFilePreview()"
+    nzClassName="tcp-modal tcp-file-preview-modal"
+    nzDestroyOnClose>
+    <ng-container *nzModalContent>
+      @if (fileSendPreviewFile()) {
+        <div class="tcp-img-preview-body">
+          <div class="tcp-img-preview-img-wrap" style="min-height:200px">
+            <div class="tcp-file-preview-icon-large"
+              [style.background]="getFilePreviewColorForFile(fileSendPreviewFile()!).bg">
+              <lucide-icon
+                [img]="getFilePreviewIconForFile(fileSendPreviewFile()!)"
+                [size]="48"
+                [style.color]="getFilePreviewColorForFile(fileSendPreviewFile()!).color">
+              </lucide-icon>
+            </div>
+            <div class="tcp-file-preview-ext-large">{{ getFileExt(fileSendPreviewFile()!.name) }}</div>
+          </div>
+          <div class="tcp-img-preview-meta">
+            <lucide-icon
+              [img]="getFilePreviewIconForFile(fileSendPreviewFile()!)"
+              [size]="14"
+              class="tcp-img-preview-icon"
+              [style.color]="getFilePreviewColorForFile(fileSendPreviewFile()!).color">
+            </lucide-icon>
+            <span class="tcp-img-preview-name" [title]="fileSendPreviewFile()!.name">
+              {{ fileSendPreviewFile()!.name }}
+            </span>
+            <span class="tcp-img-preview-size">· {{ fmtSize(fileSendPreviewFile()!.size) }}</span>
+          </div>
+          <textarea
+            class="tcp-img-preview-caption"
+            rows="2"
+            [placeholder]="t('teacherPrivateChat.add_caption')"
+            [ngModel]="fileSendPreviewCaption()"
+            (ngModelChange)="fileSendPreviewCaption.set($event)"
+            (keydown.enter)="$event.preventDefault(); sendFilePreview()">
+          </textarea>
+        </div>
+      }
+    </ng-container>
+    <ng-template #fileSendPreviewFooter>
+      <button class="tcp-btn-ghost" (click)="cancelFilePreview()">
+        <lucide-icon [img]="XIcon" [size]="13"></lucide-icon>
+        {{ t('teacherPrivateChat.cancel') }}
+      </button>
+      <button class="tcp-btn-primary" style="margin:0 10px;" (click)="sendFilePreview()" [disabled]="sending()">
+        @if (sending()) { <nz-spin nzSize="small"></nz-spin> }
+        @if (!sending()) { <lucide-icon [img]="SendIcon" [size]="13"></lucide-icon> }
+        {{ t('teacherPrivateChat.send') }}
+      </button>
+    </ng-template>
+  </nz-modal>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       ── Image VIEW modal (click on sent image in chat)
+  ══════════════════════════════════════════════════════════════════ -->
+  <nz-modal
+    [(nzVisible)]="imageViewModalVisible"
+    [nzTitle]="imageViewMsg()?.attachmentName || t('teacherPrivateChat.image_preview')"
+    [nzFooter]="imageViewFooter"
+    nzWidth="720"
+    (nzOnCancel)="closeImageView()"
+    nzClassName="tcp-modal tcp-img-view-modal">
+    <ng-container *nzModalContent>
+      @if (imageViewMsg()) {
+        <div style="text-align:center;padding:8px 0">
+          <img
+            [src]="buildUrl(imageViewMsg()!.attachmentUrl!)"
+            [alt]="imageViewMsg()!.attachmentName || 'image'"
+            style="max-width:100%;max-height:70vh;border-radius:10px;object-fit:contain" />
+          @if (imageViewMsg()!.message) {
+            <div style="margin-top:10px;font-size:13px;color:#555">{{ imageViewMsg()!.message }}</div>
+          }
+          <div style="margin-top:8px;font-size:11px;color:#888;display:flex;align-items:center;justify-content:center;gap:12px">
+            <span>{{ imageViewMsg()!.senderName }}</span>
+            <span>·</span>
+            <span>{{ fmtTime(imageViewMsg()!.createdAt) }}</span>
+          </div>
+        </div>
+      }
+    </ng-container>
+    <ng-template #imageViewFooter>
+      <button class="tcp-btn-ghost" (click)="closeImageView()">
+        <lucide-icon [img]="XIcon" [size]="13"></lucide-icon>
+        {{ t('teacherPrivateChat.close') }}
+      </button>
+      @if (imageViewMsg()?.attachmentUrl) {
+        <a [href]="buildUrl(imageViewMsg()!.attachmentUrl!)"
+          target="_blank" rel="noreferrer"
+          class="tcp-btn-primary"
+          
+          style="display:inline-flex;align-items:center;gap:6px;text-decoration:none">
+          <lucide-icon [img]="DownloadIcon" [size]="13"></lucide-icon>
+          {{ t('teacherPrivateChat.download') }}
+        </a>
+      }
+    </ng-template>
+  </nz-modal>
+
+  <!-- ══════════════════════════════════════════════════════════════════
+       ── Floating Emoji Picker
+  ══════════════════════════════════════════════════════════════════ -->
+  @if (emojiPickerVisible()) {
+    <div
+      class="tcp-emoji-floating"
+      [style.left.px]="emojiPickerX()"
+      [style.top.px]="emojiPickerY()"
+      style="position:fixed;z-index:9999">
+      <emoji-mart
+        theme="light"
+        [emojiSize]="20"
+        [perLine]="7"
+        [showPreview]="false"
+        [enableSearch]="true"
+        [showSingleCategory]="false"
+        [exclude]="['flags', 'symbols']"
+        (emojiSelect)="onEmojiSelect($event)">
+      </emoji-mart>
+    </div>
+  }
+
+  }<!-- /else not loading -->
+</ng-container>

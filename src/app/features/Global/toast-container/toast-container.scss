@@ -1,0 +1,106 @@
+// core/components/toast-container/toast-container.scss
+:host { display: contents; }
+
+.toast-viewport {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+  max-width: 360px;
+  width: calc(100vw - 48px);
+
+  [dir='rtl'] & {
+    right: auto;
+    left: 24px;
+  }
+}
+
+.toast-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px solid transparent;
+  box-shadow: 0 8px 24px rgba(30, 40, 100, 0.12);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  pointer-events: all;
+  animation: toastIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+  backdrop-filter: blur(8px);
+
+  &.toast-success {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #166534;
+    .toast-icon { color: #22c55e; }
+  }
+
+  &.toast-error {
+    background: #fff1f2;
+    border-color: #fecdd3;
+    color: #9f1239;
+    .toast-icon { color: #f43f5e; }
+  }
+
+  &.toast-warning {
+    background: #fffbeb;
+    border-color: #fed7aa;
+    color: #92400e;
+    .toast-icon { color: #f59e0b; }
+  }
+
+  &.toast-info {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1e40af;
+    .toast-icon { color: #3b82f6; }
+  }
+}
+
+.toast-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.toast-msg {
+  flex: 1;
+  line-height: 1.4;
+}
+
+.toast-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0.5;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  color: inherit;
+  transition: opacity 0.15s;
+
+  &:hover { opacity: 1; }
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 480px) {
+  .toast-viewport {
+    bottom: 16px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-width: none;
+  }
+}

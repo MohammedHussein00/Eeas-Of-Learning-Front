@@ -1,0 +1,707 @@
+<!-- ════════════════════════════════════════════════════════════════
+     LOADING
+═════════════════════════════════════════════════════════════════ -->
+@if (loading()) {
+  <div class="ld-loader"><nz-spin nzSize="large"></nz-spin></div>
+} @else if (!lecture()) {
+  <!-- ════════════════════════════════════════════════════════════
+       NOT FOUND
+  ═════════════════════════════════════════════════════════════ -->
+  <nz-result
+    nzStatus="404"
+    [nzTitle]="t('lectureNotFound', 'Lecture not found')"
+  >
+    <div nz-result-extra>
+      <button nz-button nzType="primary" (click)="goBack()">
+        {{ t('goBack', 'Go Back') }}
+      </button>
+    </div>
+  </nz-result>
+} @else {
+  <div class="ld-root">
+
+    <!-- ══════════════════════════════════════════════════════════
+         HEADER
+    ═══════════════════════════════════════════════════════════ -->
+    <header class="ld-header">
+      <div class="ld-header-left">
+        <button class="ld-back-btn" (click)="goBack()">
+          <lucide-angular [img]="ArrowLeftIcon" [size]="16"></lucide-angular>
+          <span class="ld-back-text">{{ lecture()!.courseTitle || t('back', 'Back') }}</span>
+        </button>
+        <div class="ld-header-sep"></div>
+        <div class="ld-header-info">
+          <h1 class="ld-header-title">{{ t('lectureDetails', 'Lecture Details') }}</h1>
+          <p class="ld-header-sub">{{ lecture()!.title }}</p>
+        </div>
+      </div>
+      <div class="ld-header-right">
+        <span class="ld-status-pill" [class.status--published]="lecture()!.isPublished"
+              [class.status--draft]="!lecture()!.isPublished">
+          {{ lecture()!.isPublished ? t('published', 'Published') : t('draft', 'Draft') }}
+        </span>
+        @if (lecture()!.isFree) {
+          <span class="ld-free-pill">{{ t('free', 'Free') }}</span>
+        }
+        <button class="ld-icon-btn ld-mobile-only" (click)="openSidebar()">
+          <lucide-angular [img]="MenuIcon" [size]="16"></lucide-angular>
+        </button>
+      </div>
+    </header>
+
+    <div class="ld-body">
+
+      <!-- ════════════════════════════════════════════════════════
+           HERO
+      ═════════════════════════════════════════════════════════ -->
+      <div class="ld-hero">
+        <div class="ld-hero-accent"></div>
+        <div class="ld-hero-content">
+          <div class="ld-hero-left">
+            <div class="ld-hero-icon">
+              <lucide-angular [img]="PlayCircleIcon" [size]="28"></lucide-angular>
+            </div>
+            <div class="ld-hero-text">
+              <h2 class="ld-hero-title">{{ lecture()!.title }}</h2>
+              @if (lecture()!.description) {
+                <p class="ld-hero-desc">{{ lecture()!.description }}</p>
+              }
+              <div class="ld-hero-pills">
+                <span class="ld-pill blue">
+                  <lucide-angular [img]="ClockIcon" [size]="12"></lucide-angular>
+                  {{ lecture()!.video?.formattedDuration || (lecture()!.durationMinutes + 'm') }}
+                </span>
+                <span class="ld-pill purple">
+                  <lucide-angular [img]="TeamIcon" [size]="12"></lucide-angular>
+                  {{ stats().total }} {{ t('students', 'students') }}
+                </span>
+                <span class="ld-pill green">
+                  <lucide-angular [img]="CheckCircleIcon" [size]="12"></lucide-angular>
+                  {{ stats().completed }} {{ t('completed', 'completed') }}
+                </span>
+                @if (reviewSummary() && reviewSummary()!.totalReviews > 0) {
+                  <span class="ld-pill amber">
+                    <lucide-angular [img]="StarIcon" [size]="12"></lucide-angular>
+                    {{ reviewSummary()!.averageRating.toFixed(1) }}
+                  </span>
+                }
+                @if ((lecture()!.resources?.length ?? 0) > 0) {
+                  <span class="ld-pill cyan">
+                    <lucide-angular [img]="DownloadIcon" [size]="12"></lucide-angular>
+                    {{ lecture()!.resources!.length }} {{ t('resources', 'resources') }}
+                  </span>
+                }
+              </div>
+            </div>
+          </div>
+          <div class="ld-hero-right">
+            <svg [attr.width]="76" [attr.height]="76" viewBox="0 0 76 76" class="ld-ring-svg">
+              <circle cx="38" cy="38" r="35" fill="none" stroke="#e4e8f4" stroke-width="6"></circle>
+              <circle cx="38" cy="38" r="35" fill="none" [attr.stroke]="progressColor(stats().avgWatch)"
+                      stroke-width="6"
+                      [attr.stroke-dasharray]="2 * 3.14159 * 35"
+                      [attr.stroke-dashoffset]="(2 * 3.14159 * 35) - (stats().avgWatch / 100) * (2 * 3.14159 * 35)"
+                      stroke-linecap="round" transform="rotate(-90 38 38)" class="ld-ring-progress"></circle>
+              <text x="50%" y="50%" text-anchor="middle" dominant-baseline="central"
+                    [attr.fill]="progressColor(stats().avgWatch)" class="ld-ring-text">
+                {{ stats().avgWatch }}%
+              </text>
+            </svg>
+            <div class="ld-hero-ring-label">{{ t('avgEngagement', 'Avg Engagement') }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════
+           STATS GRID
+      ═════════════════════════════════════════════════════════ -->
+      <div class="ld-stats-grid">
+        <div class="ld-stat-card blue">
+          <div class="ld-stat-icon"><lucide-angular [img]="TeamIcon" [size]="18"></lucide-angular></div>
+          <div class="ld-stat-body">
+            <div class="ld-stat-value">{{ stats().total }}</div>
+            <div class="ld-stat-label">{{ t('totalStudents', 'Total Students') }}</div>
+          </div>
+        </div>
+        <div class="ld-stat-card green">
+          <div class="ld-stat-icon"><lucide-angular [img]="CheckCircleIcon" [size]="18"></lucide-angular></div>
+          <div class="ld-stat-body">
+            <div class="ld-stat-value">{{ stats().completed }}</div>
+            <div class="ld-stat-label">{{ t('completedCount', 'Completed') }}</div>
+          </div>
+        </div>
+        <div class="ld-stat-card purple">
+          <div class="ld-stat-icon"><lucide-angular [img]="PlayCircleIcon" [size]="18"></lucide-angular></div>
+          <div class="ld-stat-body">
+            <div class="ld-stat-value">{{ stats().inProgress }}</div>
+            <div class="ld-stat-label">{{ t('inProgressCount', 'In Progress') }}</div>
+          </div>
+        </div>
+        <div class="ld-stat-card amber">
+          <div class="ld-stat-icon"><lucide-angular [img]="ZapIcon" [size]="18"></lucide-angular></div>
+          <div class="ld-stat-body">
+            <div class="ld-stat-value">{{ stats().avgWatch }}%</div>
+            <div class="ld-stat-label">{{ t('avgWatchRate', 'Avg Watch Rate') }}</div>
+          </div>
+        </div>
+        <div class="ld-stat-card orange">
+          <div class="ld-stat-icon"><lucide-angular [img]="StarIcon" [size]="18"></lucide-angular></div>
+          <div class="ld-stat-body">
+            <div class="ld-stat-value">
+              {{ reviewSummary()?.totalReviews ? (reviewSummary()!.averageRating.toFixed(1) + '/5') : '—' }}
+            </div>
+            <div class="ld-stat-label">{{ t('avgRating', 'Avg Rating') }}</div>
+          </div>
+        </div>
+        <div class="ld-stat-card cyan">
+          <div class="ld-stat-icon"><lucide-angular [img]="MessageIcon" [size]="18"></lucide-angular></div>
+          <div class="ld-stat-body">
+            <div class="ld-stat-value">{{ reviewSummary()?.totalReviews ?? 0 }}</div>
+            <div class="ld-stat-label">{{ t('totalReviews', 'Reviews') }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════
+           MAIN GRID
+      ═════════════════════════════════════════════════════════ -->
+      <div class="ld-main-grid">
+        <div class="ld-content-col">
+          <nz-tabs nzType="card" class="ld-tabs" [(nzSelectedIndex)]="tabIndex">
+
+            <!-- ── VIDEO TAB ── -->
+            <nz-tab [nzTitle]="videoTabTitle">
+              <ng-template #videoTabTitle>
+                <span class="ld-tab-label">
+                  <lucide-angular [img]="VideoIcon" [size]="14"></lucide-angular>
+                  <span class="ld-tab-text">{{ t('video', 'Video') }}</span>
+                </span>
+              </ng-template>
+
+              <div class="ld-tab-pane">
+                <div class="ld-card">
+                  <div class="ld-card-head">
+                    <div class="ld-card-heading">
+                      <span class="ld-card-chip blue"><lucide-angular [img]="VideoIcon" [size]="13"></lucide-angular></span>
+                      <span>{{ t('lectureVideo', 'Lecture Video') }}</span>
+                    </div>
+                    @if (lecture()!.video) {
+                      <div class="ld-video-meta-pills">
+                        <span class="ld-mini-tag green">{{ lecture()!.video!.status }}</span>
+                        <span class="ld-mini-tag gray">{{ lecture()!.video!.resolution }}</span>
+                        <span class="ld-mini-tag gray">{{ lecture()!.video!.format }}</span>
+                      </div>
+                    }
+                  </div>
+                  <div class="ld-card-body ld-no-pad">
+                    @if (videoSrc(lecture()!.video?.videoUrl)) {
+                      <video class="ld-video-player" controls preload="metadata">
+                        <source [src]="videoSrc(lecture()!.video?.videoUrl)" />
+                      </video>
+                    } @else {
+                      <div class="ld-video-placeholder">
+                        <lucide-angular [img]="VideoIcon" [size]="32"></lucide-angular>
+                        <span>{{ t('noVideo', 'No video available') }}</span>
+                      </div>
+                    }
+                  </div>
+                  @if (lecture()!.video) {
+                    <div class="ld-video-stats-bar">
+                      <span><lucide-angular [img]="ClockIcon" [size]="12"></lucide-angular> {{ lecture()!.video!.formattedDuration }}</span>
+                      <span><lucide-angular [img]="FileTextIcon" [size]="12"></lucide-angular> {{ lecture()!.video!.formattedFileSize }}</span>
+                      <span><lucide-angular [img]="EyeIcon" [size]="12"></lucide-angular> {{ stats().total }} {{ t('viewers', 'viewers') }}</span>
+                    </div>
+                  }
+                </div>
+
+                @if ((lecture()!.resources?.length ?? 0) > 0) {
+                  <div class="ld-card">
+                    <div class="ld-card-head">
+                      <div class="ld-card-heading">
+                        <span class="ld-card-chip cyan"><lucide-angular [img]="DownloadIcon" [size]="13"></lucide-angular></span>
+                        <span>{{ t('resources', 'Resources') }}</span>
+                        <span class="ld-count">({{ lecture()!.resources!.length }})</span>
+                      </div>
+                    </div>
+                    <div class="ld-card-body">
+                      @for (r of lecture()!.resources!; track r.id) {
+                        <div class="ld-resource-row">
+                          <div class="ld-resource-left">
+                            <div class="ld-resource-icon"><lucide-angular [img]="DownloadIcon" [size]="14"></lucide-angular></div>
+                            <div>
+                              <div class="ld-resource-name">{{ resourceName(r.fileUrl) }}</div>
+                              <div class="ld-resource-meta">{{ r.fileType }} · {{ fmtFileSize(r.fileSize) }}</div>
+                            </div>
+                          </div>
+                          <div class="ld-resource-right">
+                            @if (r.downloadCount != null) {
+                              <span class="ld-mini-tag blue">
+                                <lucide-angular [img]="DownloadIcon" [size]="10"></lucide-angular> {{ r.downloadCount }}
+                              </span>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            </nz-tab>
+
+            <!-- ── STUDENTS TAB ── -->
+            <nz-tab [nzTitle]="studentsTabTitle">
+              <ng-template #studentsTabTitle>
+                <span class="ld-tab-label">
+                  <lucide-angular [img]="TeamIcon" [size]="14"></lucide-angular>
+                  <span class="ld-tab-text">{{ t('students', 'Students') }}</span>
+                  <nz-badge [nzCount]="stats().total"></nz-badge>
+                </span>
+              </ng-template>
+
+              <div class="ld-tab-pane">
+                <!-- Completion breakdown -->
+                <div class="ld-card">
+                  <div class="ld-card-head">
+                    <div class="ld-card-heading">
+                      <span class="ld-card-chip green"><lucide-angular [img]="TrophyIcon" [size]="13"></lucide-angular></span>
+                      <span>{{ t('completionBreakdown', 'Completion Breakdown') }}</span>
+                    </div>
+                  </div>
+                  <div class="ld-card-body">
+                    <div class="ld-breakdown-grid">
+                      <div class="ld-breakdown-item" style="border-color:#16a34a">
+                        <div class="ld-breakdown-icon" style="color:#16a34a"><lucide-angular [img]="CheckCircleIcon" [size]="20"></lucide-angular></div>
+                        <div class="ld-breakdown-val" style="color:#16a34a">{{ stats().completed }}</div>
+                        <div class="ld-breakdown-label">{{ t('completed', 'Completed') }}</div>
+                        @if (stats().total > 0) {
+                          <div class="ld-breakdown-pct">{{ (stats().completed / stats().total * 100) | number:'1.0-0' }}%</div>
+                        }
+                      </div>
+                      <div class="ld-breakdown-item" style="border-color:#4f6ef7">
+                        <div class="ld-breakdown-icon" style="color:#4f6ef7"><lucide-angular [img]="PlayCircleIcon" [size]="20"></lucide-angular></div>
+                        <div class="ld-breakdown-val" style="color:#4f6ef7">{{ stats().inProgress }}</div>
+                        <div class="ld-breakdown-label">{{ t('inProgress', 'In Progress') }}</div>
+                        @if (stats().total > 0) {
+                          <div class="ld-breakdown-pct">{{ (stats().inProgress / stats().total * 100) | number:'1.0-0' }}%</div>
+                        }
+                      </div>
+                      <div class="ld-breakdown-item" style="border-color:#718096">
+                        <div class="ld-breakdown-icon" style="color:#718096"><lucide-angular [img]="PauseCircleIcon" [size]="20"></lucide-angular></div>
+                        <div class="ld-breakdown-val" style="color:#718096">{{ stats().notStarted }}</div>
+                        <div class="ld-breakdown-label">{{ t('notStarted', 'Not Started') }}</div>
+                        @if (stats().total > 0) {
+                          <div class="ld-breakdown-pct">{{ (stats().notStarted / stats().total * 100) | number:'1.0-0' }}%</div>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Student table -->
+                <div class="ld-card">
+                  <div class="ld-card-head">
+                    <div class="ld-card-heading">
+                      <span class="ld-card-chip blue"><lucide-angular [img]="TeamIcon" [size]="13"></lucide-angular></span>
+                      <span>{{ t('studentProgress', 'Student Progress') }}</span>
+                      <span class="ld-count">({{ stats().total }})</span>
+                    </div>
+                  </div>
+                  <div class="ld-table-wrap">
+                    @if (progressLoading()) {
+                      <div class="ld-spinner"><nz-spin></nz-spin></div>
+                    } @else if (studentProgress().length === 0) {
+                      <nz-empty class="ld-empty" [nzNotFoundContent]="t('noStudents', 'No students enrolled yet')"></nz-empty>
+                    } @else {
+                      <nz-table #progressTable [nzData]="studentProgress()" [nzPageSize]="15"
+                                [nzShowSizeChanger]="true" [nzScroll]="{ x: '700px' }" class="ld-ant-table">
+                        <thead>
+                          <tr>
+                            <th>{{ t('student', 'Student') }}</th>
+                            <th>{{ t('progress', 'Progress') }}</th>
+                            <th>{{ t('status', 'Status') }}</th>
+                            <th>{{ t('watchTime', 'Watch Time') }}</th>
+                            <th style="text-align:center">{{ t('visits', 'Visits') }}</th>
+                            <th>{{ t('lastWatched', 'Last Watched') }}</th>
+                            <th>{{ t('completedAt', 'Completed') }}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (r of progressTable.data; track r.studentId) {
+                            <tr>
+                              <td>
+                                <div class="ld-table-student">
+                                  <nz-avatar [nzSize]="32" [nzSrc]="avatarUrl(r.profileImagePath)" nzIcon="user"></nz-avatar>
+                                  <div>
+                                    <div class="ld-student-name">{{ r.name || t('unknown', 'Unknown') }}</div>
+                                    <div class="ld-student-email">{{ r.email }}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td>
+                                <div class="ld-progress-cell">
+                                  <nz-progress [nzPercent]="r.watchProgress | number:'1.0-0'"
+                                                [nzStrokeColor]="progressColor(r.watchProgress)"
+                                                nzSize="small" [nzShowInfo]="false"></nz-progress>
+                                  <span class="ld-progress-pct" [style.color]="progressColor(r.watchProgress)">
+                                    {{ r.watchProgress | number:'1.0-0' }}%
+                                  </span>
+                                </div>
+                              </td>
+                              <td>
+                                @if (r.isCompleted) {
+                                  <nz-tag nzColor="success">
+                                    <lucide-angular [img]="CheckCircleIcon" [size]="11"></lucide-angular>
+                                    {{ t('completed', 'Completed') }}
+                                  </nz-tag>
+                                } @else if (r.watchProgress > 0) {
+                                  <nz-tag nzColor="processing">
+                                    <lucide-angular [img]="PlayCircleIcon" [size]="11"></lucide-angular>
+                                    {{ t('inProgress', 'In Progress') }}
+                                  </nz-tag>
+                                } @else {
+                                  <nz-tag>
+                                    <lucide-angular [img]="PauseCircleIcon" [size]="11"></lucide-angular>
+                                    {{ t('notStarted', 'Not Started') }}
+                                  </nz-tag>
+                                }
+                              </td>
+                              <td><span class="ld-meta-text">{{ r.formattedTotalWatchTime || '—' }}</span></td>
+                              <td style="text-align:center"><span class="ld-visit-badge">{{ r.visitCount || 0 }}</span></td>
+                              <td>
+                                @if (r.lastWatchedAt) {
+                                  <span class="ld-meta-text">{{ formatDate(r.lastWatchedAt) }}</span>
+                                } @else { — }
+                              </td>
+                              <td>
+                                @if (r.completedAt) {
+                                  <span class="ld-meta-text">{{ formatDate(r.completedAt) }}</span>
+                                } @else { — }
+                              </td>
+                            </tr>
+                          }
+                        </tbody>
+                      </nz-table>
+                    }
+                  </div>
+                </div>
+              </div>
+            </nz-tab>
+
+            <!-- ── REVIEWS TAB ── -->
+            <nz-tab [nzTitle]="reviewsTabTitle">
+              <ng-template #reviewsTabTitle>
+                <span class="ld-tab-label">
+                  <lucide-angular [img]="StarIcon" [size]="14"></lucide-angular>
+                  <span class="ld-tab-text">{{ t('reviews', 'Reviews') }}</span>
+                  <nz-badge [nzCount]="reviewSummary()?.totalReviews ?? 0" class="ld-badge-amber"></nz-badge>
+                </span>
+              </ng-template>
+
+              <div class="ld-tab-pane">
+                @if (reviewsLoading()) {
+                  <div class="ld-spinner"><nz-spin></nz-spin></div>
+                } @else {
+                  @if (reviewSummary() && reviewSummary()!.totalReviews > 0) {
+                    <div class="ld-card">
+                      <div class="ld-card-head">
+                        <div class="ld-card-heading">
+                          <span class="ld-card-chip amber"><lucide-angular [img]="StarIcon" [size]="13"></lucide-angular></span>
+                          <span>{{ t('ratingBreakdown', 'Rating Breakdown') }}</span>
+                        </div>
+                        <div class="ld-rating-summary">
+                          <div class="ld-rating-big">{{ reviewSummary()!.averageRating.toFixed(1) }}</div>
+                          <nz-rate [ngModel]="reviewSummary()!.averageRating" [nzDisabled]="true" [nzAllowHalf]="true" style="font-size:14px"></nz-rate>
+                          <div class="ld-rating-sub">{{ reviewSummary()!.totalReviews }} {{ t('reviews', 'reviews') }}</div>
+                        </div>
+                      </div>
+                      <div class="ld-card-body">
+                        <div class="ld-star-breakdown">
+                          @for (sb of starBreakdown(); track sb.star) {
+                            <div class="ld-star-row-full">
+                              <span class="ld-star-label-full">★ {{ sb.star }}</span>
+                              <nz-progress [nzPercent]="sb.pct | number:'1.0-0'" nzStrokeColor="#d97706"
+                                            [nzShowInfo]="false" nzSize="small" class="ld-star-bar-full"></nz-progress>
+                              <span class="ld-star-pct">{{ sb.pct | number:'1.0-0' }}%</span>
+                              <span class="ld-star-count">({{ sb.count }})</span>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  }
+
+                  <div class="ld-card">
+                    <div class="ld-card-head">
+                      <div class="ld-card-heading">
+                        <span class="ld-card-chip amber"><lucide-angular [img]="MessageIcon" [size]="13"></lucide-angular></span>
+                        <span>{{ t('studentReviews', 'Student Reviews') }}</span>
+                        @if (reviewSummary()) {
+                          <span class="ld-count">({{ reviewSummary()!.totalReviews }})</span>
+                        }
+                      </div>
+                    </div>
+                    <div class="ld-card-body">
+                      @if (!reviewSummary() || reviewSummary()!.totalReviews === 0) {
+                        <div class="ld-empty-state">
+                          <div class="ld-empty-emoji">⭐</div>
+                          <p>{{ t('noReviews', 'No reviews yet') }}</p>
+                        </div>
+                      } @else {
+                        <div class="ld-reviews">
+                          @for (rv of reviewSummary()!.reviews; track rv.id) {
+                            <div class="ld-review">
+                              <div class="ld-review-head">
+                                <div class="ld-review-user">
+                                  <nz-avatar [nzSize]="36" [nzSrc]="avatarUrl(rv.userProfileImage)" nzIcon="user"></nz-avatar>
+                                  <div>
+                                    <div class="ld-review-name">{{ rv.userName }}</div>
+                                    <nz-rate [ngModel]="rv.rating" [nzDisabled]="true" style="font-size:12px"></nz-rate>
+                                  </div>
+                                </div>
+                                <div class="ld-review-meta">
+                                  <span class="ld-review-date">{{ rv.formattedDate || formatDate(rv.createdAt) }}</span>
+                                  @if (rv.helpfulCount > 0) {
+                                    <span class="ld-mini-tag blue">👍 {{ rv.helpfulCount }}</span>
+                                  }
+                                </div>
+                              </div>
+                              @if (rv.comment) {
+                                <p class="ld-review-comment">{{ rv.comment }}</p>
+                              }
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            </nz-tab>
+
+            <!-- ── ANALYTICS TAB ── -->
+            <nz-tab [nzTitle]="analyticsTabTitle">
+              <ng-template #analyticsTabTitle>
+                <span class="ld-tab-label">
+                  <lucide-angular [img]="BarChartIcon" [size]="14"></lucide-angular>
+                  <span class="ld-tab-text">{{ t('analytics', 'Analytics') }}</span>
+                </span>
+              </ng-template>
+
+              <div class="ld-tab-pane">
+                <div class="ld-card">
+                  <div class="ld-card-head">
+                    <div class="ld-card-heading">
+                      <span class="ld-card-chip blue"><lucide-angular [img]="BarChartIcon" [size]="13"></lucide-angular></span>
+                      <span>{{ t('engagementAnalytics', 'Engagement Analytics') }}</span>
+                    </div>
+                  </div>
+                  <div class="ld-card-body">
+                    <div class="ld-analytics-grid">
+                      <div class="ld-analytics-item">
+                        <div class="ld-analytics-label">{{ t('totalStudents', 'Total Students') }}</div>
+                        <div class="ld-analytics-val blue">{{ stats().total }}</div>
+                      </div>
+                      <div class="ld-analytics-item">
+                        <div class="ld-analytics-label">{{ t('completionRate', 'Completion Rate') }}</div>
+                        <div class="ld-analytics-val green">
+                          {{ stats().total > 0 ? (stats().completed / stats().total * 100 | number:'1.0-0') : 0 }}%
+                        </div>
+                      </div>
+                      <div class="ld-analytics-item">
+                        <div class="ld-analytics-label">{{ t('avgWatchRate', 'Avg Watch Rate') }}</div>
+                        <div class="ld-analytics-val purple">{{ stats().avgWatch }}%</div>
+                      </div>
+                      <div class="ld-analytics-item">
+                        <div class="ld-analytics-label">{{ t('avgRating', 'Avg Rating') }}</div>
+                        <div class="ld-analytics-val amber">
+                          {{ reviewSummary()?.totalReviews ? (reviewSummary()!.averageRating.toFixed(1) + '/5') : '—' }}
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Watch distribution -->
+                    @if (studentProgress().length > 0) {
+                      <div class="ld-watch-dist">
+                        <div class="ld-watch-dist-title">{{ t('watchDistribution', 'Watch Progress Distribution') }}</div>
+                        @for (band of watchDistribution(); track band.label) {
+                          <div class="ld-dist-row">
+                            <span class="ld-dist-label">{{ band.label }}</span>
+                            <nz-progress [nzPercent]="band.pct" [nzStrokeColor]="band.color"
+                                          [nzShowInfo]="false" nzSize="small" class="ld-dist-bar"></nz-progress>
+                            <span class="ld-dist-count">{{ band.count }}</span>
+                            <span class="ld-dist-pct">{{ band.pct }}%</span>
+                          </div>
+                        }
+                      </div>
+                    }
+
+                    <!-- Top watchers -->
+                    @if (studentProgress().length > 0) {
+                      <div class="ld-top-watchers">
+                        <div class="ld-top-title">
+                          <lucide-angular [img]="TrendingUpIcon" [size]="14"></lucide-angular>
+                          {{ t('topWatchers', 'Top Watchers') }}
+                        </div>
+                        @for (s of topWatchers(); track s.studentId; let i = $index) {
+                          <div class="ld-watcher-row">
+                            <div class="ld-watcher-rank">{{ i + 1 }}</div>
+                            <nz-avatar [nzSize]="28" [nzSrc]="avatarUrl(s.profileImagePath)" nzIcon="user"></nz-avatar>
+                            <div class="ld-watcher-info">
+                              <span class="ld-watcher-name">{{ s.name }}</span>
+                            </div>
+                            <div class="ld-watcher-progress">
+                              <nz-progress [nzPercent]="s.watchProgress | number:'1.0-0'"
+                                            [nzStrokeColor]="progressColor(s.watchProgress)"
+                                            nzSize="small" [nzShowInfo]="false" style="width:80px"></nz-progress>
+                              <span [style.color]="progressColor(s.watchProgress)" style="font-size:11px;font-weight:700">
+                                {{ s.watchProgress | number:'1.0-0' }}%
+                              </span>
+                            </div>
+                            @if (s.isCompleted) {
+                              <lucide-angular [img]="CheckCircleIcon" [size]="14" style="color:#16a34a"></lucide-angular>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            </nz-tab>
+
+          </nz-tabs>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════════
+             SIDEBAR (desktop)
+        ═════════════════════════════════════════════════════════ -->
+        <div class="ld-sidebar ld-desktop-only">
+          <ng-container *ngTemplateOutlet="sidebarContent"></ng-container>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════
+         MOBILE DRAWER
+    ═════════════════════════════════════════════════════════════ -->
+    <nz-drawer
+      [nzTitle]="t('lectureOverview', 'Lecture Overview')"
+      nzPlacement="right"
+      [nzVisible]="sidebarOpen()"
+      (nzOnClose)="closeSidebar()"
+      [nzWidth]="300"
+    >
+      <ng-container *nzDrawerContent>
+        <ng-container *ngTemplateOutlet="sidebarContent"></ng-container>
+      </ng-container>
+    </nz-drawer>
+
+  </div>
+}
+
+<!-- ════════════════════════════════════════════════════════════════
+     SIDEBAR CONTENT TEMPLATE
+═════════════════════════════════════════════════════════════════ -->
+<ng-template #sidebarContent>
+  <div class="ld-sidebar-inner">
+
+    <!-- Video info -->
+    @if (lecture()?.video) {
+      <div class="ld-sidebar-card">
+        <div class="ld-sidebar-card-title">
+          <lucide-angular [img]="VideoIcon" [size]="14"></lucide-angular>
+          <span>{{ t('videoInfo', 'Video Info') }}</span>
+        </div>
+        <div class="ld-info-row"><span>{{ t('duration', 'Duration') }}</span><strong>{{ lecture()!.video!.formattedDuration }}</strong></div>
+        <div class="ld-info-row"><span>{{ t('resolution', 'Resolution') }}</span><strong>{{ lecture()!.video!.resolution || '—' }}</strong></div>
+        <div class="ld-info-row"><span>{{ t('format', 'Format') }}</span><strong>{{ lecture()!.video!.format || '—' }}</strong></div>
+        <div class="ld-info-row"><span>{{ t('fileSize', 'File Size') }}</span><strong>{{ lecture()!.video!.formattedFileSize }}</strong></div>
+        <div class="ld-info-row">
+          <span>{{ t('status', 'Status') }}</span>
+          <nz-tag [nzColor]="lecture()!.video!.status === 'Ready' ? 'success' : 'processing'">{{ lecture()!.video!.status }}</nz-tag>
+        </div>
+      </div>
+    }
+
+    <!-- Engagement ring -->
+    <div class="ld-sidebar-card ld-engagement-card">
+      <div class="ld-sidebar-card-title">
+        <lucide-angular [img]="BarChartIcon" [size]="14"></lucide-angular>
+        <span>{{ t('engagement', 'Engagement') }}</span>
+      </div>
+      <div class="ld-engagement-ring-wrap">
+        <svg width="72" height="72" viewBox="0 0 72 72" class="ld-ring-svg">
+          <circle cx="36" cy="36" r="33" fill="none" stroke="#e4e8f4" stroke-width="6"></circle>
+          <circle cx="36" cy="36" r="33" fill="none" [attr.stroke]="progressColor(stats().avgWatch)"
+                  stroke-width="6"
+                  [attr.stroke-dasharray]="2 * 3.14159 * 33"
+                  [attr.stroke-dashoffset]="(2 * 3.14159 * 33) - (stats().avgWatch / 100) * (2 * 3.14159 * 33)"
+                  stroke-linecap="round" transform="rotate(-90 36 36)" class="ld-ring-progress"></circle>
+          <text x="50%" y="50%" text-anchor="middle" dominant-baseline="central"
+                [attr.fill]="progressColor(stats().avgWatch)" class="ld-ring-text">
+            {{ stats().avgWatch }}%
+          </text>
+        </svg>
+        <div class="ld-engagement-label">{{ t('avgWatchRate', 'Avg Watch Rate') }}</div>
+      </div>
+      <div class="ld-info-row"><span>{{ t('totalStudents', 'Students') }}</span><strong>{{ stats().total }}</strong></div>
+      <div class="ld-info-row"><span>{{ t('completedCount', 'Completed') }}</span><strong class="ld-green">{{ stats().completed }}</strong></div>
+      <div class="ld-info-row"><span>{{ t('inProgressCount', 'In Progress') }}</span><strong class="ld-blue">{{ stats().inProgress }}</strong></div>
+      <div class="ld-info-row">
+        <span>{{ t('notStarted', 'Not Started') }}</span>
+        <strong class="ld-gray">{{ stats().notStarted }}</strong>
+      </div>
+    </div>
+
+    <!-- Lecture info -->
+    <div class="ld-sidebar-card">
+      <div class="ld-sidebar-card-title">
+        <lucide-angular [img]="InfoIcon" [size]="14"></lucide-angular>
+        <span>{{ t('lectureInfo', 'Lecture Info') }}</span>
+      </div>
+      <div class="ld-info-row"><span>{{ t('section', 'Section') }}</span><strong>{{ lecture()?.sectionTitle || '—' }}</strong></div>
+      <div class="ld-info-row"><span>{{ t('order', 'Order') }}</span><strong>#{{ lecture()?.order }}</strong></div>
+      <div class="ld-info-row">
+        <span>{{ t('access', 'Access') }}</span>
+        @if (lecture()?.isFree) {
+          <nz-tag nzColor="green">{{ t('free', 'Free') }}</nz-tag>
+        } @else {
+          <nz-tag nzColor="blue">{{ t('premium', 'Premium') }}</nz-tag>
+        }
+      </div>
+      <div class="ld-info-row">
+        <span>{{ t('published', 'Published') }}</span>
+        @if (lecture()?.isPublished) {
+          <nz-tag nzColor="success">{{ t('yes', 'Yes') }}</nz-tag>
+        } @else {
+          <nz-tag>{{ t('no', 'No') }}</nz-tag>
+        }
+      </div>
+      @if ((lecture()?.resources?.length ?? 0) > 0) {
+        <div class="ld-info-row"><span>{{ t('resources', 'Resources') }}</span><strong>{{ lecture()!.resources!.length }}</strong></div>
+      }
+    </div>
+
+    <!-- Reviews summary -->
+    @if (reviewSummary() && reviewSummary()!.totalReviews > 0) {
+      <div class="ld-sidebar-card">
+        <div class="ld-sidebar-card-title">
+          <lucide-angular [img]="StarIcon" [size]="14"></lucide-angular>
+          <span>{{ t('reviewsSummary', 'Reviews') }}</span>
+        </div>
+        <div class="ld-rating-big">{{ reviewSummary()!.averageRating.toFixed(1) }}</div>
+        <nz-rate [ngModel]="reviewSummary()!.averageRating" [nzDisabled]="true" [nzAllowHalf]="true" style="font-size:12px"></nz-rate>
+        <div class="ld-rating-sub">{{ reviewSummary()!.totalReviews }} {{ t('reviews', 'reviews') }}</div>
+        @for (sb of starBreakdown(); track sb.star) {
+          <div class="ld-star-row">
+            <span class="ld-star-label">★{{ sb.star }}</span>
+            <nz-progress [nzPercent]="sb.pct | number:'1.0-0'" nzStrokeColor="#d97706"
+                          [nzShowInfo]="false" nzSize="small" class="ld-star-bar"></nz-progress>
+            <span class="ld-star-cnt">{{ sb.count }}</span>
+          </div>
+        }
+      </div>
+    }
+
+  </div>
+</ng-template>

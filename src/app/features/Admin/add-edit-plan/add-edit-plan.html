@@ -1,0 +1,930 @@
+<ng-container *transloco="let t; scope: 'addEditPlan'">
+
+  <!-- ══════════════════════════════════════════════════════════
+       LOADING SCREEN
+  ══════════════════════════════════════════════════════════ -->
+  @if (pageLoading()) {
+    <div class="ap-center-screen">
+      <nz-spin nzSize="large"></nz-spin>
+      <p style="color:#6366f1; font-weight:500; margin-top:16px; font-size:13px">
+        {{ t('addEditPlan.loading') }}
+      </p>
+    </div>
+  }
+
+  @else {
+  <!-- ════════════════════════════════════════════════════════
+       MAIN LAYOUT
+  ════════════════════════════════════════════════════════ -->
+  <div class="ap-root">
+    <div class="ap-bg"></div>
+
+    <!-- ══ Header ══ -->
+    <div class="ap-header">
+      <div class="ap-brand">
+        <div class="ap-logo">
+          <lucide-icon [img]="CrownIcon" [size]="20" style="color:#fff"></lucide-icon>
+        </div>
+        <div>
+          <div class="ap-brand-title">
+            {{ isEdit() ? t('addEditPlan.editPlan') : t('addEditPlan.createPlan') }}
+          </div>
+          <div class="ap-brand-sub">{{ t('addEditPlan.subscriptionManagement') }}</div>
+        </div>
+      </div>
+      <button class="ap-back-btn" (click)="navigateToList()">
+        <lucide-icon [img]="ArrowLeftIcon" [size]="14"></lucide-icon>
+        {{ t('addEditPlan.backToList') }}
+      </button>
+    </div>
+
+    <!-- ══ Body ══ -->
+    <div class="ap-rel">
+      <div class="ap-body">
+
+        <!-- Breadcrumb -->
+        <div class="ap-breadcrumb">
+          <a (click)="navigateToList()">{{ t('addEditPlan.subscriptionaddEditPlan') }}</a>
+          <span>›</span>
+          <span style="color:#64748b">{{ isEdit() ? t('addEditPlan.edit') : t('addEditPlan.new') }}</span>
+        </div>
+
+        <!-- Page Title -->
+        <div class="ap-page-title">
+          {{ isEdit() ? t('addEditPlan.editPlan') : t('addEditPlan.createNewPlan') }}
+        </div>
+        <div class="ap-page-sub">
+          {{ isEdit() ? t('addEditPlan.editSubtitle') : t('addEditPlan.createSubtitle') }}
+        </div>
+
+        <!-- Alerts -->
+        @if (success()) {
+          <div class="ap-alert success">
+            <lucide-icon [img]="CheckCircleIcon" [size]="15"></lucide-icon>
+            <span>{{ isEdit() ? t('addEditPlan.planUpdated') : t('addEditPlan.planCreated') }}</span>
+          </div>
+        }
+        @if (apiError()) {
+          <div class="ap-alert error">
+            <lucide-icon [img]="AlertTriangleIcon" [size]="15"></lucide-icon>
+            <span>{{ apiError() }}</span>
+            <button class="ap-alert-close" (click)="apiError.set(null)">
+              <lucide-icon [img]="XIcon" [size]="14"></lucide-icon>
+            </button>
+          </div>
+        }
+
+        <!-- ══ Hero Banner ══ -->
+        <div class="ap-hero">
+          <div class="ap-hero-band"></div>
+          <div class="ap-hero-body">
+            <div style="display:flex; align-items:center; gap:16px">
+              <div class="ap-hero-icon">
+                <lucide-icon [img]="CrownIcon" [size]="28"></lucide-icon>
+              </div>
+              <div>
+                <div class="ap-hero-title">{{ basic().name || t('addEditPlan.newPlan') }}</div>
+                <div class="ap-hero-sub">
+                  {{ basic().planType }} · {{ basic().currency }} {{ basic().monthlyPrice }}/mo ·
+                  {{ basic().forStudent ? t('addEditPlan.student') : t('addEditPlan.teacher') }} ·
+                  {{ basic().isActive ? t('addEditPlan.active') : t('addEditPlan.inactive') }}
+                </div>
+              </div>
+            </div>
+            <div style="display:flex; gap:22px; align-items:center">
+              <!-- Completion ring -->
+              <div style="text-align:center">
+                <div class="ap-ring" [style.background]="conicGradient()">
+                  <div class="ap-ring-inner"
+                       [style.font-family]="'Fraunces,serif'"
+                       [style.font-size.px]="12"
+                       [style.font-weight]="800">
+                    {{ completionPct() }}%
+                  </div>
+                </div>
+                <div style="font-size:11px; color:#64748b">{{ t('addEditPlan.complete') }}</div>
+              </div>
+              <div style="text-align:center">
+                <div class="ap-stat-num" style="color:#6366f1">{{ resources().length }}</div>
+                <div class="ap-stat-lbl">{{ t('addEditPlan.resources') }}</div>
+              </div>
+              <div style="text-align:center">
+                <div class="ap-stat-num" style="color:#8b5cf6">{{ totalTiers() }}</div>
+                <div class="ap-stat-lbl">{{ t('addEditPlan.limitTiers') }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ Main + Sidebar layout ══ -->
+        <div class="ap-layout">
+
+          <!-- ── Main Panel ── -->
+          <div>
+            <!-- Tabs -->
+            <div class="ap-tabs">
+              @for (tab of tabs(); track tab.key) {
+                <button
+                  type="button"
+                  class="ap-tab"
+                  [class.active]="activeTab() === tab.key"
+                  (click)="activeTab.set(tab.key)"
+                >
+                  @switch (tab.key) {
+                    @case ('basic')     { <lucide-icon [img]="SettingsIcon"  [size]="15"></lucide-icon> }
+                    @case ('resources') { <lucide-icon [img]="BookOpenIcon"  [size]="15"></lucide-icon> }
+                    @case ('features')  { <lucide-icon [img]="StarIcon"      [size]="15"></lucide-icon> }
+                    @case ('discounts') { <lucide-icon [img]="TagIcon"       [size]="15"></lucide-icon> }
+                  }
+                  {{ tab.label }}
+                  @if (tab.badge !== null) {
+                    <span class="ap-tab-badge">{{ tab.badge }}</span>
+                  }
+                </button>
+              }
+            </div>
+
+            <!-- ════ TAB: Basic Info ════ -->
+            @if (activeTab() === 'basic') {
+              <div class="ap-card">
+                <div class="ap-card-header">
+                  <div class="ap-card-title">
+                    <div class="ap-card-icon">
+                      <lucide-icon [img]="FileTextIcon" [size]="14"></lucide-icon>
+                    </div>
+                    {{ t('addEditPlan.planIdentity') }}
+                  </div>
+                </div>
+                <div class="ap-card-body">
+
+                  <!-- Name & Type -->
+                  <div class="ap-sub">
+                    <div class="ap-sub-title">
+                      <lucide-icon [img]="GlobeIcon" [size]="14"></lucide-icon>
+                      {{ t('addEditPlan.nameAndType') }}
+                    </div>
+                    <div class="ap-grid2">
+                      <div class="ap-field">
+                        <label class="ap-label">{{ t('addEditPlan.planNameEn') }} <span class="req">*</span></label>
+                        <input class="ap-input"
+                               [ngModel]="basic().name"
+                               (ngModelChange)="updateBasic('name', $event)"
+                               [placeholder]="t('addEditPlan.planNameEnPlaceholder')" />
+                      </div>
+                      <div class="ap-field">
+                        <label class="ap-label">{{ t('addEditPlan.planNameAr') }} <span class="req">*</span></label>
+                        <input class="ap-input"
+                               dir="rtl"
+                               [ngModel]="basic().nameInAr"
+                               (ngModelChange)="updateBasic('nameInAr', $event)"
+                               [placeholder]="t('addEditPlan.planNameArPlaceholder')" />
+                      </div>
+                      <div class="ap-field">
+                        <label class="ap-label">{{ t('addEditPlan.planType') }}</label>
+                        <select class="ap-select"
+                                [ngModel]="basic().planType"
+                                (ngModelChange)="updateBasic('planType', $event)">
+                          @for (pt of planTypes; track pt) {
+                            <option [value]="pt">{{ pt }}</option>
+                          }
+                        </select>
+                      </div>
+                      <div class="ap-field">
+                        <label class="ap-label">{{ t('addEditPlan.currency') }}</label>
+                        <select class="ap-select"
+                                [ngModel]="basic().currency"
+                                (ngModelChange)="updateBasic('currency', $event)">
+                          @for (c of currencies; track c) {
+                            <option [value]="c">{{ c }}</option>
+                          }
+                        </select>
+                      </div>
+                      <div class="ap-field">
+                        <label class="ap-label">{{ t('addEditPlan.displayOrder') }}</label>
+                        <input class="ap-input" type="number" min="1"
+                               [ngModel]="basic().displayOrder"
+                               (ngModelChange)="updateBasic('displayOrder', +$event || 1)" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Pricing -->
+                  <div class="ap-sub">
+                    <div class="ap-sub-title">
+                      <lucide-icon [img]="DollarSignIcon" [size]="14"></lucide-icon>
+                      {{ t('addEditPlan.pricing') }}
+                    </div>
+                    <div class="ap-grid4">
+                      <div class="ap-field">
+                        <label class="ap-label">{{ t('addEditPlan.monthly') }}</label>
+                        <div class="ap-currency-wrap">
+                          <span class="ap-currency-prefix">{{ basic().currency }}</span>
+                          <input class="ap-input ap-input-suffixed" type="number" min="0" step="0.01"
+                                 [ngModel]="basic().monthlyPrice"
+                                 (ngModelChange)="updateBasic('monthlyPrice', +$event || 0)" />
+                        </div>
+                      </div>
+                      <div class="ap-field">
+                        <label class="ap-label">{{ t('addEditPlan.quarterly') }}</label>
+                        <div class="ap-currency-wrap">
+                          <span class="ap-currency-prefix">{{ basic().currency }}</span>
+                          <input class="ap-input ap-input-suffixed" type="number" min="0" step="0.01"
+                                 [ngModel]="basic().quarterlyPrice"
+                                 (ngModelChange)="updateBasic('quarterlyPrice', +$event || 0)" />
+                        </div>
+                      </div>
+                      <div class="ap-field">
+                        <label class="ap-label">{{ t('addEditPlan.semiAnnual') }}</label>
+                        <div class="ap-currency-wrap">
+                          <span class="ap-currency-prefix">{{ basic().currency }}</span>
+                          <input class="ap-input ap-input-suffixed" type="number" min="0" step="0.01"
+                                 [ngModel]="basic().semiAnnualPrice"
+                                 (ngModelChange)="updateBasic('semiAnnualPrice', +$event || 0)" />
+                        </div>
+                      </div>
+                      <div class="ap-field">
+                        <label class="ap-label">{{ t('addEditPlan.annual') }}</label>
+                        <div class="ap-currency-wrap">
+                          <span class="ap-currency-prefix">{{ basic().currency }}</span>
+                          <input class="ap-input ap-input-suffixed" type="number" min="0" step="0.01"
+                                 [ngModel]="basic().annualPrice"
+                                 (ngModelChange)="updateBasic('annualPrice', +$event || 0)" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Descriptions -->
+                  <div class="ap-sub">
+                    <div class="ap-sub-title">
+                      <lucide-icon [img]="FileTextIcon" [size]="14"></lucide-icon>
+                      {{ t('addEditPlan.descriptions') }}
+                    </div>
+                    <div class="ap-field" style="margin-bottom:12px">
+                      <label class="ap-label">{{ t('addEditPlan.descriptionEn') }}</label>
+                      <textarea class="ap-textarea" rows="3" maxlength="500"
+                                [ngModel]="basic().description"
+                                (ngModelChange)="updateBasic('description', $event)"
+                                [placeholder]="t('addEditPlan.descriptionEnPlaceholder')"></textarea>
+                      <span style="font-size:11px; color:#94a3b8">{{ basic().description.length }}/500</span>
+                    </div>
+                    <div class="ap-field">
+                      <label class="ap-label">{{ t('addEditPlan.descriptionAr') }}</label>
+                      <textarea class="ap-textarea" rows="3" maxlength="500" dir="rtl"
+                                [ngModel]="basic().descriptionInAr"
+                                (ngModelChange)="updateBasic('descriptionInAr', $event)"
+                                [placeholder]="t('addEditPlan.descriptionArPlaceholder')"></textarea>
+                      <span style="font-size:11px; color:#94a3b8">{{ basic().descriptionInAr.length }}/500</span>
+                    </div>
+                  </div>
+
+                  <!-- Status -->
+                  <div class="ap-sub" style="margin-bottom:0">
+                    <div class="ap-sub-title">
+                      <lucide-icon [img]="SettingsIcon" [size]="14"></lucide-icon>
+                      {{ t('addEditPlan.status') }}
+                    </div>
+                    <div class="ap-grid2">
+                      <div class="ap-field">
+                        <label class="ap-label">{{ t('addEditPlan.activePlan') }}</label>
+                        <div class="ap-toggle" (click)="updateBasic('isActive', !basic().isActive)">
+                          <div class="ap-toggle-track" [class.active]="basic().isActive">
+                            <div class="ap-toggle-thumb"></div>
+                          </div>
+                          <span class="ap-toggle-label">
+                            {{ basic().isActive ? t('addEditPlan.active') : t('addEditPlan.inactive') }}
+                          </span>
+                        </div>
+                      </div>
+                      <div class="ap-field">
+                        <label class="ap-label">
+                          {{ t('addEditPlan.forStudents') }}
+                          <span nz-tooltip [nzTooltipTitle]="t('addEditPlan.forStudentsHint')"
+                                style="margin-left:4px; color:#94a3b8; cursor:help">ⓘ</span>
+                        </label>
+                        <div class="ap-toggle" (click)="updateBasic('forStudent', !basic().forStudent)">
+                          <div class="ap-toggle-track" [class.active]="basic().forStudent">
+                            <div class="ap-toggle-thumb"></div>
+                          </div>
+                          <span class="ap-toggle-label">
+                            {{ basic().forStudent ? t('addEditPlan.student') : t('addEditPlan.teacher') }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            }
+
+            <!-- ════ TAB: Resources ════ -->
+            @if (activeTab() === 'resources') {
+              <div>
+                <!-- Quick-add templates -->
+                <div class="ap-card" style="margin-bottom:20px">
+                  <div class="ap-card-header">
+                    <div class="ap-card-title">
+                      <div class="ap-card-icon">
+                        <lucide-icon [img]="LayersIcon" [size]="14"></lucide-icon>
+                      </div>
+                      {{ t('addEditPlan.quickAddTemplates') }}
+                    </div>
+                    <div class="ap-hint">
+                      <lucide-icon [img]="InfoIcon" [size]="12"></lucide-icon>
+                      {{ t('addEditPlan.quickAddHint') }}
+                    </div>
+                  </div>
+                  <div class="ap-card-body" style="padding-top:14px">
+                    @for (group of resourceTemplates; track trackByCategory($index, group)) {
+                      <div class="ap-tpl-group">
+                        <div class="ap-tpl-label" [style.color]="group.color">{{ group.category }}</div>
+                        <div class="ap-tpl-chips">
+                          @for (item of group.items; track trackByKey($index, item)) {
+                            <button
+                              type="button"
+                              class="ap-tpl-chip"
+                              [class.added]="existingKeys().includes(item.key)"
+                              [style.border-color]="existingKeys().includes(item.key) ? '#86efac' : group.color + '33'"
+                              [style.background]="existingKeys().includes(item.key) ? '#f0fdf4' : group.color + '08'"
+                              [style.color]="existingKeys().includes(item.key) ? '#16a34a' : group.color"
+                              (click)="addFromTemplate(item)"
+                            >
+                              @if (existingKeys().includes(item.key)) {
+                                <lucide-icon [img]="CheckCircleIcon" [size]="11"></lucide-icon>
+                              } @else {
+                                <lucide-icon [img]="PlusIcon" [size]="11"></lucide-icon>
+                              }
+                              {{ item.label }}
+                              @if (item.limits.length > 0) {
+                                <span style="font-size:10px; opacity:.7">
+                                  ({{ item.limits.length }} tier{{ item.limits.length > 1 ? 's' : '' }})
+                                </span>
+                              }
+                            </button>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <!-- Multi-tier callout -->
+                <div class="ap-info-callout">
+                  <lucide-icon [img]="InfoIcon" [size]="14"></lucide-icon>
+                  <span>
+                    Each resource can have <strong>multiple limit tiers</strong>
+                    (e.g. 5/day + 30/month + 50 lifetime).
+                    All tiers are enforced simultaneously — whichever runs out first blocks usage.
+                  </span>
+                </div>
+
+                <!-- Resource cards -->
+                @if (resources().length === 0) {
+                  <div class="ap-card ap-empty-state">
+                    <lucide-icon [img]="BookOpenIcon" [size]="48" style="color:#cbd5e1; margin-bottom:16px"></lucide-icon>
+                    <p>{{ t('addEditPlan.noResourcesYet') }}</p>
+                  </div>
+                } @else {
+                  @for (r of resources(); track trackByUid($index, r)) {
+                    <div class="ap-resource-card">
+                      <!-- Resource header (collapsible) -->
+                      <div class="ap-res-header" (click)="updateResource(r._uid, 'expanded', !r.expanded)">
+                        <div style="display:flex; align-items:center; gap:10px">
+                          <div class="ap-res-num">{{ $index + 1 }}</div>
+                          <div>
+                            <div class="ap-res-title">{{ r.name || 'Unnamed Resource' }}</div>
+                            <div style="display:flex; align-items:center; gap:8px">
+                              <div class="ap-res-sub">{{ r.resourceKey || 'no key' }}</div>
+                              @if (tierSummary(r)) {
+                                <span class="ap-tier-pill">{{ tierSummary(r) }}</span>
+                              }
+                            </div>
+                          </div>
+                        </div>
+                        <div style="display:flex; gap:6px; align-items:center">
+                          <button class="ap-icon-btn"
+                                  nz-tooltip [nzTooltipTitle]="r.isActive ? 'Deactivate' : 'Activate'"
+                                  (click)="$event.stopPropagation(); updateResource(r._uid, 'isActive', !r.isActive)">
+                            @if (r.isActive) {
+                              <lucide-icon [img]="UnlockIcon" [size]="13"></lucide-icon>
+                            } @else {
+                              <lucide-icon [img]="LockIcon" [size]="13"></lucide-icon>
+                            }
+                          </button>
+                          <button class="ap-icon-btn danger"
+                                  (click)="$event.stopPropagation(); removeResource(r._uid)">
+                            <lucide-icon [img]="Trash2Icon" [size]="13"></lucide-icon>
+                          </button>
+                          @if (r.expanded) {
+                            <lucide-icon [img]="ChevronUpIcon" [size]="16" style="color:#94a3b8"></lucide-icon>
+                          } @else {
+                            <lucide-icon [img]="ChevronDownIcon" [size]="16" style="color:#94a3b8"></lucide-icon>
+                          }
+                        </div>
+                      </div>
+
+                      <!-- Resource body -->
+                      @if (r.expanded) {
+                        <div class="ap-res-body">
+                          <!-- Identity fields -->
+                          <div class="ap-grid3" style="margin-bottom:16px">
+                            <div class="ap-field">
+                              <label class="ap-label">Name <span class="req">*</span></label>
+                              <input class="ap-input"
+                                     [ngModel]="r.name"
+                                     (ngModelChange)="updateResource(r._uid, 'name', $event)"
+                                     placeholder="Display name" />
+                            </div>
+                            <div class="ap-field">
+                              <label class="ap-label">Resource Key <span class="req">*</span></label>
+                              <input class="ap-input" style="font-family:monospace"
+                                     [ngModel]="r.resourceKey"
+                                     (ngModelChange)="updateResource(r._uid, 'resourceKey', $event)"
+                                     placeholder="e.g. ai.gpt4_calls" />
+                            </div>
+                            <div class="ap-field">
+                              <label class="ap-label">Category Type</label>
+                              <select class="ap-select"
+                                      [ngModel]="r.limitType"
+                                      (ngModelChange)="updateResource(r._uid, 'limitType', +$event)">
+                                @for (lt of limitTypes; track lt.value) {
+                                  <option [value]="lt.value">{{ lt.label }}</option>
+                                }
+                              </select>
+                            </div>
+                            <div class="ap-field">
+                              <label class="ap-label">Unlimited</label>
+                              <div class="ap-toggle" (click)="updateResource(r._uid, 'isUnlimited', !r.isUnlimited)">
+                                <div class="ap-toggle-track" [class.active]="r.isUnlimited">
+                                  <div class="ap-toggle-thumb"></div>
+                                </div>
+                                <span class="ap-toggle-label">{{ r.isUnlimited ? 'Unlimited' : 'Limited' }}</span>
+                              </div>
+                            </div>
+                            <div class="ap-field" style="grid-column: 1 / -1">
+                              <label class="ap-label">Description</label>
+                              <input class="ap-input"
+                                     [ngModel]="r.description"
+                                     (ngModelChange)="updateResource(r._uid, 'description', $event)"
+                                     placeholder="Brief description" />
+                            </div>
+                          </div>
+
+                          <!-- Limit Tiers -->
+                          @if (!r.isUnlimited) {
+                            <div>
+                              <div class="ap-limit-tiers-header">
+                                <div class="ap-limit-tiers-label">
+                                  <lucide-icon [img]="LayersIcon" [size]="13"></lucide-icon>
+                                  Limit Tiers
+                                  <span class="ap-tier-count-badge">{{ r.limits.length }}</span>
+                                </div>
+                                <div class="ap-hint">
+                                  <lucide-icon [img]="InfoIcon" [size]="12"></lucide-icon>
+                                  All active tiers are enforced simultaneously
+                                </div>
+                              </div>
+
+                              @if (r.limits.length === 0) {
+                                <div class="ap-no-limits">No limits — click below to add tiers</div>
+                              } @else {
+                                @for (lim of r.limits; track trackByUid($index, lim)) {
+                                  <!-- ── Limit Tier ── -->
+                                  <div class="ap-limit-tier">
+                                    <div class="ap-limit-tier-header">
+                                      <div class="ap-limit-label">
+                                        <lucide-icon [img]="LayersIcon" [size]="12"></lucide-icon>
+                                        Tier {{ $index + 1 }}
+                                        <span class="ap-limit-pill">{{ ltLabel(lim.limitType) }}</span>
+                                      </div>
+                                      <button class="ap-icon-btn danger"
+                                              (click)="removeLimit(r._uid, lim._uid)"
+                                              title="Remove tier">
+                                        <lucide-icon [img]="Trash2Icon" [size]="13"></lucide-icon>
+                                      </button>
+                                    </div>
+                                    <div class="ap-grid3" style="gap:10px">
+                                      <!-- Limit type -->
+                                      <div class="ap-field">
+                                        <label class="ap-label">Limit Type</label>
+                                        <select class="ap-select ap-select-sm"
+                                                [ngModel]="lim.limitType"
+                                                (ngModelChange)="updateLimitType(r._uid, lim._uid, +$event)">
+                                          @for (lt of limitTypes; track lt.value) {
+                                            <option [value]="lt.value">{{ lt.label }}</option>
+                                          }
+                                        </select>
+                                      </div>
+
+                                      <!-- Cap field -->
+                                      @if ([0,1,2,3].includes(lim.limitType)) {
+                                        <div class="ap-field">
+                                          <label class="ap-label">Max Count</label>
+                                          <input class="ap-input ap-input-sm" type="number" min="1"
+                                                 [ngModel]="lim.maxCount"
+                                                 (ngModelChange)="updateLimit(r._uid, lim._uid, 'maxCount', +$event || null)"
+                                                 placeholder="e.g. 5" />
+                                        </div>
+                                      }
+                                      @if (lim.limitType === 4) {
+                                        <div class="ap-field">
+                                          <label class="ap-label">Max Size (MB)</label>
+                                          <input class="ap-input ap-input-sm" type="number" min="1"
+                                                 [ngModel]="lim.maxSize"
+                                                 (ngModelChange)="updateLimit(r._uid, lim._uid, 'maxSize', +$event || null)"
+                                                 placeholder="e.g. 500" />
+                                        </div>
+                                      }
+                                      @if (lim.limitType === 5) {
+                                        <div class="ap-field">
+                                          <label class="ap-label">Max Duration (min)</label>
+                                          <input class="ap-input ap-input-sm" type="number" min="1"
+                                                 [ngModel]="lim.maxDuration"
+                                                 (ngModelChange)="updateLimit(r._uid, lim._uid, 'maxDuration', +$event || null)"
+                                                 placeholder="e.g. 60" />
+                                        </div>
+                                      }
+                                      @if (lim.limitType === 6) {
+                                        <div class="ap-field" style="justify-content:center">
+                                          <label class="ap-label">Allowed</label>
+                                          <div class="ap-toggle" (click)="updateLimit(r._uid, lim._uid, 'isAllowed', !lim.isAllowed)">
+                                            <div class="ap-toggle-track" [class.active]="lim.isAllowed">
+                                              <div class="ap-toggle-thumb"></div>
+                                            </div>
+                                            <span class="ap-toggle-label">{{ lim.isAllowed ? 'Yes' : 'No' }}</span>
+                                          </div>
+                                        </div>
+                                      }
+
+                                      <!-- Reset frequency -->
+                                      @if (lim.limitType !== 6) {
+                                        <div class="ap-field">
+                                          <label class="ap-label">Resets</label>
+                                          <select class="ap-select ap-select-sm"
+                                                  [ngModel]="lim.resetFrequency"
+                                                  (ngModelChange)="updateLimit(r._uid, lim._uid, 'resetFrequency', +$event)">
+                                            @for (rf of resetFrequencies; track rf.value) {
+                                              <option [value]="rf.value">{{ rf.label }}</option>
+                                            }
+                                          </select>
+                                        </div>
+                                      }
+
+                                      <!-- Friendly label -->
+                                      <div class="ap-field" style="grid-column: 1 / -1">
+                                        <label class="ap-label">
+                                          Friendly Label
+                                          <span style="color:#94a3b8; font-weight:400">(optional)</span>
+                                        </label>
+                                        <input class="ap-input ap-input-sm"
+                                               [ngModel]="lim.label"
+                                               (ngModelChange)="updateLimit(r._uid, lim._uid, 'label', $event)"
+                                               [placeholder]="'e.g. ' + (lim.maxCount ?? 'N') + ' per ' + ltLabel(lim.limitType).toLowerCase()" />
+                                      </div>
+                                    </div>
+
+                                    <!-- Summary pill -->
+                                    @if (lim.maxCount || lim.maxSize || lim.maxDuration) {
+                                      <div style="margin-top:8px">
+                                        <span class="ap-tier-summary-pill">
+                                          ✦ {{ tierCapDisplay(lim) }}
+                                        </span>
+                                      </div>
+                                    }
+                                  </div>
+                                }
+                              }
+
+                              <button type="button" class="ap-add-tier-btn" (click)="addLimit(r._uid)">
+                                <lucide-icon [img]="PlusIcon" [size]="13"></lucide-icon>
+                                Add Limit Tier
+                              </button>
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
+                  }
+                }
+
+                <button type="button" class="ap-btn-add" (click)="addResource()">
+                  <lucide-icon [img]="PlusIcon" [size]="14"></lucide-icon>
+                  {{ t('addEditPlan.addCustomResource') }}
+                </button>
+              </div>
+            }
+
+            <!-- ════ TAB: Features ════ -->
+            @if (activeTab() === 'features') {
+              <div class="ap-card">
+                <div class="ap-card-header">
+                  <div class="ap-card-title">
+                    <div class="ap-card-icon" style="background:linear-gradient(135deg,#f59e0b,#fbbf24)">
+                      <lucide-icon [img]="StarIcon" [size]="14"></lucide-icon>
+                    </div>
+                    {{ t('addEditPlan.planFeatures') }} ({{ features().length }})
+                  </div>
+                  <button class="ap-btn-primary ap-btn-sm" (click)="addFeature()">
+                    <lucide-icon [img]="PlusIcon" [size]="14"></lucide-icon>
+                    {{ t('addEditPlan.addFeature') }}
+                  </button>
+                </div>
+                <div class="ap-card-body">
+                  @if (features().length === 0) {
+                    <div class="ap-empty-inline">{{ t('addEditPlan.noFeaturesYet') }}</div>
+                  } @else {
+                    @for (f of features(); track trackByUid($index, f)) {
+                      <div class="ap-feature-row">
+                        <div class="ap-feature-row-header">
+                          <div class="ap-feature-title">{{ t('addEditPlan.feature') }} {{ $index + 1 }}</div>
+                          <div style="display:flex; gap:6px; align-items:center">
+                            <div class="ap-toggle" (click)="updateFeature(f._uid, 'isPositive', !f.isPositive)">
+                              <div class="ap-toggle-track" [class.active]="f.isPositive">
+                                <div class="ap-toggle-thumb"></div>
+                              </div>
+                              <span class="ap-toggle-label" style="font-size:11px">
+                                {{ f.isPositive ? '✓ Positive' : '✕ Negative' }}
+                              </span>
+                            </div>
+                            <button class="ap-icon-btn danger" (click)="removeFeature(f._uid)">
+                              <lucide-icon [img]="Trash2Icon" [size]="14"></lucide-icon>
+                            </button>
+                          </div>
+                        </div>
+                        <div class="ap-grid2">
+                          <div class="ap-field">
+                            <label class="ap-label">{{ t('addEditPlan.descriptionEn') }}</label>
+                            <input class="ap-input"
+                                   [ngModel]="f.description"
+                                   (ngModelChange)="updateFeature(f._uid, 'description', $event)"
+                                   placeholder="e.g. Priority support" />
+                          </div>
+                          <div class="ap-field">
+                            <label class="ap-label">{{ t('addEditPlan.descriptionAr') }}</label>
+                            <input class="ap-input" dir="rtl"
+                                   [ngModel]="f.descriptionInAr"
+                                   (ngModelChange)="updateFeature(f._uid, 'descriptionInAr', $event)"
+                                   placeholder="دعم ذو أولوية" />
+                          </div>
+                          <div class="ap-field">
+                            <label class="ap-label">{{ t('addEditPlan.icon') }}</label>
+                            <input class="ap-input"
+                                   [ngModel]="f.icon"
+                                   (ngModelChange)="updateFeature(f._uid, 'icon', $event)"
+                                   placeholder="check / star / lock" />
+                          </div>
+                          <div class="ap-field">
+                            <label class="ap-label">{{ t('addEditPlan.displayOrder') }}</label>
+                            <input class="ap-input" type="number" min="0"
+                                   [ngModel]="f.displayOrder"
+                                   (ngModelChange)="updateFeature(f._uid, 'displayOrder', +$event || 0)" />
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- ════ TAB: Discounts ════ -->
+            @if (activeTab() === 'discounts') {
+              <div class="ap-card">
+                <div class="ap-card-header">
+                  <div class="ap-card-title">
+                    <div class="ap-card-icon" style="background:linear-gradient(135deg,#22c55e,#4ade80)">
+                      <lucide-icon [img]="TagIcon" [size]="14"></lucide-icon>
+                    </div>
+                    {{ t('addEditPlan.discountsAndPromoCodes') }} ({{ discounts().length }})
+                  </div>
+                  <button class="ap-btn-primary ap-btn-sm"
+                          style="background:linear-gradient(135deg,#22c55e,#4ade80)"
+                          (click)="addDiscount()">
+                    <lucide-icon [img]="PlusIcon" [size]="14"></lucide-icon>
+                    {{ t('addEditPlan.addDiscount') }}
+                  </button>
+                </div>
+                <div class="ap-card-body">
+                  @if (discounts().length === 0) {
+                    <div class="ap-empty-inline">{{ t('addEditPlan.noDiscountsYet') }}</div>
+                  } @else {
+                    @for (d of discounts(); track trackByUid($index, d)) {
+                      <div class="ap-discount-row">
+                        <div class="ap-discount-row-header">
+                          <div class="ap-feature-title">
+                            {{ t('addEditPlan.discount') }} {{ $index + 1 }}
+                            @if (d.discountCode) { — {{ d.discountCode }} }
+                          </div>
+                          <div style="display:flex; gap:6px; align-items:center">
+                            <div class="ap-toggle" (click)="updateDiscount(d._uid, 'isActive', !d.isActive)">
+                              <div class="ap-toggle-track" [class.active]="d.isActive">
+                                <div class="ap-toggle-thumb"></div>
+                              </div>
+                              <span class="ap-toggle-label" style="font-size:11px">
+                                {{ d.isActive ? t('addEditPlan.active') : t('addEditPlan.off') }}
+                              </span>
+                            </div>
+                            <button class="ap-icon-btn danger" (click)="removeDiscount(d._uid)">
+                              <lucide-icon [img]="Trash2Icon" [size]="14"></lucide-icon>
+                            </button>
+                          </div>
+                        </div>
+                        <div class="ap-grid3">
+                          <div class="ap-field">
+                            <label class="ap-label">{{ t('addEditPlan.nameEn') }}</label>
+                            <input class="ap-input"
+                                   [ngModel]="d.name"
+                                   (ngModelChange)="updateDiscount(d._uid, 'name', $event)"
+                                   placeholder="Launch Discount" />
+                          </div>
+                          <div class="ap-field">
+                            <label class="ap-label">{{ t('addEditPlan.nameAr') }}</label>
+                            <input class="ap-input" dir="rtl"
+                                   [ngModel]="d.nameInAr"
+                                   (ngModelChange)="updateDiscount(d._uid, 'nameInAr', $event)"
+                                   placeholder="خصم الإطلاق" />
+                          </div>
+                          <div class="ap-field">
+                            <label class="ap-label">{{ t('addEditPlan.code') }}</label>
+                            <input class="ap-input" style="font-weight:700; letter-spacing:1px"
+                                   [ngModel]="d.discountCode"
+                                   (ngModelChange)="updateDiscount(d._uid, 'discountCode', $event.toUpperCase())"
+                                   placeholder="LAUNCH20" />
+                          </div>
+                          <div class="ap-field">
+                            <label class="ap-label">{{ t('addEditPlan.type') }}</label>
+                            <select class="ap-select"
+                                    [ngModel]="d.discountType"
+                                    (ngModelChange)="updateDiscount(d._uid, 'discountType', $event)">
+                              @for (dt of discountTypes; track dt) {
+                                <option [value]="dt">{{ dt }}</option>
+                              }
+                            </select>
+                          </div>
+                          <div class="ap-field">
+                            <label class="ap-label">
+                              {{ d.discountType === 'Percentage' ? t('addEditPlan.percentage') : t('addEditPlan.fixedAmount') }}
+                            </label>
+                            <input class="ap-input" type="number" min="0"
+                                   [attr.max]="d.discountType === 'Percentage' ? 100 : null"
+                                   [ngModel]="d.discountType === 'Percentage' ? d.percentage : d.fixedAmount"
+                                   (ngModelChange)="updateDiscount(d._uid, d.discountType === 'Percentage' ? 'percentage' : 'fixedAmount', +$event || 0)" />
+                          </div>
+                          <div class="ap-field">
+                            <label class="ap-label">{{ t('addEditPlan.maxUses') }}</label>
+                            <input class="ap-input" type="number" min="1"
+                                   [ngModel]="d.maxUses"
+                                   (ngModelChange)="updateDiscount(d._uid, 'maxUses', +$event || 0)" />
+                          </div>
+                          <div class="ap-field">
+                            <label class="ap-label">{{ t('addEditPlan.validFrom') }}</label>
+                            <input class="ap-input" type="date"
+                                   [ngModel]="d.validFrom"
+                                   (ngModelChange)="updateDiscount(d._uid, 'validFrom', $event)" />
+                          </div>
+                          <div class="ap-field">
+                            <label class="ap-label">{{ t('addEditPlan.validTo') }}</label>
+                            <input class="ap-input" type="date"
+                                   [ngModel]="d.validTo"
+                                   (ngModelChange)="updateDiscount(d._uid, 'validTo', $event)" />
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  }
+                </div>
+              </div>
+            }
+
+          </div><!-- /main panel -->
+
+          <!-- ── Sidebar ── -->
+          <div class="ap-sidebar">
+
+            <!-- Readiness -->
+            <div class="ap-card">
+              <div class="ap-card-header">
+                <div class="ap-card-title">
+                  <div class="ap-card-icon" style="background:linear-gradient(135deg,#22c55e,#4ade80)">
+                    <lucide-icon [img]="CheckCircleIcon" [size]="14"></lucide-icon>
+                  </div>
+                  {{ t('addEditPlan.readiness') }}
+                </div>
+                <div class="ap-sidebar-pct"
+                     [style.color]="completionPct() >= 80 ? '#22c55e' : '#f59e0b'">
+                  {{ completionPct() }}%
+                </div>
+              </div>
+              <div class="ap-card-body" style="padding-top:10px">
+                @for (check of sidebarChecks(); track check.label) {
+                  <div class="ap-check-item">
+                    <div class="ap-check-dot" [class.ok]="check.ok" [class.err]="!check.ok">
+                      {{ check.ok ? '✓' : '!' }}
+                    </div>
+                    <span style="font-size:12px; flex:1">{{ check.label }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Resource Summary -->
+            <div class="ap-card">
+              <div class="ap-card-header">
+                <div class="ap-card-title">
+                  <div class="ap-card-icon">
+                    <lucide-icon [img]="LayersIcon" [size]="14"></lucide-icon>
+                  </div>
+                  {{ t('addEditPlan.resourceSummary') }}
+                </div>
+              </div>
+              <div class="ap-card-body" style="padding-top:10px">
+                @if (resources().length === 0) {
+                  <div style="font-size:12px; color:#94a3b8; text-align:center; padding:12px 0">
+                    {{ t('addEditPlan.noResourcesYet') }}
+                  </div>
+                } @else {
+                  @for (r of resources(); track trackByUid($index, r)) {
+                    <div class="ap-check-item" style="align-items:flex-start">
+                      <div class="ap-res-status-dot"
+                           [class.ok]="r.limits.length > 0 || r.isUnlimited"
+                           [class.err]="r.limits.length === 0 && !r.isUnlimited">
+                        {{ r.limits.length > 0 || r.isUnlimited ? '✓' : '!' }}
+                      </div>
+                      <div style="flex:1; min-width:0">
+                        <div style="font-size:12px; font-weight:600; color:#0f172a">{{ r.name || 'Unnamed' }}</div>
+                        <div style="font-size:10px; color:#64748b; font-family:monospace">{{ r.resourceKey }}</div>
+                        @if (r.isUnlimited) {
+                          <span style="font-size:10px; color:#22c55e; font-weight:700">∞ Unlimited</span>
+                        } @else {
+                          <div style="display:flex; flex-wrap:wrap; gap:3px; margin-top:3px">
+                            @for (l of r.limits; track trackByUid($index, l)) {
+                              <span class="ap-sidebar-tier-pill">
+                                {{ (l.maxCount ?? l.maxSize ?? l.maxDuration) ?? '?' }}/{{ ltLabel(l.limitType).split(' ')[0].toLowerCase() }}
+                              </span>
+                            }
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+                }
+              </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="ap-card">
+              <div class="ap-card-header">
+                <div class="ap-card-title">
+                  <div class="ap-card-icon">
+                    <lucide-icon [img]="BarChartIcon" [size]="14"></lucide-icon>
+                  </div>
+                  {{ t('addEditPlan.stats') }}
+                </div>
+              </div>
+              <div class="ap-card-body" style="padding-top:10px">
+                <div class="ap-check-item">
+                  <div class="ap-stat-big" style="color:#6366f1">{{ resources().length }}</div>
+                  <span style="font-size:13px; color:#374151">{{ t('addEditPlan.resources') }}</span>
+                </div>
+                <div class="ap-check-item">
+                  <div class="ap-stat-big" style="color:#8b5cf6">{{ totalTiers() }}</div>
+                  <span style="font-size:13px; color:#374151">{{ t('addEditPlan.limitTiers') }}</span>
+                </div>
+                <div class="ap-check-item">
+                  <div class="ap-stat-big" style="color:#f59e0b">{{ features().length }}</div>
+                  <span style="font-size:13px; color:#374151">{{ t('addEditPlan.features') }}</span>
+                </div>
+                <div class="ap-check-item">
+                  <div class="ap-stat-big" style="color:#22c55e">{{ discounts().length }}</div>
+                  <span style="font-size:13px; color:#374151">{{ t('addEditPlan.discounts') }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Save button -->
+            <button
+              type="button"
+              class="ap-btn-primary ap-btn-full"
+              [disabled]="saving()"
+              (click)="handleSave()"
+            >
+              @if (saving()) {
+                <lucide-icon [img]="RefreshCwIcon" [size]="16" class="spin-icon"></lucide-icon>
+                {{ t('addEditPlan.saving') }}
+              } @else {
+                <lucide-icon [img]="SaveIcon" [size]="16"></lucide-icon>
+                {{ isEdit() ? t('addEditPlan.saveChanges') : t('addEditPlan.createPlan') }}
+              }
+            </button>
+
+          </div><!-- /sidebar -->
+
+        </div><!-- /ap-layout -->
+
+      </div><!-- /ap-body -->
+    </div><!-- /ap-rel -->
+  </div><!-- /ap-root -->
+  }<!-- /else main -->
+
+</ng-container>

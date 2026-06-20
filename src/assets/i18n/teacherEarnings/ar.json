@@ -1,0 +1,112 @@
+{
+    "loading": "جاري تحميل الأرباح...",
+    "back_to_dashboard": "لوحة التحكم",
+    "page_title": "الأرباح والمدفوعات",
+    "page_subtitle": "تتبع دخلك وطلب المدفوعات",
+    "export": "تصدير",
+    "request_payout": "طلب دفع",
+    
+    "welcome_title": "مرحباً بك في لوحة أرباحك! 🎉",
+    "welcome_msg1": "عندما يلتحق الطلاب بدوراتك، ستكسب المال هنا.",
+    "welcome_msg2": "تأخذ المنصة رسوماً بسيطة. وتحتفظ أنت بالباقي.",
+    "welcome_msg3": "بمجرد حصولك على ٤٠٫٠٠ جنيه أو أكثر، يمكنك طلب الدفع.",
+    
+    "available_to_withdraw": "الرصيد المتاح",
+    "total_sales": "إجمالي المبيعات",
+    "fees": "الرسوم",
+    "already_paid": "تم الدفع بالفعل",
+    "need_more": "تحتاج",
+    "to_reach_minimum": "المزيد للوصول إلى الحد الأدنى للدفع",
+    "minimum": "الحد الأدنى",
+    "min_payout": "الحد الأدنى للدفع",
+    
+    "progress_to_payout": "التقدم نحو الدفع",
+    "ready_to_payout": "يمكنك طلب الدفع الآن",
+    "minimum_required": "الحد الأدنى المطلوب",
+    "reached": "تم الوصول",
+    
+    "total_courses": "دوراتك",
+    "total_students": "إجمالي الطلاب",
+    "avg_per_course": "متوسط / دورة",
+    "platform_fees": "رسوم المنصة",
+    "this_month": "هذا الشهر",
+    "total_earned": "إجمالي الأرباح",
+    
+    "revenue_overview": "نظرة عامة على الإيرادات",
+    "last_12_months": "آخر ١٢ شهراً",
+    "revenue": "الإيرادات",
+    "new_students": "الطلاب",
+    
+    "earnings_history": "سجل الأرباح",
+    "payout_history": "سجل المدفوعات",
+    
+    "search_placeholder": "البحث عن دورة أو طالب…",
+    "all_courses": "جميع الدورات",
+    "all_statuses": "جميع الحالات",
+    "reset": "إعادة تعيين",
+    
+    "date": "التاريخ",
+    "course": "الدورة",
+    "student": "الطالب",
+    "gross_amount": "المبلغ الإجمالي",
+    "fee": "الرسوم",
+    "net_amount": "صافي المبلغ",
+    "status": "الحالة",
+    "platform_fee": "رسوم المنصة",
+    
+    "pending": "قيد الانتظار",
+    "processing": "قيد المعالجة",
+    "completed": "مكتمل",
+    "failed": "فشل",
+    
+    "no_earnings": "لا توجد أرباح بعد",
+    "no_payouts": "لا توجد طلبات دفع بعد",
+    "request_first_payout": "طلب دفع",
+    
+    "requested_amount": "المبلغ المطلوب",
+    "received_amount": "المبلغ المستلم",
+    "method": "الطريقة",
+    "recipient": "المستلم",
+    "completed_on": "تاريخ الإكمال",
+    
+    "summary": "ملخص",
+    "available_now": "متاح الآن",
+    
+    "how_it_works_title": "كيف تعمل",
+    "simple_process": "عملية بسيطة",
+    "how_it_works_desc": "عندما يلتحق طالب بدورتك، تكسب المال. يتم خصم رسوم المنصة تلقائياً. والباقي لك لتسحبه.",
+    "minimum_amount": "الحد الأدنى",
+    "fee_rate": "رسوم المنصة",
+    "cooldown": "فترة الانتظار",
+    "every_x_days": "كل {days} أيام",
+    
+    "payment_methods": "طرق الدفع",
+    "egypt_wallets_only": "طرق الدفع المصرية فقط",
+    
+    "transaction_details": "تفاصيل المعاملة",
+    "close": "إغلاق",
+    
+    "payout_subtitle": "سيتم إرسال أرباحك إلى محفظتك",
+    "payout_amount": "مبلغ الدفع",
+    "enter_amount": "أدخل المبلغ",
+    "maximum": "الحد الأقصى",
+    "payment_method": "طريقة الدفع",
+    "account_number": "رقم الحساب",
+    "enter_account_number": "أدخل رقم حسابك",
+    "notes_optional": "ملاحظات (اختياري)",
+    "additional_info": "أي معلومات إضافية…",
+    "you_will_receive": "سوف تستلم",
+    "fee_already_deducted": "تم خصم رسوم المنصة بالفعل — تستلم المبلغ كاملاً",
+    "cancel": "إلغاء",
+    "submit_request": "تقديم الطلب",
+    
+    "data_refreshed": "تم التحديث",
+    "withdrawal_submitted": "تم تقديم طلب الدفع",
+    "withdrawal_failed": "فشل",
+    "could_not_load_details": "تعذر تحميل التفاصيل",
+    "export_started": "بدأ التصدير",
+    "error": "خطأ",
+    
+    "need_more_to_withdraw": "تحتاج على الأقل"
+  
+}

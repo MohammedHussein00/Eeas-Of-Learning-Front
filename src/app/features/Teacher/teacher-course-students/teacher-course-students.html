@@ -1,0 +1,539 @@
+<ng-container *transloco="let t; scope: 'courseStudents'">
+
+  @if (loading()) {
+    <!-- ════ Full-page loading ════ -->
+    <div class="cs-loading">
+      <nz-spin nzSize="large"></nz-spin>
+    </div>
+
+  } @else {
+    <div class="cs">
+
+      <!-- ════════════════════════════════════════════════════════
+           HEADER
+      ═════════════════════════════════════════════════════════ -->
+      <div class="cs-hd">
+        <div class="cs-hd-row">
+
+          <!-- Left: back button + title block -->
+          <div class="cs-hd-left">
+            <button class="cs-back-btn" (click)="goBackToCourse()">
+              <lucide-icon [img]="backArrowIcon" [size]="16"></lucide-icon>
+              <span class="cs-back-label">{{ t('courseStudents.back_to_course') }}</span>
+            </button>
+
+            <div class="cs-hd-divider"></div>
+
+            <div class="cs-hd-ico">
+              <lucide-icon [img]="TeamIcon" [size]="20" style="color:#fff"></lucide-icon>
+            </div>
+            <div>
+              <div class="cs-title">{{ t('courseStudents.student_management') }}</div>
+              <div class="cs-sub">{{ course()?.title || t('courseStudents.loading') }}</div>
+            </div>
+          </div>
+
+          <!-- Right: action buttons -->
+          <div class="cs-hd-right">
+            <button class="cs-refresh" [disabled]="studentsLoading()" (click)="refresh()">
+              <lucide-icon [img]="RefreshCwIcon" [size]="13"
+                [style.animation]="studentsLoading() ? 'csSpin 1s linear infinite' : 'none'">
+              </lucide-icon>
+              {{ t('courseStudents.refresh') }}
+            </button>
+            <button class="cs-export-btn" (click)="openExportModal()">
+              <lucide-icon [img]="DownloadIcon" [size]="14"></lucide-icon>
+              <span>{{ t('courseStudents.export') }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats Strip -->
+        <div class="cs-stats">
+          <div class="cs-stat">
+            <div class="cs-stat-ico" style="background:#eef0ff; color:#3d5af1">
+              <lucide-icon [img]="TeamIcon" [size]="16"></lucide-icon>
+            </div>
+            <div>
+              <div class="cs-stat-v">{{ stats().total }}</div>
+              <div class="cs-stat-l">{{ t('courseStudents.total_students') }}</div>
+            </div>
+          </div>
+          <div class="cs-stat">
+            <div class="cs-stat-ico" style="background:#ecfdf5; color:#059669">
+              <lucide-icon [img]="CheckCircleIcon" [size]="16"></lucide-icon>
+            </div>
+            <div>
+              <div class="cs-stat-v">{{ stats().enrolled }}</div>
+              <div class="cs-stat-l">{{ t('courseStudents.active') }}</div>
+            </div>
+          </div>
+          <div class="cs-stat">
+            <div class="cs-stat-ico" style="background:#fffbeb; color:#d97706">
+              <lucide-icon [img]="ClockIcon" [size]="16"></lucide-icon>
+            </div>
+            <div>
+              <div class="cs-stat-v">{{ stats().pending }}</div>
+              <div class="cs-stat-l">{{ t('courseStudents.pending') }}</div>
+            </div>
+          </div>
+          <div class="cs-stat">
+            <div class="cs-stat-ico" style="background:#f5f0ff; color:#7c3aed">
+              <lucide-icon [img]="BarChartIcon" [size]="16"></lucide-icon>
+            </div>
+            <div>
+              <div class="cs-stat-v">{{ stats().averageProgress }}%</div>
+              <div class="cs-stat-l">{{ t('courseStudents.avg_progress') }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════
+           BODY
+      ═════════════════════════════════════════════════════════ -->
+      <div class="cs-body">
+
+        <!-- ── Filters Card ── -->
+        <div class="cs-card cs-filters-card">
+          <div class="cs-filters-head">
+            <lucide-icon [img]="FilterIcon" [size]="14" style="color:#94a3b8"></lucide-icon>
+            <span>{{ t('courseStudents.filters') }}</span>
+          </div>
+          <div class="cs-filters-body">
+            <form nz-form nzLayout="vertical" [formGroup]="filterForm">
+              <div nz-row [nzGutter]="[16, 0]">
+
+                <!-- Search -->
+                <div nz-col [nzXs]="24" [nzSm]="24" [nzMd]="8">
+                  <nz-form-item>
+                    <nz-form-label>{{ t('courseStudents.search') }}</nz-form-label>
+                    <nz-form-control>
+                      <div class="cs-search-wrap">
+                        <lucide-icon [img]="SearchIcon" [size]="14"
+                          style="position:absolute; left:10px; color:#94a3b8; pointer-events:none; z-index:1">
+                        </lucide-icon>
+                        <input nz-input formControlName="searchTerm" class="cs-search-input"
+                               [placeholder]="t('courseStudents.search_placeholder')" />
+                      </div>
+                    </nz-form-control>
+                  </nz-form-item>
+                </div>
+
+                <!-- Date Range -->
+                <div nz-col [nzXs]="24" [nzSm]="24" [nzMd]="8">
+                  <nz-form-item>
+                    <nz-form-label>{{ t('courseStudents.enrollment_date_range') }}</nz-form-label>
+                    <nz-form-control>
+                      <nz-range-picker formControlName="enrollmentDateRange" style="width:100%"></nz-range-picker>
+                    </nz-form-control>
+                  </nz-form-item>
+                </div>
+
+                <!-- Order -->
+                <div nz-col [nzXs]="24" [nzSm]="24" [nzMd]="8">
+                  <nz-form-item>
+                    <nz-form-label>{{ t('courseStudents.order') }}</nz-form-label>
+                    <nz-form-control>
+                      <nz-select formControlName="sortDescending" style="width:100%">
+                        <nz-option [nzValue]="true" [nzLabel]="t('courseStudents.descending')"></nz-option>
+                        <nz-option [nzValue]="false" [nzLabel]="t('courseStudents.ascending')"></nz-option>
+                      </nz-select>
+                    </nz-form-control>
+                  </nz-form-item>
+                </div>
+
+              </div>
+
+              <!-- Filter action buttons -->
+              <div class="cs-filter-actions">
+                <button class="cs-apply-btn" (click)="applyFilters()">
+                  <lucide-icon [img]="FilterIcon" [size]="13"></lucide-icon>
+                  {{ t('courseStudents.apply_filters') }}
+                </button>
+                <button class="cs-reset-btn" (click)="resetFilters()">
+                  {{ t('courseStudents.reset') }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- ── Students Table Card ── -->
+        <div class="cs-card">
+
+          <div class="cs-table-head">
+            <div>
+              <span class="cs-table-title">
+                {{ t('courseStudents.enrolled_students') }} ({{ students().length }})
+              </span>
+              <span class="cs-table-sub">{{ formatCountMessage(students().length) }}</span>
+            </div>
+          </div>
+
+          <!-- ── Desktop Table ── -->
+          <div class="cs-table-wrap">
+            @if (studentsLoading()) {
+              <div class="cs-loading-state">
+                <nz-spin nzSize="large"></nz-spin>
+              </div>
+            } @else if (students().length === 0) {
+              <ng-container *ngTemplateOutlet="emptyState"></ng-container>
+            } @else {
+              <nz-table
+                #studentsTable
+                [nzData]="students()"
+                [nzFrontPagination]="false"
+                [nzTotal]="students().length"
+                [nzPageIndex]="searchFilters().page"
+                [nzPageSize]="searchFilters().pageSize"
+                [nzPageSizeOptions]="pageSizeOptions"
+                [nzShowSizeChanger]="true"
+                [nzShowQuickJumper]="true"
+                [nzShowTotal]="totalTpl"
+                (nzPageIndexChange)="onPageChange($event)"
+                (nzPageSizeChange)="onPageSizeChange($event)"
+                [nzScroll]="{ x: '1200px' }"
+                nzSize="middle">
+
+                <ng-template #totalTpl let-total>
+                  {{ formatTotalMessage(total) }}
+                </ng-template>
+
+                <thead>
+                  <tr>
+                    <th nzLeft style="min-width:220px">{{ t('courseStudents.student') }}</th>
+                    <th style="min-width:160px">{{ t('courseStudents.enrollment') }}</th>
+                    <th style="min-width:160px">{{ t('courseStudents.progress') }}</th>
+                    <th style="min-width:140px">{{ t('courseStudents.activity') }}</th>
+                    <th style="min-width:120px">{{ t('courseStudents.completion') }}</th>
+                    <th style="min-width:120px">{{ t('courseStudents.performance') }}</th>
+                    <th nzRight style="min-width:120px">{{ t('courseStudents.actions') }}</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  @for (record of studentsTable.data; track record.enrollmentId) {
+                    <tr>
+                      <!-- Student -->
+                      <td nzLeft>
+                        <div class="cs-student-cell">
+                          <nz-avatar
+                            nzSize="large"
+                            [nzSrc]="avatarUrl(record.studentAvatar)"
+                            nzIcon="user">
+                          </nz-avatar>
+                          <div class="cs-student-info">
+                            <div class="cs-student-name">
+                              {{ record.studentName }}
+                            </div>
+                            <div class="cs-student-email">
+                              {{ record.studentEmail }}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <!-- Enrollment -->
+                      <td>
+                        <div class="cs-enrollment-cell">
+                          <div class="cs-enrollment-tags">
+                            <nz-tag [nzColor]="statusColor(record.status)">
+                              {{ statusLabel(record.status) }}
+                            </nz-tag>
+                            <nz-tag [nzColor]="enrollmentTypeColor(record.enrollmentType)">
+                              {{ enrollmentTypeLabel(record.enrollmentType) }}
+                            </nz-tag>
+                          </div>
+                          <div class="cs-enrollment-date">
+                            {{ formatDate(record.enrollmentDate) }}
+                          </div>
+                        </div>
+                      </td>
+
+                      <!-- Progress -->
+                      <td>
+                        <div class="cs-progress-cell">
+                          <nz-progress
+                            [nzPercent]="record.progressPercentage"
+                            nzSize="small"
+                            [nzStrokeColor]="progressColor(record.progressPercentage)">
+                          </nz-progress>
+                          <div class="cs-progress-lectures">
+                            {{ record.completedLectures }}/{{ record.totalLectures }}
+                            {{ t('courseStudents.lectures') }}
+                          </div>
+                        </div>
+                      </td>
+
+                      <!-- Activity -->
+                      <td>
+                        <div class="cs-activity-cell">
+                          <div class="cs-activity-time">
+                            <lucide-icon [img]="ClockIcon" [size]="12" style="color:#94a3b8"></lucide-icon>
+                            <span>{{ record.formattedWatchTime }}</span>
+                          </div>
+                          <div class="cs-activity-last">
+                            {{ t('courseStudents.last') }}:
+                            {{ record.lastAccessedAt ? formatDate(record.lastAccessedAt) : t('courseStudents.never') }}
+                          </div>
+                        </div>
+                      </td>
+
+                      <!-- Completion -->
+                      <td>
+                        <div class="cs-completion-cell">
+                          @if (record.isCompleted) {
+                            <nz-tag nzColor="success">
+                              <lucide-icon [img]="CheckCircleIcon" [size]="11"></lucide-icon>
+                              {{ t('courseStudents.completed') }}
+                            </nz-tag>
+                          } @else {
+                            <nz-tag>{{ t('courseStudents.in_progress') }}</nz-tag>
+                          }
+                          @if (record.certificateEarned) {
+                            <nz-tag nzColor="gold" class="cs-cert-tag">
+                              {{ t('courseStudents.certificate_earned') }}
+                            </nz-tag>
+                          }
+                        </div>
+                      </td>
+
+                      <!-- Performance -->
+                      <td>
+                        <div class="cs-performance-cell">
+                          <div class="cs-performance-quizzes">
+                            <lucide-icon [img]="HelpCircleIcon" [size]="12" style="color:#94a3b8"></lucide-icon>
+                            <span>{{ record.totalQuizAttempts }} {{ t('courseStudents.quizzes') }}</span>
+                          </div>
+                          <div class="cs-performance-score">
+                            {{ t('courseStudents.avg') }}: {{ record.averageQuizScore }}%
+                          </div>
+                        </div>
+                      </td>
+
+                      <!-- Actions -->
+                      <td nzRight>
+                        <div class="cs-actions-cell">
+                          <button
+                            class="cs-btn cs-bv"
+                            nz-tooltip
+                            [nzTooltipTitle]="t('courseStudents.view_analytics')"
+                            (click)="viewStudentAnalytics(record)">
+                            <lucide-icon [img]="BarChartIcon" [size]="13"></lucide-icon>
+                          </button>
+                          <button
+                            class="cs-btn cs-be"
+                            nz-tooltip
+                            [nzTooltipTitle]="t('courseStudents.send_message')"
+                            (click)="sendMessage(record)">
+                            <lucide-icon [img]="MailIcon" [size]="13"></lucide-icon>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </nz-table>
+            }
+          </div>
+
+          <!-- ── Mobile Cards ── -->
+          <div class="cs-mlist">
+            @if (studentsLoading()) {
+              <div class="cs-loading-state">
+                <nz-spin nzSize="large"></nz-spin>
+              </div>
+            } @else if (students().length === 0) {
+              <ng-container *ngTemplateOutlet="emptyState"></ng-container>
+            } @else {
+              @for (record of students(); track record.enrollmentId) {
+                <div class="cs-mc">
+                  <!-- Header -->
+                  <div class="cs-mc-hd">
+                    <div class="cs-mc-user">
+                      <nz-avatar
+                        [nzSrc]="avatarUrl(record.studentAvatar)"
+                        nzIcon="user">
+                      </nz-avatar>
+                      <div class="cs-mc-user-info">
+                        <div class="cs-mc-title">{{ record.studentName }}</div>
+                        <div class="cs-mc-sub">{{ record.studentEmail }}</div>
+                      </div>
+                    </div>
+                    <nz-tag [nzColor]="statusColor(record.status)">
+                      {{ statusLabel(record.status) }}
+                    </nz-tag>
+                  </div>
+
+                  <!-- Meta Info -->
+                  <div class="cs-mc-meta">
+                    <div class="cs-mc-meta-row">
+                      <nz-tag [nzColor]="enrollmentTypeColor(record.enrollmentType)">
+                        {{ enrollmentTypeLabel(record.enrollmentType) }}
+                      </nz-tag>
+                      <div class="cs-mc-mi">
+                        <lucide-icon [img]="BarChartIcon" [size]="12" style="color:#94a3b8"></lucide-icon>
+                        <span>{{ record.progressPercentage }}%</span>
+                      </div>
+                      <div class="cs-mc-mi">
+                        <lucide-icon [img]="ClockIcon" [size]="12" style="color:#94a3b8"></lucide-icon>
+                        <span>{{ record.formattedWatchTime }}</span>
+                      </div>
+                    </div>
+                    <div class="cs-mc-meta-row">
+                      <div class="cs-mc-mi">
+                        <span class="cs-mc-label">{{ t('courseStudents.enrolled') }}:</span>
+                        <span>{{ formatDate(record.enrollmentDate) }}</span>
+                      </div>
+                      @if (record.isCompleted) {
+                        <nz-tag nzColor="success" class="cs-mc-completed-tag">
+                          <lucide-icon [img]="CheckCircleIcon" [size]="10"></lucide-icon>
+                          {{ t('courseStudents.completed') }}
+                        </nz-tag>
+                      }
+                    </div>
+                    <div class="cs-mc-meta-row">
+                      <div class="cs-mc-mi">
+                        <span class="cs-mc-label">{{ t('courseStudents.lectures') }}:</span>
+                        <span>{{ record.completedLectures }}/{{ record.totalLectures }}</span>
+                      </div>
+                      <div class="cs-mc-mi">
+                        <span class="cs-mc-label">{{ t('courseStudents.avg') }}:</span>
+                        <span>{{ record.averageQuizScore }}%</span>
+                      </div>
+                    </div>
+                    @if (record.certificateEarned) {
+                      <div class="cs-mc-meta-row">
+                        <nz-tag nzColor="gold">
+                          🎓 {{ t('courseStudents.certificate_earned') }}
+                        </nz-tag>
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Actions -->
+                  <div class="cs-mc-actions">
+                    <button
+                      class="cs-btn cs-bv cs-mc-action-btn"
+                      (click)="viewStudentAnalytics(record)">
+                      <lucide-icon [img]="BarChartIcon" [size]="12"></lucide-icon>
+                      <span>{{ t('courseStudents.view_analytics') }}</span>
+                    </button>
+                    <button
+                      class="cs-btn cs-be cs-mc-action-btn"
+                      (click)="sendMessage(record)">
+                      <lucide-icon [img]="MailIcon" [size]="12"></lucide-icon>
+                      <span>{{ t('courseStudents.send_message') }}</span>
+                    </button>
+                  </div>
+                </div>
+              }
+
+              <!-- Mobile Pagination Info -->
+              <div class="cs-mobile-total">
+                {{ formatTotalMessage(students().length) }}
+              </div>
+            }
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════
+         EXPORT MODAL
+    ═════════════════════════════════════════════════════════ -->
+    <nz-modal
+      [nzTitle]="t('courseStudents.export_student_data')"
+      [nzVisible]="exportVisible()"
+      (nzOnCancel)="closeExportModal()"
+      [nzWidth]="560">
+
+      <ng-container *nzModalContent>
+        <nz-alert
+          [nzMessage]="t('courseStudents.export_information')"
+          [nzDescription]="t('courseStudents.export_description')"
+          nzType="info"
+          [nzShowIcon]="true"
+          class="cs-export-alert">
+        </nz-alert>
+
+        <form nz-form nzLayout="vertical" class="cs-export-form">
+          <nz-form-item>
+            <nz-form-label>{{ t('courseStudents.export_format') }}</nz-form-label>
+            <nz-form-control>
+              <nz-radio-group
+                [ngModel]="exportFormat()"
+                (ngModelChange)="setExportFormat($event)"
+                name="exportFormat">
+                <label nz-radio nzValue="csv">CSV (Excel)</label>
+                <label nz-radio nzValue="json">JSON</label>
+                <label nz-radio nzValue="pdf">PDF {{ t('courseStudents.report') }}</label>
+              </nz-radio-group>
+            </nz-form-control>
+          </nz-form-item>
+
+          <nz-form-item>
+            <nz-form-label>{{ t('courseStudents.include_data') }}</nz-form-label>
+            <nz-form-control>
+              <div class="cs-switch-stack">
+                <nz-switch
+                  [ngModel]="true"
+                  name="incStudentInfo"
+                  [nzCheckedChildren]="t('courseStudents.student_information')"
+                  [nzUnCheckedChildren]="t('courseStudents.student_information')">
+                </nz-switch>
+                <nz-switch
+                  [ngModel]="true"
+                  name="incProgress"
+                  [nzCheckedChildren]="t('courseStudents.progress_data')"
+                  [nzUnCheckedChildren]="t('courseStudents.progress_data')">
+                </nz-switch>
+                <nz-switch
+                  [ngModel]="true"
+                  name="incQuiz"
+                  [nzCheckedChildren]="t('courseStudents.quiz_scores')"
+                  [nzUnCheckedChildren]="t('courseStudents.quiz_scores')">
+                </nz-switch>
+                <nz-switch
+                  [ngModel]="false"
+                  name="incActivity"
+                  [nzCheckedChildren]="t('courseStudents.activity_logs')"
+                  [nzUnCheckedChildren]="t('courseStudents.activity_logs')">
+                </nz-switch>
+              </div>
+            </nz-form-control>
+          </nz-form-item>
+        </form>
+      </ng-container>
+
+      <ng-container *nzModalFooter>
+        <button nz-button (click)="closeExportModal()">{{ tc('cancel') }}</button>
+        <button
+          nz-button
+          nzType="primary"
+          [nzLoading]="exportLoading()"
+          (click)="handleExport()">
+          {{ t('courseStudents.export') }}
+        </button>
+      </ng-container>
+    </nz-modal>
+
+    <!-- ════ Empty State Template ════ -->
+    <ng-template #emptyState>
+      <div class="cs-empty">
+        <div class="cs-empty-ico">🎓</div>
+        <h3 class="cs-empty-title">{{ t('courseStudents.no_students_title') }}</h3>
+        <p class="cs-empty-desc">{{ t('courseStudents.no_students_desc') }}</p>
+        <button class="cs-export-btn cs-empty-action" (click)="goBackToCourse()">
+          {{ t('courseStudents.view_course_details') }}
+        </button>
+      </div>
+    </ng-template>
+
+  }
+
+</ng-container>

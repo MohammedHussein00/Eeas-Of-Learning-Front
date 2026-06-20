@@ -1,0 +1,1508 @@
+<ng-container *transloco="let t; scope: 'teacherCourseBuilder'">
+
+  <!-- ══ Loading ══ -->
+  @if (loading()) {
+    <div class="cb-loader">
+      <nz-spin nzSize="large"></nz-spin>
+    </div>
+  }
+
+  <!-- ══ Course not found ══ -->
+  @else if (!course()) {
+    <div class="cb-loader">
+      <nz-result
+        nzStatus="404"
+        [nzTitle]="t('teacherCourseBuilder.course_not_found')"
+        [nzSubTitle]="t('teacherCourseBuilder.course_not_found_desc')">
+        <div nz-result-extra>
+          <button class="cb-btn-primary" (click)="router.navigate(['/teacher/courses'])">
+            {{ t('teacherCourseBuilder.back_to_courses') }}
+          </button>
+        </div>
+      </nz-result>
+    </div>
+  }
+
+  <!-- ══ MAIN LAYOUT ══ -->
+  @else {
+  <div class="cb-root">
+
+    <!-- ── Header ── -->
+    <header class="cb-header">
+      <div class="cb-header-left">
+        <button class="cb-back-btn" (click)="router.navigate(['/teacher/courses'])">
+          <lucide-icon [img]="ArrowLeftIcon" [size]="16"></lucide-icon>
+          <span class="cb-back-label">{{ t('teacherCourseBuilder.my_courses') }}</span>
+        </button>
+        <div class="cb-header-sep"></div>
+        <div class="cb-header-info">
+          <h1 class="cb-header-title">{{ t('teacherCourseBuilder.course_builder') }}</h1>
+          <p class="cb-header-sub">{{ course()!.title }}</p>
+        </div>
+      </div>
+      <div class="cb-header-right">
+        <span class="cb-status-pill {{ getCourseStatus().cls }}">
+          <lucide-icon [img]="getCourseStatus().icon" [size]="13"></lucide-icon>
+          <span>{{ getCourseStatus().text }}</span>
+        </span>
+        @if ((course()!.studentCount ?? 0) > 0) {
+          <span class="cb-students-pill">
+            <lucide-icon [img]="TeamIcon" [size]="13"></lucide-icon>
+            {{ course()!.studentCount }}
+          </span>
+        }
+
+      </div>
+    </header>
+
+    <div class="cb-body">
+
+      <!-- ── Hero ── -->
+      <div class="cb-hero">
+        <div class="cb-hero-accent"></div>
+        <div class="cb-hero-content">
+          <div class="cb-hero-left">
+            <!-- Thumbnail -->
+            <div class="cb-thumbnail-wrap">
+              @if (thumbnailSrc()) {
+                <img [src]="thumbnailSrc()!" alt="course"
+                  class="cb-thumbnail-img"
+                  (error)="thumbnailError.set(true)" />
+              } @else {
+                <div class="cb-thumbnail-placeholder">
+                  <lucide-icon [img]="ImageIcon" [size]="32"></lucide-icon>
+                </div>
+              }
+            </div>
+            <div class="cb-hero-text">
+              <h2 class="cb-hero-title">{{ course()!.title }}</h2>
+              <p class="cb-hero-subtitle">{{ course()!.subtitle || t('teacherCourseBuilder.no_subtitle') }}</p>
+              <div class="cb-hero-pills">
+                <span class="cb-status-pill {{ getCourseStatus().cls }}">
+                  <lucide-icon [img]="getCourseStatus().icon" [size]="12"></lucide-icon>
+                  <span>{{ getCourseStatus().text }}</span>
+                </span>
+                <span class="cb-pill blue">
+                  <lucide-icon [img]="TeamIcon" [size]="12"></lucide-icon>
+                  {{ course()!.studentCount || 0 }} {{ t('teacherCourseBuilder.students') }}
+                </span>
+                <span class="cb-pill amber">
+                  <lucide-icon [img]="StarIcon" [size]="12"></lucide-icon>
+                  {{ computedRating() | number:'1.1-1' }}
+                </span>
+                <span class="cb-pill purple">
+                  <lucide-icon [img]="PlayIcon" [size]="12"></lucide-icon>
+                  {{ lectures().length }} {{ t('teacherCourseBuilder.lectures') }}
+                </span>
+                @if (courseExam()) {
+                  <span class="cb-pill orange">
+                    <lucide-icon [img]="TrophyIcon" [size]="12"></lucide-icon>
+                    {{ t('teacherCourseBuilder.course_exam') }}
+                  </span>
+                }
+              </div>
+            </div>
+          </div>
+          <div class="cb-hero-right">
+            <div class="cb-hero-ring">
+              <nz-progress
+                [nzPercent]="completionPercent"
+                nzType="circle"
+                [nzWidth]="80"
+                [nzStrokeColor]="completionPercent >= 80 ? '#22c55e' : completionPercent >= 50 ? '#f59e0b' : '#6366f1'"
+                [nzFormat]="percentFormat">
+              </nz-progress>
+              <span class="cb-hero-ring-label">{{ t('teacherCourseBuilder.ready_to_publish') }}</span>
+            </div>
+            <div class="cb-hero-actions">
+              @if (!course()!.isPublished) {
+                <button
+                  class="cb-hero-publish-btn"
+                  [class.disabled]="!completionChecklist().isPublishable || latestPublishRequest()?.status === 'Pending'"
+                  [disabled]="!completionChecklist().isPublishable || latestPublishRequest()?.status === 'Pending'"
+                  [nz-tooltip]="!completionChecklist().isPublishable ? t('teacherCourseBuilder.complete_requirements_to_publish') : ''"
+                  (click)="openPublishRequestModal()">
+                  <lucide-icon [img]="RocketIcon" [size]="14"></lucide-icon>
+                  <span class="cb-btn-label">
+                    {{ latestPublishRequest()?.status === 'Pending'
+                        ? t('teacherCourseBuilder.pending_review')
+                        : (latestPublishRequest()?.status === 'Rejected' || latestPublishRequest()?.status === 'ChangesRequested')
+                          ? t('teacherCourseBuilder.resubmit_for_review')
+                          : t('teacherCourseBuilder.request_publication') }}
+                  </span>
+                </button>
+              }
+              <button class="cb-hero-secondary-btn"
+                (click)="router.navigate(['/teacher/courses', courseId, 'students'])">
+                <lucide-icon [img]="UsersAddIcon" [size]="14"></lucide-icon>
+                <span class="cb-btn-label">{{ t('teacherCourseBuilder.students') }} ({{ course()!.studentCount || 0 }})</span>
+              </button>
+              @if (publishRequests().length > 0) {
+                <button class="cb-hero-secondary-btn"
+                  (click)="publishHistoryModalVisible.set(true)">
+                  <lucide-icon [img]="HistoryIcon" [size]="14"></lucide-icon>
+                  <span class="cb-btn-label cb-md-only">{{ t('teacherCourseBuilder.history') }}</span>
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Stats ── -->
+      <div class="cb-stats-grid">
+        @for (s of statCards(); track s.title) {
+          <div class="cb-stat-card {{ s.cls }}" [class.clickable]="!!s.route"
+            (click)="s.route && router.navigate(s.route)">
+            <div class="cb-stat-icon">
+              <lucide-icon [img]="s.icon" [size]="20"></lucide-icon>
+            </div>
+            <div class="cb-stat-body">
+              <div class="cb-stat-value">{{ s.val }}</div>
+              <div class="cb-stat-label">{{ s.title }}</div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- ── Main grid ── -->
+      <div class="cb-main-grid">
+
+        <!-- ── Content column ── -->
+        <div class="cb-content-col">
+
+          <!-- ════ TABS ════ -->
+          <nz-tabs
+            [nzSelectedIndex]="selectedTabIndex"
+            (nzSelectedIndexChange)="onTabChange($event)"
+            nzType="card"
+            class="cb-tabs">
+
+            <!-- Tab: Content -->
+            <nz-tab [nzTitle]="contentTabTitle">
+              <ng-template #contentTabTitle>
+                <span class="cb-tab-label">
+                  <lucide-icon [img]="FileTextIcon" [size]="14"></lucide-icon>
+                  <span class="cb-tab-text">{{ t('teacherCourseBuilder.course_content') }}</span>
+                  <nz-badge [nzCount]="sections().length" nzShowZero></nz-badge>
+                </span>
+              </ng-template>
+              <div class="cb-tab-pane">
+                <!-- Course Exam Card -->
+                <div class="cb-card">
+                  <div class="cb-card-head">
+                    <div class="cb-card-heading">
+                      <span class="cb-card-chip orange">
+                        <lucide-icon [img]="TrophyIcon" [size]="16"></lucide-icon>
+                      </span>
+                      <span>{{ t('teacherCourseBuilder.course_exam') }}</span>
+                    </div>
+                    @if (!courseExam()) {
+                      <button class="cb-btn-primary sm" (click)="openExamModal('add')">
+                        <lucide-icon [img]="PlusIcon" [size]="13"></lucide-icon>
+                        {{ t('teacherCourseBuilder.create_exam') }}
+                      </button>
+                    } @else {
+                      <div class="cb-action-group">
+                        <button class="cb-icon-btn sm" (click)="router.navigate(['/teacher/quizzes', courseExam()!.id])">
+                          <lucide-icon [img]="EyeIcon" [size]="13"></lucide-icon>
+                        </button>
+                        <button class="cb-icon-btn sm" (click)="openExamModal('edit')">
+                          <lucide-icon [img]="EditIcon" [size]="13"></lucide-icon>
+                        </button>
+                        <button class="cb-icon-btn danger sm" (click)="confirmDeleteExam()">
+                          <lucide-icon [img]="TrashIcon" [size]="13"></lucide-icon>
+                        </button>
+                      </div>
+                    }
+                  </div>
+                  <div class="cb-card-body">
+                    @if (courseExam()) {
+                      <div class="cb-exam-info">
+                        <span class="cb-pill orange">
+                          <lucide-icon [img]="TrophyIcon" [size]="12"></lucide-icon>
+                          {{ courseExam()!.title }}
+                        </span>
+                        <span class="cb-pill blue">{{ quizTypeLabel(courseExam()!.type) }}</span>
+                        <span class="cb-pill gray">
+                          <lucide-icon [img]="CheckIcon" [size]="12"></lucide-icon>
+                          {{ t('teacherCourseBuilder.passing_score') }}: {{ courseExam()!.passingScore }}%
+                        </span>
+                        @if (courseExam()!.timeLimitMinutes) {
+                          <span class="cb-pill gray">
+                            <lucide-icon [img]="ClockIcon" [size]="12"></lucide-icon>
+                            {{ courseExam()!.timeLimitMinutes }} {{ t('teacherCourseBuilder.minutes') }}
+                          </span>
+                        }
+                      </div>
+                    } @else {
+                      <div class="cb-empty-note">
+                        <lucide-icon [img]="InfoIcon" [size]="14"></lucide-icon>
+                        {{ t('teacherCourseBuilder.no_course_exam_desc') }}
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <!-- Sections Card -->
+                <div class="cb-card">
+                  <div class="cb-card-head">
+                    <div class="cb-card-heading">
+                      <span class="cb-card-chip blue">
+                        <lucide-icon [img]="FileTextIcon" [size]="16"></lucide-icon>
+                      </span>
+                      <span>{{ t('teacherCourseBuilder.course_sections') }}</span>
+                      <span class="cb-count">({{ sections().length }})</span>
+                    </div>
+                    <button class="cb-btn-primary sm" (click)="openSectionModal('add')">
+                      <lucide-icon [img]="PlusIcon" [size]="13"></lucide-icon>
+                      {{ t('teacherCourseBuilder.add_section') }}
+                    </button>
+                  </div>
+                  <div class="cb-card-body">
+                    @if (sections().length === 0) {
+                      <div class="cb-empty-state">
+                        <div class="cb-empty-icon">
+                          <lucide-icon [img]="FolderIcon" [size]="40"></lucide-icon>
+                        </div>
+                        <p>{{ t('teacherCourseBuilder.no_sections_yet') }}</p>
+                        <button class="cb-btn-primary" (click)="openSectionModal('add')">{{ t('teacherCourseBuilder.create_first_section') }}</button>
+                      </div>
+                    } @else {
+                      <div class="cb-sections">
+                        @for (section of sections(); track section.id) {
+                          @let sLectures = getLecturesForSection(section.id);
+                          @let sQuiz = getSectionQuiz(section.id);
+                          <div class="cb-section">
+                            <div class="cb-section-head">
+                              <div class="cb-section-info">
+                                <div class="cb-section-num">{{ section.order }}</div>
+                                <div>
+                                  <div class="cb-section-title">{{ section.title }}</div>
+                                  @if (section.description) {
+                                    <div class="cb-section-desc">{{ section.description }}</div>
+                                  }
+                                </div>
+                              </div>
+                              <div class="cb-section-actions">
+                                <div class="cb-section-tags">
+                                  <span class="cb-mini-tag {{ section.isPublished ? 'green' : 'gray' }}">
+                                    {{ section.isPublished ? t('teacherCourseBuilder.published') : t('teacherCourseBuilder.draft') }}
+                                  </span>
+                                  <span class="cb-mini-tag gray">{{ sLectures.length }} {{ t('teacherCourseBuilder.lectures') }}</span>
+                                  @if (sQuiz) { <span class="cb-mini-tag purple">{{ t('teacherCourseBuilder.section_quiz') }}</span> }
+                                </div>
+                                <div class="cb-section-btns">
+                                  <button class="cb-icon-btn" [nz-tooltip]="t('teacherCourseBuilder.edit_section')"
+                                    (click)="openSectionModal('edit', section)">
+                                    <lucide-icon [img]="EditIcon" [size]="13"></lucide-icon>
+                                  </button>
+                                  <button class="cb-icon-btn primary" [nz-tooltip]="t('teacherCourseBuilder.add_lecture')"
+                                    (click)="openLectureModal('add', null, section.id)">
+                                    <lucide-icon [img]="PlusIcon" [size]="13"></lucide-icon>
+                                  </button>
+                                  @if (!sQuiz) {
+                                    <button class="cb-icon-btn purple" [nz-tooltip]="t('teacherCourseBuilder.add_section_quiz')"
+                                      (click)="openQuizModal('add', null, null, section.id)">
+                                      <lucide-icon [img]="AppstoreIcon" [size]="13"></lucide-icon>
+                                    </button>
+                                  } @else {
+                                    <button class="cb-icon-btn purple" [nz-tooltip]="t('teacherCourseBuilder.edit_section_quiz')"
+                                      (click)="openQuizModal('edit', sQuiz, null, section.id)">
+                                      <lucide-icon [img]="QuestionIcon" [size]="13"></lucide-icon>
+                                    </button>
+                                  }
+                                  <button class="cb-icon-btn danger" [nz-tooltip]="t('teacherCourseBuilder.delete_section')"
+                                    (click)="confirmDeleteSection(section.id)">
+                                    <lucide-icon [img]="TrashIcon" [size]="13"></lucide-icon>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                            @if (sQuiz) {
+                              <div class="cb-section-quiz-bar">
+                                <span class="cb-quiz-chip"
+                                  (click)="router.navigate(['/teacher/quizzes', sQuiz.id])">
+                                  <lucide-icon [img]="LayersIcon" [size]="12"></lucide-icon>
+                                  {{ sQuiz.title }} · {{ t('teacherCourseBuilder.passing_score') }}: {{ sQuiz.passingScore }}%
+                                </span>
+                                <button class="cb-icon-btn danger sm"
+                                  (click)="confirmDeleteQuiz(sQuiz.id)">
+                                  <lucide-icon [img]="TrashIcon" [size]="12"></lucide-icon>
+                                </button>
+                              </div>
+                            }
+
+                            <div class="cb-lectures">
+                              @for (lec of sLectures; track lec.id) {
+                                @let lQuiz = getLectureQuiz(lec.id);
+                                <div class="cb-lecture-row">
+                                  <div class="cb-lecture-left">
+                                    <div class="cb-lecture-play">
+                                      <lucide-icon [img]="PlayIcon" [size]="12"></lucide-icon>
+                                    </div>
+                                    <div>
+                                      <div class="cb-lecture-title">{{ lec.title }}</div>
+                                      <div class="cb-lecture-meta">
+                                        {{ lec.durationMinutes || 0 }} {{ t('teacherCourseBuilder.minutes') }}
+                                        · {{ lec.isFree ? t('teacherCourseBuilder.free_preview') : t('teacherCourseBuilder.premium') }}
+                                        @if (lQuiz) { <span class="cb-mini-tag cyan">{{ t('teacherCourseBuilder.quiz') }}</span> }
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div class="cb-lecture-actions">
+                                    <button class="cb-icon-btn sm" [nz-tooltip]="t('teacherCourseBuilder.view')"
+                                      (click)="router.navigate(['/teacher/lectures', lec.id])">
+                                      <lucide-icon [img]="EyeIcon" [size]="12"></lucide-icon>
+                                    </button>
+                                    <button class="cb-icon-btn sm" [nz-tooltip]="t('teacherCourseBuilder.edit_lecture')"
+                                      (click)="openLectureModal('edit', lec)">
+                                      <lucide-icon [img]="EditIcon" [size]="12"></lucide-icon>
+                                    </button>
+                                    @if (!lQuiz) {
+                                      <button class="cb-icon-btn primary sm" [nz-tooltip]="t('teacherCourseBuilder.add_quiz')"
+                                        (click)="openQuizModal('add', null, lec.id, null)">
+                                        <lucide-icon [img]="QuestionIcon" [size]="12"></lucide-icon>
+                                      </button>
+                                    } @else {
+                                      <button class="cb-icon-btn primary sm" [nz-tooltip]="t('teacherCourseBuilder.edit_quiz')"
+                                        (click)="openQuizModal('edit', lQuiz, lec.id, null)">
+                                        <lucide-icon [img]="QuestionIcon" [size]="12"></lucide-icon>
+                                      </button>
+                                    }
+                                    <button class="cb-icon-btn danger sm" [nz-tooltip]="t('teacherCourseBuilder.delete_lecture')"
+                                      (click)="confirmDeleteLecture(lec.id)">
+                                      <lucide-icon [img]="TrashIcon" [size]="12"></lucide-icon>
+                                    </button>
+                                  </div>
+                                </div>
+                              }
+                              <button class="cb-add-lecture-btn"
+                                (click)="openLectureModal('add', null, section.id)">
+                                <lucide-icon [img]="PlusIcon" [size]="13"></lucide-icon>
+                                {{ t('teacherCourseBuilder.add_lecture_to_section') }}
+                              </button>
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <!-- All Quizzes Card -->
+                @if (quizzes().length > 0) {
+                  <div class="cb-card">
+                    <div class="cb-card-head">
+                      <div class="cb-card-heading">
+                        <span class="cb-card-chip yellow">
+                          <lucide-icon [img]="QuestionIcon" [size]="16"></lucide-icon>
+                        </span>
+                        <span>{{ t('teacherCourseBuilder.course_quizzes') }}</span>
+                        <span class="cb-count">({{ quizzes().length }})</span>
+                      </div>
+                      <div class="cb-action-group">
+                        @if (lectureQuizzes().length > 0) {
+                          <span class="cb-mini-tag cyan">{{ lectureQuizzes().length }} {{ t('teacherCourseBuilder.lecture_quizzes') }}</span>
+                        }
+                        @if (sectionQuizzes().length > 0) {
+                          <span class="cb-mini-tag purple">{{ sectionQuizzes().length }} {{ t('teacherCourseBuilder.section_quizzes') }}</span>
+                        }
+                      </div>
+                    </div>
+                    <div class="cb-card-body">
+                      @for (quiz of allQuizzesSorted(); track quiz.id) {
+                        <div class="cb-quiz-row">
+                          <div class="cb-quiz-left">
+                            <div class="cb-quiz-chip-icon {{ quiz.quizTarget }}">
+                              <lucide-icon [img]="quiz.quizTarget === 'section' ? LayersIcon : QuestionIcon" [size]="14"></lucide-icon>
+                            </div>
+                            <div>
+                              <div class="cb-quiz-title">{{ quiz.title }}</div>
+                              <div class="cb-quiz-meta">
+                                {{ quiz.quizTarget === 'section' ? quiz.sectionTitle : quiz.lectureTitle }}
+                                · {{ t('teacherCourseBuilder.passing_score') }}: {{ quiz.passingScore }}%
+                                @if (quiz.timeLimitMinutes) { · {{ quiz.timeLimitMinutes }}{{ t('teacherCourseBuilder.min') }} }
+                              </div>
+                            </div>
+                          </div>
+                          <div class="cb-quiz-actions">
+                            <span class="cb-mini-tag {{ quiz.type === 'Graded' || quiz.type === 2 ? 'blue' : 'green' }}">
+                              {{ quizTypeLabel(quiz.type) }}
+                            </span>
+                            <button class="cb-icon-btn sm"
+                              (click)="router.navigate(['/teacher/quizzes', quiz.id])">
+                              <lucide-icon [img]="EyeIcon" [size]="12"></lucide-icon>
+                            </button>
+                            <button class="cb-icon-btn sm"
+                              (click)="openQuizModal('edit', quiz, quiz.quizTarget === 'lecture' ? quiz.lectureId : null, quiz.quizTarget === 'section' ? quiz.sectionId : null)">
+                              <lucide-icon [img]="EditIcon" [size]="12"></lucide-icon>
+                            </button>
+                            <button class="cb-icon-btn danger sm" (click)="confirmDeleteQuiz(quiz.id)">
+                              <lucide-icon [img]="TrashIcon" [size]="12"></lucide-icon>
+                            </button>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+                <!-- Course Resources Card -->
+<div class="cb-card">
+  <div class="cb-card-head">
+    <div class="cb-card-heading">
+      <span class="cb-card-chip blue">
+        <lucide-icon [img]="PaperclipIcon" [size]="16"></lucide-icon>
+      </span>
+      <span>{{ t('teacherCourseBuilder.course_resources') }}</span>
+      <span class="cb-count">({{ courseResources().length }}/10)</span>
+    </div>
+    <button
+      class="cb-btn-primary sm"
+      [disabled]="courseResourceUploadingModal() || courseResources().length >= 10"
+      (click)="openResourceUploadModal()">
+      @if (courseResourceUploadingModal()) {
+        <nz-spin nzSize="small"></nz-spin>
+      } @else {
+        <lucide-icon [img]="UploadIcon" [size]="13"></lucide-icon>
+      }
+      {{ courseResourceUploadingModal() ? t('teacherCourseBuilder.uploading') : t('teacherCourseBuilder.upload_resource') }}
+    </button>
+  </div>
+  <div class="cb-card-body">
+
+    @if (courseResourceError()) {
+      <nz-alert
+        [nzMessage]="courseResourceError()"
+        nzType="error" nzShowIcon nzCloseable
+        (nzOnClose)="courseResourceError.set(null)"
+        class="cb-resource-alert">
+      </nz-alert>
+    }
+
+    @if (courseResourcesLoading()) {
+      <nz-spin></nz-spin>
+    } @else if (courseResources().length === 0) {
+      <div class="cb-empty-note">
+        <lucide-icon [img]="InfoIcon" [size]="14"></lucide-icon>
+        {{ t('teacherCourseBuilder.no_course_resources') }}
+      </div>
+    } @else {
+      <div class="cb-course-resource-list">
+        @for (r of courseResources(); track r.id) {
+          <div class="cb-course-resource-item">
+            <div class="cb-course-resource-left">
+              <span class="cb-resource-type-badge">{{ r.fileType }}</span>
+              <div>
+                <div class="cb-resource-name">{{ r.fileName }}</div>
+                <div class="cb-resource-meta">{{ r.formattedSize }}</div>
+              </div>
+            </div>
+            <div class="cb-course-resource-actions">
+
+              <button class="cb-icon-btn danger sm" [nz-tooltip]="t('teacherCourseBuilder.delete')"
+                (click)="confirmDeleteCourseResource(r.id)">
+                <lucide-icon [img]="TrashIcon" [size]="12"></lucide-icon>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <div class="cb-upload-hint" style="margin-top:10px">
+      <lucide-icon [img]="InfoIcon" [size]="12"></lucide-icon>
+      {{ t('teacherCourseBuilder.course_resource_format_limit') }}
+    </div>
+  </div>
+</div>
+
+              </div>
+            </nz-tab>
+
+            <!-- Tab: Analytics -->
+            <nz-tab [nzTitle]="analyticsTabTitle">
+              <ng-template #analyticsTabTitle>
+                <span class="cb-tab-label">
+                  <lucide-icon [img]="BarChartIcon" [size]="14"></lucide-icon>
+                  <span class="cb-tab-text">{{ t('teacherCourseBuilder.analytics') }}</span>
+                </span>
+              </ng-template>
+              <div class="cb-tab-pane">
+                <div class="cb-card">
+                  <div class="cb-card-head">
+                    <div class="cb-card-heading">
+                      <span class="cb-card-chip green">
+                        <lucide-icon [img]="BarChartIcon" [size]="16"></lucide-icon>
+                      </span>
+                      <span>{{ t('teacherCourseBuilder.course_analytics') }}</span>
+                    </div>
+                  </div>
+                  <div class="cb-card-body">
+                    <div class="cb-analytics-grid">
+                      <div class="cb-analytics-item">
+                        <div class="cb-analytics-label">{{ t('teacherCourseBuilder.total_revenue') }}</div>
+                        <div class="cb-analytics-val green">${{ totalRevenue() | number:'1.2-2' }}</div>
+                        @if ((course()!.studentCount ?? 0) > 0) {
+                          <div class="cb-analytics-sub">${{ (totalRevenue() / course()!.studentCount!) | number:'1.2-2' }} {{ t('teacherCourseBuilder.average_revenue_per_student') }}</div>
+                        }
+                      </div>
+                      <div class="cb-analytics-item">
+                        <div class="cb-analytics-label">{{ t('teacherCourseBuilder.average_rating') }}</div>
+                        <div class="cb-analytics-val amber">{{ computedRating() | number:'1.1-1' }}<span class="cb-unit">/5</span></div>
+                        <div class="cb-analytics-sub">{{ reviews().length || course()!.ratingCount || 0 }} {{ t('teacherCourseBuilder.total_reviews') }}</div>
+                      </div>
+                      <div class="cb-analytics-item">
+                        <div class="cb-analytics-label">{{ t('teacherCourseBuilder.total_students') }}</div>
+                        <div class="cb-analytics-val blue">{{ course()!.studentCount || 0 }}</div>
+                      </div>
+                      <div class="cb-analytics-item">
+                        <div class="cb-analytics-label">{{ t('teacherCourseBuilder.total_hours') }}</div>
+                        <div class="cb-analytics-val cyan">{{ (course()!.totalHours || 0) | number:'1.1-1' }}<span class="cb-unit">h</span></div>
+                      </div>
+                    </div>
+                    <nz-alert
+                      [nzMessage]="t('teacherCourseBuilder.advanced_analytics')"
+                      [nzDescription]="t('teacherCourseBuilder.analytics_coming_soon')"
+                      nzType="info"
+                      nzShowIcon
+                      style="margin-top:16px; border-radius:10px">
+                    </nz-alert>
+                  </div>
+                </div>
+              </div>
+            </nz-tab>
+
+            <!-- Tab: Reviews -->
+            <nz-tab [nzTitle]="reviewsTabTitle">
+              <ng-template #reviewsTabTitle>
+                <span class="cb-tab-label">
+                  <lucide-icon [img]="StarIcon" [size]="14"></lucide-icon>
+                  <span class="cb-tab-text">{{ t('teacherCourseBuilder.reviews') }}</span>
+                  <nz-badge [nzCount]="reviews().length" nzShowZero class="cb-badge-amber"></nz-badge>
+                </span>
+              </ng-template>
+              <div class="cb-tab-pane">
+                <div class="cb-card">
+                  <div class="cb-card-head">
+                    <div class="cb-card-heading">
+                      <span class="cb-card-chip amber">
+                        <lucide-icon [img]="StarIcon" [size]="16"></lucide-icon>
+                      </span>
+                      <span>{{ t('teacherCourseBuilder.course_reviews') }} ({{ reviews().length }})</span>
+                    </div>
+                    <div class="cb-rating-summary">
+                      <div class="cb-rating-big">{{ computedRating() | number:'1.1-1' }}</div>
+                      <div class="cb-rating-sub">{{ t('teacherCourseBuilder.average_rating') }}</div>
+                    </div>
+                  </div>
+                  <div class="cb-card-body">
+                    @if (reviewsLoading()) {
+                      <nz-spin></nz-spin>
+                    } @else if (reviews().length === 0) {
+                      <div class="cb-empty-state">
+                        <div class="cb-empty-icon">
+                          <lucide-icon [img]="StarIcon" [size]="40"></lucide-icon>
+                        </div>
+                        <p>{{ t('teacherCourseBuilder.no_reviews_yet') }}</p>
+                        <button class="cb-btn-primary" (click)="router.navigate(['/courses', courseId])">
+                          <lucide-icon [img]="EyeIcon" [size]="14"></lucide-icon>
+                          {{ t('teacherCourseBuilder.view_course_as_student') }}
+                        </button>
+                      </div>
+                    } @else {
+                      <div class="cb-reviews">
+                        @for (rv of reviews(); track rv.id) {
+                          <div class="cb-review">
+                            <div class="cb-review-head">
+                              <div class="cb-review-user">
+                                <nz-avatar [nzSize]="34" nzIcon="user" [nzSrc]="rv.userAvatar"></nz-avatar>
+                                <div>
+                                  <div class="cb-review-name">{{ rv.userName }}</div>
+                                  @if (rv.isVerifiedPurchase) {
+                                    <span class="cb-mini-tag green">
+                                      <lucide-icon [img]="CheckIcon" [size]="10"></lucide-icon>
+                                      {{ t('teacherCourseBuilder.verified_purchase') }}
+                                    </span>
+                                  }
+                                </div>
+                              </div>
+                              <div class="cb-review-meta">
+                                <nz-rate [ngModel]="rv.rating" nzDisabled [nzCount]="5" style="font-size:12px"></nz-rate>
+                                <span class="cb-review-date">{{ rv.createdAt | date:'mediumDate' }}</span>
+                              </div>
+                            </div>
+                            <p class="cb-review-comment">{{ rv.comment }}</p>
+                            @if (rv.instructorResponse) {
+                              <div class="cb-response">
+                                <div class="cb-response-label">{{ t('teacherCourseBuilder.instructor_response') }}</div>
+                                <p>{{ rv.instructorResponse }}</p>
+                              </div>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            </nz-tab>
+
+          </nz-tabs>
+          <!-- ════ /TABS ════ -->
+
+        </div>
+
+        <!-- ── Sidebar (desktop) ── -->
+        <aside class="cb-sidebar-desktop">
+          <ng-container *ngTemplateOutlet="sidebarTpl"></ng-container>
+        </aside>
+
+      </div><!-- /cb-main-grid -->
+    </div><!-- /cb-body -->
+  </div><!-- /cb-root -->
+
+
+
+  <!-- ════════════════════════════════════════════
+       SIDEBAR TEMPLATE
+  ════════════════════════════════════════════ -->
+  <ng-template #sidebarTpl>
+    <div class="cb-sidebar">
+
+      <!-- Publish readiness card -->
+      <div class="cb-sidebar-card cb-readiness-card">
+        <div class="cb-readiness-header">
+          <div>
+            <div class="cb-readiness-label">{{ t('teacherCourseBuilder.ready_to_publish') }}</div>
+            <div class="cb-readiness-sublabel">
+              {{ doneChecklistCount }} / {{ requiredChecklistCount }} {{ t('teacherCourseBuilder.required') || 'required' }}
+            </div>
+          </div>
+          <nz-progress
+            [nzPercent]="completionPercent"
+            nzType="circle"
+            [nzWidth]="64"
+            [nzStrokeWidth]="6"
+            [nzStrokeColor]="completionPercent >= 80 ? '#22c55e' : completionPercent >= 50 ? '#f59e0b' : '#6366f1'"
+            [nzFormat]="percentFormat">
+          </nz-progress>
+        </div>
+
+        <div class="cb-checklist">
+          @for (item of checklistDefs; track item.key) {
+            @let done = getChecklistValue(item.key);
+            <div class="cb-checklist-row {{ done ? 'done' : item.required ? 'missing' : 'optional' }}">
+              <span class="cb-check-icon">
+                <lucide-icon [img]="done ? CheckIcon : item.required ? AlertIcon : XIcon" [size]="12"></lucide-icon>
+              </span>
+              <span class="cb-check-label">{{ t('teacherCourseBuilder.check' + item.key) }}</span>
+              @if (!item.required) { <span class="cb-opt-tag">opt</span> }
+            </div>
+          }
+        </div>
+
+        <div class="cb-publish-actions">
+          @if (!course()!.isPublished) {
+            <button
+              class="cb-publish-btn"
+              [class.disabled]="!completionChecklist().isPublishable || latestPublishRequest()?.status === 'Pending'"
+              [disabled]="!completionChecklist().isPublishable || latestPublishRequest()?.status === 'Pending'"
+              [nz-tooltip]="!completionChecklist().isPublishable ? t('teacherCourseBuilder.complete_requirements_to_publish') : ''"
+              (click)="openPublishRequestModal()">
+              <lucide-icon [img]="RocketIcon" [size]="14"></lucide-icon>
+              <span>{{ latestPublishRequest()?.status === 'Pending' ? t('teacherCourseBuilder.pending_review') : t('teacherCourseBuilder.request_publication') }}</span>
+            </button>
+          } @else {
+            <div class="cb-published-banner">
+              <lucide-icon [img]="GlobeIcon" [size]="14"></lucide-icon>
+              <span>{{ t('teacherCourseBuilder.course_published') }}</span>
+            </div>
+          }
+          @if (!course()!.isPublished && latestPublishRequest()?.status === 'Pending') {
+            <div class="cb-status-note info">
+              <lucide-icon [img]="InfoIcon" [size]="12"></lucide-icon>
+              {{ t('teacherCourseBuilder.pending_review_desc') }}
+            </div>
+          }
+          @if (!course()!.isPublished && latestPublishRequest()?.status === 'Rejected') {
+            <div class="cb-status-note error">
+              <lucide-icon [img]="AlertIcon" [size]="12"></lucide-icon>
+              {{ latestPublishRequest()!.adminFeedback || t('teacherCourseBuilder.rejected_desc') }}
+            </div>
+          }
+          @if (!course()!.isPublished && latestPublishRequest()?.status === 'ChangesRequested') {
+            <div class="cb-status-note warning">
+              <lucide-icon [img]="AlertIcon" [size]="12"></lucide-icon>
+              {{ latestPublishRequest()!.adminFeedback || t('teacherCourseBuilder.changes_requested_desc') }}
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Edit course details -->
+      <div class="cb-sidebar-card">
+        <button class="cb-edit-details-btn" (click)="router.navigate(['/teacher/courses', courseId])">
+          <lucide-icon [img]="WrenchIcon" [size]="14"></lucide-icon>
+          <span>{{ t('teacherCourseBuilder.edit_course_details') }}</span>
+        </button>
+        <p class="cb-edit-hint">
+          <lucide-icon [img]="InfoIcon" [size]="12"></lucide-icon>
+          {{ t('teacherCourseBuilder.edit_course_details_hint') }}
+        </p>
+      </div>
+
+      <!-- Promo video -->
+      <div class="cb-sidebar-card">
+        <div class="cb-sidebar-card-title">
+          <lucide-icon [img]="VideoIcon" [size]="14"></lucide-icon>
+          <span>{{ t('teacherCourseBuilder.promotional_video') }}</span>
+        </div>
+        @if (getPromoVideoUrl()) {
+          <div class="cb-promo-player-wrap">
+            @if (!promoVideoError()) {
+              <!-- Custom player — getElementById used in TS because this is inside ng-template -->
+              <div class="cb-promo-player">
+                <video
+                  id="cb-promo-video-el"
+                  [src]="getPromoVideoUrl()!"
+                  class="cb-promo-video"
+                  preload="metadata"
+                  (error)="onPromoVideoError()"
+                  (loadedmetadata)="onPromoVideoLoad($event)"
+                  (timeupdate)="onPromoVideoTimeUpdate($event)"
+                  (ended)="promoVideoPlaying.set(false)">
+                </video>
+                <!-- Click-to-play overlay -->
+                <div class="cb-promo-overlay" (click)="togglePromoPlay()">
+                  <div class="cb-promo-play-btn" [class.playing]="promoVideoPlaying()">
+                    <lucide-icon [img]="promoVideoPlaying() ? PauseIcon : PlayIcon" [size]="22"></lucide-icon>
+                  </div>
+                </div>
+                <!-- Controls bar -->
+                <div class="cb-promo-controls">
+                  <button class="cb-promo-ctrl-btn" (click)="togglePromoPlay()">
+                    <lucide-icon [img]="promoVideoPlaying() ? PauseIcon : PlayIcon" [size]="14"></lucide-icon>
+                  </button>
+                  <div class="cb-promo-progress-wrap">
+                    <div class="cb-promo-progress-bar" (click)="seekPromoVideo($event)">
+                      <div class="cb-promo-progress-fill" [style.width.%]="promoVideoProgress()"></div>
+                    </div>
+                  </div>
+                  <span class="cb-promo-time">
+                    {{ promoVideoDuration() > 0
+                        ? (promoVideoCurrentTime() | number:'1.0-0') + 's / ' + (promoVideoDuration() | number:'1.0-0') + 's'
+                        : '--' }}
+                  </span>
+                  <button class="cb-promo-ctrl-btn" (click)="togglePromoMute()">
+                    <lucide-icon [img]="promoVideoMuted() ? VolumeXIcon : Volume2Icon" [size]="14"></lucide-icon>
+                  </button>
+                  <button class="cb-promo-ctrl-btn" (click)="openPromoFullscreen()">
+                    <lucide-icon [img]="MaximizeIcon" [size]="14"></lucide-icon>
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <div class="cb-promo-video-error">
+                <lucide-icon [img]="AlertTriangleIcon" [size]="28"></lucide-icon>
+                <p>{{ t('teacherCourseBuilder.video_load_error') }}</p>
+                <span class="cb-promo-error-hint">{{ t('teacherCourseBuilder.video_load_error_hint') }}</span>
+                <div class="cb-promo-error-actions">
+                  <button class="cb-btn-secondary sm" (click)="reloadPromoVideo()">
+                    <lucide-icon [img]="RefreshCwIcon" [size]="12"></lucide-icon>
+                    {{ t('teacherCourseBuilder.retry') }}
+                  </button>
+                  <button class="cb-btn-danger sm" (click)="removePromoVideo()">
+                    <lucide-icon [img]="TrashIcon" [size]="12"></lucide-icon>
+                    {{ t('teacherCourseBuilder.remove') }}
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+          <div class="cb-promo-actions">
+            <button class="cb-btn-secondary sm" (click)="openPromoVideoModal()">
+              <lucide-icon [img]="UploadIcon" [size]="12"></lucide-icon>
+              {{ t('teacherCourseBuilder.replace_promo') }}
+            </button>
+            @if (!promoVideoError()) {
+              <button class="cb-btn-danger sm" (click)="removePromoVideo()">
+                <lucide-icon [img]="TrashIcon" [size]="12"></lucide-icon>
+                {{ t('teacherCourseBuilder.remove') }}
+              </button>
+            }
+          </div>
+        } @else {
+          <div class="cb-empty-promo">
+            <div class="cb-empty-promo-icon">
+              <lucide-icon [img]="VideoIcon" [size]="32"></lucide-icon>
+            </div>
+            <p class="cb-empty-promo-text">{{ t('teacherCourseBuilder.no_promo_video') }}</p>
+            <p class="cb-empty-promo-hint">{{ t('teacherCourseBuilder.no_promo_video_hint') }}</p>
+            <button class="cb-btn-primary" (click)="openPromoVideoModal()">
+              <lucide-icon [img]="UploadIcon" [size]="14"></lucide-icon>
+              {{ t('teacherCourseBuilder.add_promo_video') }}
+            </button>
+          </div>
+        }
+      </div>
+
+      <!-- Publish history -->
+      @if (publishRequests().length > 0) {
+        <div class="cb-sidebar-card">
+          <div class="cb-sidebar-card-title">
+            <lucide-icon [img]="HistoryIcon" [size]="14"></lucide-icon>
+            <span>{{ t('teacherCourseBuilder.publish_history') }}</span>
+            <button class="cb-link-btn" (click)="publishHistoryModalVisible.set(true)">{{ t('teacherCourseBuilder.view_all') }}</button>
+          </div>
+          <div class="cb-history-list">
+            @for (r of publishRequests().slice(0, 3); track r.id) {
+              <div class="cb-history-row">
+                <span class="cb-history-date">{{ r.requestedAt | date:'mediumDate' }}</span>
+                <span class="cb-history-badge status-{{ r.status.toLowerCase() }}">
+                  {{ r.status === 'ChangesRequested' ? t('teacherCourseBuilder.changes_requested') : r.status }}
+                </span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </ng-template>
+
+  <!-- ══════════════════════════════════════════
+       MODALS
+  ══════════════════════════════════════════ -->
+
+  <!-- Promo Video Modal -->
+  <nz-modal
+    [nzVisible]="promoVideoModalVisible()"
+    [nzTitle]="t('teacherCourseBuilder.upload_promo_video')"
+    [nzWidth]="520"
+    nzCentered
+    (nzOnCancel)="promoVideoModalVisible.set(false)"
+    [nzFooter]="promoFooter">
+    <ng-container *nzModalContent>
+      <nz-alert
+        [nzMessage]="t('teacherCourseBuilder.promo_video_info')"
+        nzType="info" nzShowIcon
+        class="cb-modal-alert">
+      </nz-alert>
+
+      <div class="cb-modal-upload-section">
+        <nz-upload
+          [nzBeforeUpload]="beforePromoUpload"
+          [nzFileList]="promoVideoFileList()"
+          [nzDisabled]="isPromoUploading()"
+          nzAccept="video/*"
+          [nzShowButton]="promoVideoFileList().length === 0"
+          (nzChange)="onPromoVideoChange($event)">
+          <button nz-button [disabled]="isPromoUploading()">
+            <lucide-icon [img]="UploadIcon" [size]="14"></lucide-icon>
+            {{ isPromoUploading() ? t('teacherCourseBuilder.uploading') : t('teacherCourseBuilder.select_video') }}
+          </button>
+        </nz-upload>
+
+        @if (isPromoUploading()) {
+          <div class="cb-upload-progress">
+            <div class="cb-progress-bar">
+              <div class="cb-progress-fill" [style.width.%]="promoVideoUploadProgress()"></div>
+            </div>
+            <div class="cb-progress-text">{{ promoVideoUploadProgress() }}%</div>
+          </div>
+        }
+
+        @if (promoVideoFile() && !isPromoUploading()) {
+          <div class="cb-file-ok">
+            <lucide-icon [img]="CheckIcon" [size]="14"></lucide-icon>
+            {{ t('teacherCourseBuilder.selected') }}: {{ promoVideoFile()!.name }} ({{ formatFileSize(promoVideoFile()!.size) }})
+          </div>
+        }
+
+        <div class="cb-upload-hint">
+          <lucide-icon [img]="InfoIcon" [size]="12"></lucide-icon>
+          {{ t('teacherCourseBuilder.video_format_limit') }}
+        </div>
+      </div>
+    </ng-container>
+    <ng-template #promoFooter>
+      <button class="cb-btn-ghost" (click)="promoVideoModalVisible.set(false)">{{ t('teacherCourseBuilder.cancel') }}</button>
+      <button class="cb-btn-primary" [disabled]="!promoVideoFile() || isPromoUploading()" (click)="submitPromoVideo()">
+        @if (isPromoUploading()) { <nz-spin nzSize="small"></nz-spin> }
+        <lucide-icon [img]="UploadIcon" [size]="14"></lucide-icon>
+        {{ t('teacherCourseBuilder.upload') }}
+      </button>
+    </ng-template>
+  </nz-modal>
+
+  <!-- Publish Request Modal -->
+  <nz-modal
+    [nzVisible]="publishRequestModalVisible()"
+    [nzTitle]="t('teacherCourseBuilder.request_publication')"
+    [nzWidth]="560"
+    nzCentered
+    (nzOnCancel)="publishRequestModalVisible.set(false)"
+    [nzFooter]="publishFooter">
+    <ng-container *nzModalContent>
+      <nz-alert
+        [nzMessage]="t('teacherCourseBuilder.before_submitting')"
+        nzType="info" nzShowIcon
+        class="cb-modal-alert">
+      </nz-alert>
+      <div class="cb-modal-checklist">
+        <div class="cb-modal-section-title">{{ t('teacherCourseBuilder.course_checklist') }}</div>
+        @for (item of checklistDefs; track item.key) {
+          @let done = getChecklistValue(item.key);
+          <div class="cb-checklist-row {{ done ? 'done' : item.required ? 'missing' : 'optional' }}">
+            <span class="cb-check-icon">
+              <lucide-icon [img]="done ? CheckIcon : item.required ? AlertIcon : XIcon" [size]="12"></lucide-icon>
+            </span>
+            <span class="cb-check-label">{{ t('teacherCourseBuilder.check' + item.key) }}</span>
+          </div>
+        }
+      </div>
+      <div class="cb-modal-field-label">
+        <lucide-icon [img]="InfoIcon" [size]="12"></lucide-icon>
+        {{ t('teacherCourseBuilder.notes_for_admin') }} <span class="cb-dim">({{ t('teacherCourseBuilder.optional') }})</span>
+      </div>
+      <textarea nz-input
+        [placeholder]="t('teacherCourseBuilder.notes_placeholder')"
+        [nzAutosize]="{ minRows: 3, maxRows: 6 }"
+        nzMaxLength="500"
+        [ngModel]="publishTeacherNotes()"
+        (ngModelChange)="publishTeacherNotes.set($event)"
+        class="cb-modal-textarea">
+      </textarea>
+    </ng-container>
+    <ng-template #publishFooter>
+      <button class="cb-btn-ghost" (click)="publishRequestModalVisible.set(false)">{{ t('teacherCourseBuilder.cancel') }}</button>
+      <button class="cb-btn-primary" [disabled]="publishRequestLoading()" (click)="submitPublishRequest()">
+        @if (publishRequestLoading()) { <nz-spin nzSize="small"></nz-spin> }
+        <lucide-icon [img]="RocketIcon" [size]="14"></lucide-icon>
+        {{ t('teacherCourseBuilder.submit_request') }}
+      </button>
+    </ng-template>
+  </nz-modal>
+
+  <!-- Publish History Modal -->
+  <nz-modal
+    [nzVisible]="publishHistoryModalVisible()"
+    [nzTitle]="t('teacherCourseBuilder.publish_request_history')"
+    [nzWidth]="580"
+    nzCentered
+    (nzOnCancel)="publishHistoryModalVisible.set(false)"
+    [nzFooter]="historyFooter">
+    <ng-container *nzModalContent>
+      @if (publishRequests().length === 0) {
+        <nz-empty [nzNotFoundContent]="t('teacherCourseBuilder.no_publish_requests')"></nz-empty>
+      } @else {
+        <div class="cb-history-modal">
+          @for (r of publishRequests(); track r.id) {
+            <div class="cb-history-modal-item">
+              <div class="cb-history-modal-head">
+                <span class="cb-history-badge status-{{ r.status.toLowerCase() }}">{{ r.status }}</span>
+                <span class="cb-history-date">{{ r.requestedAt | date:'medium' }}</span>
+              </div>
+              @if (r.teacherNotes) {
+                <div class="cb-history-note teacher">
+                  <b>{{ t('teacherCourseBuilder.your_notes') }}:</b> {{ r.teacherNotes }}
+                </div>
+              }
+              @if (r.adminFeedback) {
+                <div class="cb-history-note admin">
+                  <b>{{ t('teacherCourseBuilder.admin_feedback') }}:</b> {{ r.adminFeedback }}
+                </div>
+              }
+              @if (r.reviewedAt) {
+                <div class="cb-history-reviewed">
+                  <lucide-icon [img]="ClockIcon" [size]="12"></lucide-icon>
+                  {{ t('teacherCourseBuilder.reviewed') }}: {{ r.reviewedAt | date:'medium' }}
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    </ng-container>
+    <ng-template #historyFooter>
+      <button class="cb-btn-ghost" (click)="publishHistoryModalVisible.set(false)">{{ t('teacherCourseBuilder.close') }}</button>
+    </ng-template>
+  </nz-modal>
+
+  <!-- Section Modal -->
+  <nz-modal
+    [nzVisible]="sectionModalVisible()"
+    [nzTitle]="sectionModalMode() === 'add' ? t('teacherCourseBuilder.add_section') : t('teacherCourseBuilder.edit_section')"
+    [nzWidth]="460"
+    nzCentered
+    (nzOnCancel)="sectionModalVisible.set(false)"
+    [nzFooter]="sectionFooter">
+    <ng-container *nzModalContent>
+      <form [formGroup]="sectionForm" class="cb-form">
+        <div class="cb-form-field">
+          <label class="cb-form-label cb-required">{{ t('teacherCourseBuilder.section_title') }}</label>
+          <input nz-input formControlName="title" [placeholder]="t('teacherCourseBuilder.enter_section_title')" nzSize="large" />
+        </div>
+        <div class="cb-form-field">
+          <label class="cb-form-label">{{ t('teacherCourseBuilder.description') }}</label>
+          <textarea nz-input formControlName="description"
+            [placeholder]="t('teacherCourseBuilder.enter_section_description')"
+            [nzAutosize]="{ minRows: 3 }" nzMaxLength="500"></textarea>
+        </div>
+        <div class="cb-form-row">
+          <div class="cb-form-field">
+            <label class="cb-form-label cb-required">{{ t('teacherCourseBuilder.order') }}</label>
+            <nz-input-number formControlName="order" [nzMin]="1" [nzMax]="100" nzSize="large" style="width:100%"></nz-input-number>
+          </div>
+          <div class="cb-form-field">
+            <label class="cb-form-label">{{ t('teacherCourseBuilder.published_label') }}</label>
+            <nz-switch formControlName="isPublished"></nz-switch>
+          </div>
+        </div>
+      </form>
+    </ng-container>
+    <ng-template #sectionFooter>
+      <button class="cb-btn-ghost" (click)="sectionModalVisible.set(false)">{{ t('teacherCourseBuilder.cancel') }}</button>
+      <button class="cb-btn-primary" [disabled]="sectionModalLoading()" (click)="submitSection()">
+        @if (sectionModalLoading()) { <nz-spin nzSize="small"></nz-spin> }
+        {{ sectionModalMode() === 'add' ? t('teacherCourseBuilder.create_section') : t('teacherCourseBuilder.update_section') }}
+      </button>
+    </ng-template>
+  </nz-modal>
+
+  <!-- Lecture Modal -->
+  <nz-modal
+    [nzVisible]="lectureModalVisible()"
+    [nzTitle]="lectureModalMode() === 'add' ? t('teacherCourseBuilder.add_lecture') : t('teacherCourseBuilder.edit_lecture')"
+    [nzWidth]="560"
+    nzCentered
+    (nzOnCancel)="lectureModalVisible.set(false)"
+    [nzFooter]="lectureFooter">
+    <ng-container *nzModalContent>
+      <form [formGroup]="lectureForm" class="cb-form">
+        <div class="cb-form-field">
+          <label class="cb-form-label cb-required">{{ t('teacherCourseBuilder.lecture_title') }}</label>
+          <input nz-input formControlName="title" [placeholder]="t('teacherCourseBuilder.enter_lecture_title')" nzSize="large" />
+        </div>
+        <div class="cb-form-field">
+          <label class="cb-form-label">{{ t('teacherCourseBuilder.description') }}</label>
+          <textarea nz-input formControlName="description"
+            [placeholder]="t('teacherCourseBuilder.enter_lecture_description')"
+            [nzAutosize]="{ minRows: 2 }" nzMaxLength="1000"></textarea>
+        </div>
+        <div class="cb-form-row">
+          <div class="cb-form-field">
+            <label class="cb-form-label cb-required">{{ t('teacherCourseBuilder.order') }}</label>
+            <nz-input-number formControlName="order" [nzMin]="1" [nzMax]="100" nzSize="large" style="width:100%"></nz-input-number>
+          </div>
+          <div class="cb-form-field">
+            <label class="cb-form-label cb-required">{{ t('teacherCourseBuilder.duration_minutes') }}</label>
+            <nz-input-number formControlName="durationMinutes" [nzMin]="0" [nzMax]="300" nzSize="large" style="width:100%"></nz-input-number>
+          </div>
+        </div>
+        <div class="cb-form-row">
+          <div class="cb-form-field">
+            <label class="cb-form-label">{{ t('teacherCourseBuilder.free_preview') }}</label>
+            <nz-switch formControlName="isFree"
+              [nzCheckedChildren]="t('teacherCourseBuilder.free')"
+              [nzUnCheckedChildren]="t('teacherCourseBuilder.paid')">
+            </nz-switch>
+          </div>
+          <div class="cb-form-field">
+            <label class="cb-form-label">{{ t('teacherCourseBuilder.published_label') }}</label>
+            <nz-switch formControlName="isPublished"></nz-switch>
+          </div>
+        </div>
+
+        <!-- Video upload -->
+        <div class="cb-modal-upload-section">
+          <div class="cb-modal-section-title">
+            <lucide-icon [img]="VideoIcon" [size]="14"></lucide-icon>
+            {{ t('teacherCourseBuilder.lecture_video') }}
+            @if (lectureModalMode() === 'add') {
+              <span class="cb-required-badge">{{ t('teacherCourseBuilder.required') }}</span>
+            }
+          </div>
+          <nz-upload
+            [nzBeforeUpload]="beforeVideoUpload"
+            [nzFileList]="videoFileList()"
+            [nzDisabled]="isUploading()"
+            nzAccept="video/*"
+            [nzShowButton]="videoFileList().length === 0"
+            (nzChange)="onVideoChange($event)">
+            <button nz-button [disabled]="isUploading()">
+              <lucide-icon [img]="UploadIcon" [size]="14"></lucide-icon>
+              {{ isUploading() ? t('teacherCourseBuilder.uploading') : t('teacherCourseBuilder.upload_video') }}
+            </button>
+          </nz-upload>
+          @if (isUploading()) {
+            <div class="cb-progress-bar">
+              <div class="cb-progress-fill" [style.width.%]="uploadProgress()"></div>
+            </div>
+          }
+          @if (existingVideoInfo() && !videoToRemove() && !newVideoFile()) {
+            <div class="cb-file-ok">
+              <lucide-icon [img]="CheckIcon" [size]="14"></lucide-icon>
+              {{ t('teacherCourseBuilder.current_video') }}: {{ existingVideoInfo()!.formattedDuration }}
+            </div>
+          }
+          <div class="cb-upload-hint">
+            <lucide-icon [img]="InfoIcon" [size]="12"></lucide-icon>
+            {{ t('teacherCourseBuilder.video_format_limit') }}
+          </div>
+        </div>
+
+        <!-- Resources upload — button opens confirm modal BEFORE adding file -->
+        <div class="cb-modal-upload-section">
+          <div class="cb-modal-section-title">
+            <lucide-icon [img]="PaperclipIcon" [size]="14"></lucide-icon>
+            {{ t('teacherCourseBuilder.additional_resources') }}
+            <span class="cb-opt-tag">{{ t('teacherCourseBuilder.optional') }}</span>
+          </div>
+          <button class="cb-btn-primary sm" [disabled]="isUploading()" (click)="openResourceFilePicker()">
+            <lucide-icon [img]="UploadIcon" [size]="14"></lucide-icon>
+            {{ t('teacherCourseBuilder.upload_resources') }}
+          </button>
+          @if (resourceFiles().length > 0) {
+            <div class="cb-resource-list">
+              @for (f of resourceFiles(); track f.uid) {
+                <div class="cb-resource-item">
+                  <lucide-icon [img]="FileTextIcon" [size]="14"></lucide-icon>
+                  <span class="cb-resource-name">{{ f.name }}</span>
+                  @if (f.size) { <span class="cb-resource-size">{{ formatFileSize(f.size) }}</span> }
+                  @if (f.existing) { <span class="cb-mini-tag blue">{{ t('teacherCourseBuilder.existing') }}</span> }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </form>
+    </ng-container>
+    <ng-template #lectureFooter>
+      <button class="cb-btn-ghost" (click)="lectureModalVisible.set(false)">{{ t('teacherCourseBuilder.cancel') }}</button>
+      <button class="cb-btn-primary" [disabled]="lectureModalLoading()" (click)="submitLecture()">
+        @if (lectureModalLoading()) { <nz-spin nzSize="small"></nz-spin> }
+        {{ lectureModalMode() === 'add' ? t('teacherCourseBuilder.create_lecture') : t('teacherCourseBuilder.update_lecture') }}
+      </button>
+    </ng-template>
+  </nz-modal>
+
+  <!-- Quiz Modal -->
+  <nz-modal
+    [nzVisible]="quizModalVisible()"
+    [nzTitle]="quizModalTitle()"
+    [nzWidth]="480"
+    nzCentered
+    (nzOnCancel)="quizModalVisible.set(false)"
+    [nzFooter]="quizFooter">
+    <ng-container *nzModalContent>
+      @if (quizModalTarget() === 'section' && quizModalSectionId()) {
+        <nz-alert [nzMessage]="t('teacherCourseBuilder.section_quiz_for') + ': ' + getSectionTitle(quizModalSectionId()!)"
+          nzType="info" nzShowIcon class="cb-modal-alert"></nz-alert>
+      }
+      @if (quizModalTarget() === 'lecture' && quizModalLectureId()) {
+        <nz-alert [nzMessage]="t('teacherCourseBuilder.lecture_quiz_for') + ': ' + getLectureTitle(quizModalLectureId()!)"
+          nzType="info" nzShowIcon class="cb-modal-alert"></nz-alert>
+      }
+      <form [formGroup]="quizForm" class="cb-form">
+        <div class="cb-form-field">
+          <label class="cb-form-label cb-required">{{ t('teacherCourseBuilder.quiz_title') }}</label>
+          <input nz-input formControlName="title" [placeholder]="t('teacherCourseBuilder.enter_quiz_title')" nzSize="large" />
+        </div>
+        <div class="cb-form-field">
+          <label class="cb-form-label">{{ t('teacherCourseBuilder.description') }}</label>
+          <textarea nz-input formControlName="description"
+            [placeholder]="t('teacherCourseBuilder.enter_quiz_description')"
+            [nzAutosize]="{ minRows: 2 }" nzMaxLength="500"></textarea>
+        </div>
+        <div class="cb-form-row">
+          <div class="cb-form-field">
+            <label class="cb-form-label cb-required">{{ t('teacherCourseBuilder.quiz_type') }}</label>
+            <nz-select formControlName="type" nzSize="large" style="width:100%">
+              <nz-option nzValue="Practice" [nzLabel]="t('teacherCourseBuilder.practice')"></nz-option>
+              <nz-option nzValue="Graded" [nzLabel]="t('teacherCourseBuilder.graded')"></nz-option>
+            </nz-select>
+          </div>
+          <div class="cb-form-field">
+            <label class="cb-form-label cb-required">{{ t('teacherCourseBuilder.passing_score') }}</label>
+            <nz-input-number formControlName="passingScore" [nzMin]="0" [nzMax]="100"
+              nzSize="large" nzAddonAfter="%" style="width:100%"></nz-input-number>
+          </div>
+        </div>
+        <div class="cb-form-field">
+          <label class="cb-form-label">{{ t('teacherCourseBuilder.time_limit') }}</label>
+          <nz-switch formControlName="isTimeLimitMinutes"
+            [nzCheckedChildren]="t('teacherCourseBuilder.timed')"
+            [nzUnCheckedChildren]="t('teacherCourseBuilder.no_limit')">
+          </nz-switch>
+        </div>
+        @if (quizForm.get('isTimeLimitMinutes')?.value) {
+          <div class="cb-form-field">
+            <label class="cb-form-label cb-required">{{ t('teacherCourseBuilder.time_limit_minutes') }}</label>
+            <nz-input-number formControlName="timeLimitMinutes" [nzMin]="1" [nzMax]="300" nzSize="large" style="width:100%"></nz-input-number>
+          </div>
+        }
+      </form>
+    </ng-container>
+    <ng-template #quizFooter>
+      <button class="cb-btn-ghost" (click)="quizModalVisible.set(false)">{{ t('teacherCourseBuilder.cancel') }}</button>
+      <button class="cb-btn-primary" [disabled]="quizModalLoading()" (click)="submitQuiz()">
+        @if (quizModalLoading()) { <nz-spin nzSize="small"></nz-spin> }
+        {{ quizModalMode() === 'add' ? t('teacherCourseBuilder.create_quiz') : t('teacherCourseBuilder.update_quiz') }}
+      </button>
+    </ng-template>
+  </nz-modal>
+
+  <!-- Exam Modal -->
+  <nz-modal
+    [nzVisible]="examModalVisible()"
+    [nzTitle]="examModalMode() === 'add' ? t('teacherCourseBuilder.create_course_exam') : t('teacherCourseBuilder.edit_course_exam')"
+    [nzWidth]="480"
+    nzCentered
+    (nzOnCancel)="examModalVisible.set(false)"
+    [nzFooter]="examFooter">
+    <ng-container *nzModalContent>
+      <nz-alert [nzMessage]="t('teacherCourseBuilder.course_exam_info')"
+        [nzDescription]="t('teacherCourseBuilder.course_exam_desc')"
+        nzType="info" nzShowIcon class="cb-modal-alert"></nz-alert>
+      <form [formGroup]="examForm" class="cb-form">
+        <div class="cb-form-field">
+          <label class="cb-form-label cb-required">{{ t('teacherCourseBuilder.exam_title') }}</label>
+          <input nz-input formControlName="title" [placeholder]="t('teacherCourseBuilder.enter_exam_title')" nzSize="large" />
+        </div>
+        <div class="cb-form-field">
+          <label class="cb-form-label">{{ t('teacherCourseBuilder.description') }}</label>
+          <textarea nz-input formControlName="description" [nzAutosize]="{ minRows: 2 }" nzMaxLength="500"></textarea>
+        </div>
+        <div class="cb-form-row">
+          <div class="cb-form-field">
+            <label class="cb-form-label cb-required">{{ t('teacherCourseBuilder.exam_type') }}</label>
+            <nz-select formControlName="type" nzSize="large" style="width:100%">
+              <nz-option nzValue="Practice" [nzLabel]="t('teacherCourseBuilder.practice')"></nz-option>
+              <nz-option nzValue="Graded" [nzLabel]="t('teacherCourseBuilder.graded')"></nz-option>
+            </nz-select>
+          </div>
+          <div class="cb-form-field">
+            <label class="cb-form-label cb-required">{{ t('teacherCourseBuilder.passing_score') }}</label>
+            <nz-input-number formControlName="passingScore" [nzMin]="0" [nzMax]="100"
+              nzSize="large" nzAddonAfter="%" style="width:100%"></nz-input-number>
+          </div>
+        </div>
+        <div class="cb-form-field">
+          <label class="cb-form-label">{{ t('teacherCourseBuilder.time_limit') }}</label>
+          <nz-switch formControlName="isTimeLimitMinutes"></nz-switch>
+        </div>
+        @if (examForm.get('isTimeLimitMinutes')?.value) {
+          <div class="cb-form-field">
+            <label class="cb-form-label cb-required">{{ t('teacherCourseBuilder.time_limit_minutes') }}</label>
+            <nz-input-number formControlName="timeLimitMinutes" [nzMin]="1" [nzMax]="300" nzSize="large" style="width:100%"></nz-input-number>
+          </div>
+        }
+      </form>
+    </ng-container>
+    <ng-template #examFooter>
+      <button class="cb-btn-ghost" (click)="examModalVisible.set(false)">{{ t('teacherCourseBuilder.cancel') }}</button>
+      <button class="cb-btn-primary" [disabled]="examModalLoading()" (click)="submitExam()">
+        @if (examModalLoading()) { <nz-spin nzSize="small"></nz-spin> }
+        {{ examModalMode() === 'add' ? t('teacherCourseBuilder.create_exam') : t('teacherCourseBuilder.update_exam') }}
+      </button>
+    </ng-template>
+  </nz-modal>
+
+
+  <!-- Resource Upload Confirm Modal -->
+  <nz-modal
+    [nzVisible]="resourceConfirmModalVisible()"
+    [nzTitle]="t('teacherCourseBuilder.upload_resource_confirm_title')"
+    [nzWidth]="480"
+    nzCentered
+    (nzOnCancel)="cancelResourceUpload()"
+    [nzFooter]="resourceConfirmFooter">
+    <ng-container *nzModalContent>
+      <div class="cb-resource-confirm-body">
+        <div class="cb-resource-confirm-icon">
+          <lucide-icon [img]="PaperclipIcon" [size]="32"></lucide-icon>
+        </div>
+
+        <!-- Custom file select section -->
+        <div class="cb-custom-upload-area">
+          <input
+            type="file"
+            #resourceFileInput
+            style="display: none"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.jpg,.jpeg,.png,.gif,.webp"
+            (change)="onResourceFileSelected($event)" />
+
+          <button
+            class="cb-select-file-btn"
+            [class.cb-disabled]="isResourceUploading()"
+            [disabled]="isResourceUploading()"
+            (click)="resourceFileInput.click()">
+            <lucide-icon [img]="UploadIcon" [size]="16"></lucide-icon>
+            <span>{{ isResourceUploading() ? (t('teacherCourseBuilder.uploading') || 'Uploading...') : (t('teacherCourseBuilder.select_resource') || 'Select Resource') }}</span>
+          </button>
+        </div>
+
+        <!-- Selected file info -->
+        @if (pendingResourceFile()) {
+          <div class="cb-selected-file-info">
+            <div class="cb-file-icon">
+              <lucide-icon [img]="FileTextIcon" [size]="20"></lucide-icon>
+            </div>
+            <div class="cb-file-details">
+              <div class="cb-file-name">{{ pendingResourceFile()!.name }}</div>
+              <div class="cb-file-size">{{ formatFileSize(pendingResourceFile()!.size) }}</div>
+            </div>
+            <button class="cb-remove-file" (click)="clearSelectedResource()">
+              <lucide-icon [img]="XIcon" [size]="14"></lucide-icon>
+            </button>
+          </div>
+        }
+
+        <!-- Upload progress -->
+        @if (isResourceUploading()) {
+          <div class="cb-upload-progress">
+            <div class="cb-progress-bar">
+              <div class="cb-progress-fill" [style.width.%]="resourceUploadProgress()"></div>
+            </div>
+            <div class="cb-progress-text">{{ resourceUploadProgress() }}%</div>
+          </div>
+        }
+
+        <!-- Info alert -->
+        <nz-alert
+          [nzMessage]="t('teacherCourseBuilder.resource_upload_info')"
+          nzType="info" nzShowIcon
+          class="cb-modal-alert cb-resource-confirm-alert">
+        </nz-alert>
+      </div>
+    </ng-container>
+    <ng-template #resourceConfirmFooter>
+      <button class="cb-btn-ghost" (click)="cancelResourceUpload()">{{ t('teacherCourseBuilder.cancel') }}</button>
+      <button class="cb-btn-primary"
+        [disabled]="!pendingResourceFile() || isResourceUploading()"
+        (click)="confirmResourceUpload()">
+        @if (isResourceUploading()) { <nz-spin nzSize="small"></nz-spin> }
+        <lucide-icon [img]="UploadIcon" [size]="14"></lucide-icon>
+        {{ t('teacherCourseBuilder.confirm_upload') }}
+      </button>
+    </ng-template>
+  </nz-modal>
+
+  <!-- Delete Confirm Modal (shared) -->
+  <nz-modal
+    [nzVisible]="deleteModalVisible()"
+    [nzTitle]="deleteModalTitle()"
+    [nzWidth]="380"
+    nzCentered
+    (nzOnCancel)="deleteModalVisible.set(false)"
+    [nzFooter]="deleteFooter">
+    <ng-container *nzModalContent>
+      <div class="cb-delete-body">
+        <div class="cb-delete-icon">
+          <lucide-icon [img]="TrashIcon" [size]="32"></lucide-icon>
+        </div>
+        <p>{{ deleteModalMessage() }}</p>
+      </div>
+    </ng-container>
+    <ng-template #deleteFooter>
+      <button class="cb-btn-ghost" (click)="deleteModalVisible.set(false)">{{ t('teacherCourseBuilder.cancel') }}</button>
+      <button class="cb-btn-danger" [disabled]="deleteModalLoading()" (click)="executeDelete()">
+        @if (deleteModalLoading()) { <nz-spin nzSize="small"></nz-spin> }
+        <lucide-icon [img]="TrashIcon" [size]="14"></lucide-icon>
+        {{ t('teacherCourseBuilder.delete') }}
+      </button>
+    </ng-template>
+  </nz-modal>
+
+  <!-- Resource Upload Confirm Modal -->
+  <nz-modal
+    [nzVisible]="resourceConfirmModalVisible()"
+    [nzTitle]="t('teacherCourseBuilder.upload_resource_confirm_title')"
+    [nzWidth]="480"
+    nzCentered
+    (nzOnCancel)="cancelResourceUpload()"
+    [nzFooter]="resourceConfirmFooter">
+    <ng-container *nzModalContent>
+      <div class="cb-resource-confirm-body">
+        <div class="cb-resource-confirm-icon">
+          <lucide-icon [img]="PaperclipIcon" [size]="32"></lucide-icon>
+        </div>
+
+        <!-- Custom file select section with Ant Button -->
+        <div class="cb-custom-upload-area">
+          <input
+            type="file"
+            #resourceFileInput
+            style="display: none"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.jpg,.jpeg,.png,.gif,.webp"
+            (change)="onResourceFileSelected($event)" />
+
+          <button
+            nz-button
+            nzType="primary"
+            [nzLoading]="isResourceUploading()"
+            [disabled]="isResourceUploading()"
+            (click)="resourceFileInput.click()"
+            class="cb-select-file-btn">
+            <lucide-icon [img]="UploadIcon" [size]="16"></lucide-icon>
+            <span>{{ isResourceUploading() ? (t('teacherCourseBuilder.uploading') || 'Uploading...') : (t('teacherCourseBuilder.select_resource') || 'Select Resource') }}</span>
+          </button>
+        </div>
+
+        <!-- Selected file info -->
+        @if (pendingResourceFile()) {
+          <div class="cb-selected-file-info">
+            <div class="cb-file-icon">
+              <lucide-icon [img]="FileTextIcon" [size]="20"></lucide-icon>
+            </div>
+            <div class="cb-file-details">
+              <div class="cb-file-name">{{ pendingResourceFile()!.name }}</div>
+              <div class="cb-file-size">{{ formatFileSize(pendingResourceFile()!.size) }}</div>
+            </div>
+            <button nz-button nzType="text" class="cb-remove-file" (click)="clearSelectedResource()">
+              <lucide-icon [img]="XIcon" [size]="14"></lucide-icon>
+            </button>
+          </div>
+        }
+
+        <!-- Upload progress -->
+        @if (isResourceUploading()) {
+          <div class="cb-upload-progress">
+            <nz-progress
+              [nzPercent]="resourceUploadProgress()"
+              nzStatus="active"
+              nzStrokeColor="#3d5af1">
+            </nz-progress>
+          </div>
+        }
+
+        <!-- Info alert -->
+        <nz-alert
+          [nzMessage]="t('teacherCourseBuilder.resource_upload_info')"
+          nzType="info" nzShowIcon
+          class="cb-modal-alert cb-resource-confirm-alert">
+        </nz-alert>
+      </div>
+    </ng-container>
+    <ng-template #resourceConfirmFooter>
+      <button nz-button (click)="cancelResourceUpload()" class="cb-btn-ghost">
+        {{ t('teacherCourseBuilder.cancel') }}
+      </button>
+      <button
+        nz-button
+        nzType="primary"
+        [nzLoading]="isResourceUploading()"
+        [disabled]="!pendingResourceFile() || isResourceUploading()"
+        (click)="confirmResourceUpload()"
+        class="cb-btn-primary">
+        <lucide-icon [img]="UploadIcon" [size]="14"></lucide-icon>
+        {{ t('teacherCourseBuilder.confirm_upload') }}
+      </button>
+    </ng-template>
+  </nz-modal>
+
+  }<!-- /else main -->
+
+</ng-container>

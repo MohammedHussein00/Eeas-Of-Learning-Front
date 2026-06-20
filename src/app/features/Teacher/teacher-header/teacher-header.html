@@ -1,0 +1,189 @@
+<!-- features/teacher/components/teacher-header/teacher-header.html -->
+<div class="th-root" [class.rtl]="isRtl()">
+  <!-- Language Toggle -->
+  <button class="th-lang-btn" (click)="toggleLanguage()">
+    <lucide-icon [img]="GlobeIcon" [size]="14" class="lang-icon"></lucide-icon>
+    <span>{{ isRtl() ? 'English' : 'العربية' }}</span>
+  </button>
+
+  <!-- Notifications with Ant Design Badge -->
+  <div class="th-bell-btn" (click)="toggleNotifications()">
+    <div class="bell-wrapper">
+      <nz-badge [nzCount]="unreadCount()" [nzOverflowCount]="99">
+        <lucide-icon [img]="BellIcon" [size]="18"></lucide-icon>
+      </nz-badge>
+    </div>
+  </div>
+
+  <!-- Notifications Panel -->
+  @if (notifOpen()) {
+    <div class="th-notif-panel" clickOutside (clickOutside)="closeNotifications()">
+      <div class="th-notif-header">
+        <div class="th-notif-title">
+          <lucide-icon [img]="BellIcon" [size]="16" style="color: #3d5af1"></lucide-icon>
+          {{ 'notifications' | transloco }}
+          @if (totalCount() > 0) {
+            <nz-badge [nzCount]="totalCount()" [nzShowZero]="false"></nz-badge>
+          }
+        </div>
+        @if (unreadCount() > 0) {
+          <button class="th-mark-all-btn" (click)="markAllAsRead()" [disabled]="notificationsLoading()">
+            {{ 'mark_all_read' | transloco }}
+          </button>
+        }
+      </div>
+
+      <div class="th-notif-list">
+        @if (notificationsLoading()) {
+          <div class="th-notif-loading">
+            <nz-spin nzSimple></nz-spin>
+            <div class="loading-text">{{ 'loading' | transloco }}</div>
+          </div>
+        } @else if (notifications().length === 0) {
+          <div class="th-notif-empty">
+            <nz-empty
+              [nzNotFoundImage]="'https://gw.alipayobjects.com/zos/antfincdn/ZHrcdLPrvN/empty.svg'"
+              [nzNotFoundContent]="'no_notifications' | transloco">
+            </nz-empty>
+            <div class="empty-subtitle">{{ 'notifications_will_appear' | transloco }}</div>
+          </div>
+        } @else {
+          @for (notification of notifications(); track notification.id) {
+            <div
+              class="th-notif-item"
+              [class.unread]="!notification.isRead"
+              (click)="onNotificationClick(notification)">
+              <div class="th-notif-avatar" [class.read]="notification.isRead" [class.unread]="!notification.isRead">
+                <lucide-icon [img]="BellIcon" [size]="14"></lucide-icon>
+                @if (!notification.isRead) {
+                  <span class="th-unread-dot"></span>
+                }
+              </div>
+              <div class="th-notif-body">
+                <div class="th-notif-title-text">{{ notification.title }}</div>
+                <div class="th-notif-msg">{{ notification.body }}</div>
+                <div class="th-notif-meta">
+                  @if (notification.isPushSent) {
+                    <lucide-icon [img]="SmartphoneIcon" [size]="12" class="push-icon"></lucide-icon>
+                  }
+                  @if (notification.isEmailSent) {
+                    <lucide-icon [img]="MailIcon" [size]="12" class="email-icon"></lucide-icon>
+                  }
+                  @if (notification.isSmsSent) {
+                    <lucide-icon [img]="MessageCircleIcon" [size]="12" class="sms-icon"></lucide-icon>
+                  }
+                  <lucide-icon [img]="ClockIcon" [size]="12"></lucide-icon>
+                  <span>{{ getTimeAgo(notification.createdAt) }}</span>
+                </div>
+              </div>
+            </div>
+          }
+        }
+      </div>
+
+      @if (totalCount() > 5 && notifications().length > 0) {
+        <div class="th-notif-footer">
+          <button class="th-view-all-btn" (click)="viewAllNotifications()">
+            {{ 'view_all_notifications' | transloco }}
+          </button>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Desktop Profile with Ant Design Dropdown -->
+  <div class="th-profile-btn" nz-dropdown [nzDropdownMenu]="profileMenu" nzTrigger="click" [nzPlacement]="isRtl() ? 'bottomRight' : 'bottomLeft'">
+    <div class="th-profile-avatar">
+      <nz-avatar [nzSrc]="avatarSrc()" nzSize="default"></nz-avatar>
+      @if (isVerified()) {
+        <div class="th-verified-badge">
+          <lucide-icon [img]="CheckCircleIcon" [size]="10"></lucide-icon>
+        </div>
+      }
+    </div>
+    <div class="th-profile-text">
+      <span class="th-profile-role">{{ (profile()?.fullName) || ('teacher' | transloco) }}</span>
+    </div>
+    <lucide-icon [img]="ChevronDownIcon" [size]="14" class="th-chevron"></lucide-icon>
+  </div>
+
+  <!-- Ant Design Profile Dropdown Menu -->
+  <nz-dropdown-menu #profileMenu="nzDropdownMenu">
+    <div class="th-profile-dropdown">
+      <div class="th-profile-header-wrap">
+        <div class="profile-avatar-large">
+          <nz-avatar [nzSrc]="avatarSrc()" nzSize="large"></nz-avatar>
+        </div>
+        <div>
+          <div class="th-profile-header-name">{{ userName() }}</div>
+          <div class="th-profile-header-role">{{ (profile()?.headline) || ('teacher' | transloco) }}</div>
+          @if (isVerified()) {
+            <span class="th-profile-header-verified">
+              <lucide-icon [img]="BadgeCheckIcon" [size]="12"></lucide-icon>
+              {{ 'verified' | transloco }}
+            </span>
+          }
+        </div>
+      </div>
+      <nz-divider></nz-divider>
+      
+      @for (item of profileMenuItems; track item.key) {
+        @if (item.key === 'logout') {
+          <nz-divider></nz-divider>
+          <div class="th-dropdown-item logout-item" (click)="navigateTo(item.path)">
+            <lucide-icon [img]="item.icon" [size]="16"></lucide-icon>
+            <span>{{ item.label | transloco }}</span>
+          </div>
+        } @else {
+          <div class="th-dropdown-item" (click)="navigateTo(item.path)">
+            <lucide-icon [img]="item.icon" [size]="16"></lucide-icon>
+            <span>{{ item.label | transloco }}</span>
+          </div>
+        }
+      }
+    </div>
+  </nz-dropdown-menu>
+
+  <!-- Mobile Menu Button -->
+  <div class="th-mobile-menu-btn" (click)="openMobileMenu()">
+    <lucide-icon [img]="MenuIcon" [size]="18"></lucide-icon>
+  </div>
+
+  <!-- Mobile Drawer -->
+  @if (mobileMenuOpen()) {
+    <div class="th-mobile-drawer-overlay" (click)="closeMobileMenu()"></div>
+    <div class="th-mobile-drawer" [class.open]="mobileMenuOpen()">
+      <div class="th-mobile-drawer-header">
+        <button class="close-btn" (click)="closeMobileMenu()">×</button>
+      </div>
+      <div class="th-mobile-user-info">
+        <div class="mobile-avatar">
+          <nz-avatar [nzSrc]="avatarSrc()" nzSize="large"></nz-avatar>
+          @if (isVerified()) {
+            <div class="verified-badge-mobile">
+              <lucide-icon [img]="CheckCircleIcon" [size]="12"></lucide-icon>
+            </div>
+          }
+        </div>
+        <div class="th-mobile-user-details">
+          <div class="th-mobile-user-name">{{ userName() }}</div>
+          <div class="th-mobile-user-role">{{ (profile()?.headline) || ('teacher' | transloco) }}</div>
+        </div>
+      </div>
+
+      @for (item of mobileMenuItems; track item.key) {
+        <div class="th-mobile-menu-item" (click)="navigateTo(item.path)">
+          <lucide-icon [img]="item.icon" [size]="18"></lucide-icon>
+          <span>{{ item.label | transloco }}</span>
+        </div>
+      }
+
+      <div class="th-mobile-menu-divider"></div>
+
+      <div class="th-mobile-menu-item logout-item" (click)="logout()">
+        <lucide-icon [img]="LogOutIcon" [size]="18"></lucide-icon>
+        <span>{{ 'logout' | transloco }}</span>
+      </div>
+    </div>
+  }
+</div>

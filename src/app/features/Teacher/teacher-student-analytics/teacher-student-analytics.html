@@ -1,0 +1,657 @@
+<ng-container *transloco="let t; scope: 'teacherStudentAnalytics'">
+
+  <!-- ══ Loading ══ -->
+  @if (loading()) {
+    <div class="tsa-center-screen">
+      <nz-spin nzSize="large"></nz-spin>
+      <p class="tsa-loading-text">{{ t('teacherStudentAnalytics.loading_analytics') }}</p>
+    </div>
+
+  } @else if (networkError()) {
+    <!-- ══ Network Error ══ -->
+    <div class="tsa-center-screen">
+      <div class="tsa-error-box">
+        <div class="tsa-error-icon">⚠️</div>
+        <div class="tsa-error-title">{{ t('teacherStudentAnalytics.network_error') }}</div>
+        <div class="tsa-error-desc">{{ t('teacherStudentAnalytics.network_error_desc') }}</div>
+        <div class="tsa-error-actions">
+          <button class="tsa-btn-primary" (click)="fetchData()">
+            <lucide-icon [img]="RefreshCwIcon" [size]="14"></lucide-icon>
+            {{ t('teacherStudentAnalytics.retry') }}
+          </button>
+          <button class="tsa-btn-ghost" (click)="navigateToStudents()">
+            <lucide-icon [img]="backArrowIcon" [size]="14"></lucide-icon>
+            {{ t('teacherStudentAnalytics.back') }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+  } @else if (!analytics() || !course()) {
+    <!-- ══ No Data ══ -->
+    <div class="tsa-center-screen">
+      <div class="tsa-empty-box">
+        <div class="tsa-empty-icon-large">📊</div>
+        <div class="tsa-empty-title">{{ t('teacherStudentAnalytics.no_data_title') }}</div>
+        <div class="tsa-empty-desc">{{ t('teacherStudentAnalytics.no_data_desc') }}</div>
+        <button class="tsa-btn-primary" (click)="navigateToStudents()">
+          <lucide-icon [img]="backArrowIcon" [size]="14"></lucide-icon>
+          {{ t('teacherStudentAnalytics.back_to_students') }}
+        </button>
+      </div>
+    </div>
+
+  } @else {
+    <div class="tsa-root" [class.tsa-rtl]="isRtl">
+
+      <!-- ══ Header ══ -->
+      <header class="tsa-header">
+        <div class="tsa-header-left">
+          <button class="tsa-back-btn" (click)="navigateToStudents()">
+            <lucide-icon [img]="backArrowIcon" [size]="16"></lucide-icon>
+            <span class="tsa-back-label">{{ t('teacherStudentAnalytics.back_to_students') }}</span>
+          </button>
+          <div class="tsa-header-divider"></div>
+          <div class="tsa-header-info">
+            <p class="tsa-header-title">{{ t('teacherStudentAnalytics.page_title') }}</p>
+            <p class="tsa-header-sub">{{ course()?.title }}</p>
+          </div>
+        </div>
+        <div class="tsa-header-right">
+          @if (cv(); as s) {
+            <nz-tag [nzColor]="s.statusColor" class="tsa-status-tag">{{ s.statusText }}</nz-tag>
+          }
+          <button class="tsa-btn-ghost tsa-btn-sm" (click)="refresh()">
+            <lucide-icon [img]="RefreshCwIcon" [size]="14"></lucide-icon>
+            <span class="tsa-btn-label">{{ t('teacherStudentAnalytics.refresh') }}</span>
+          </button>
+          <button class="tsa-btn-green tsa-btn-sm" (click)="navigateToChat()">
+            <lucide-icon [img]="MessageSquareIcon" [size]="14"></lucide-icon>
+            <span class="tsa-btn-label">{{ t('teacherStudentAnalytics.contact_student') }}</span>
+          </button>
+          <button class="tsa-btn-icon tsa-mobile-only" (click)="sidebarOpen.set(true)">
+            <lucide-icon [img]="PanelRightIcon" [size]="18"></lucide-icon>
+          </button>
+        </div>
+      </header>
+
+      <!-- ══ Body ══ -->
+      <div class="tsa-body">
+
+        <!-- Profile Hero -->
+        <div class="tsa-profile-hero tsa-fade-up">
+          <div class="tsa-hero-band"></div>
+          <div class="tsa-hero-body">
+            <div class="tsa-hero-main">
+              <div class="tsa-hero-left">
+                <div class="tsa-hero-avatar">
+                  @if (analytics()?.studentAvatar) {
+                    <img [src]="config.baseUrl + analytics()?.studentAvatar" alt="" />
+                  } @else {
+                    {{ avatarLetter(analytics()?.studentName) }}
+                  }
+                </div>
+                <div class="tsa-hero-info">
+                  <div class="tsa-hero-name">
+                    {{ analytics()?.studentName || t('teacherStudentAnalytics.student') }}
+                  </div>
+                  <div class="tsa-hero-email">
+                    <lucide-icon [img]="MailIcon" [size]="12"></lucide-icon>
+                    {{ analytics()?.studentEmail || '—' }}
+                  </div>
+                  <div class="tsa-tags-row">
+                    @if (cv(); as s) {
+                      <nz-tag [nzColor]="s.statusColor" class="tsa-tag">{{ s.statusText }}</nz-tag>
+                      <nz-tag [nzColor]="s.enrollmentTypeColor" class="tsa-tag">{{ s.enrollmentType }}</nz-tag>
+                    }
+                    @if (analytics()?.certificateEarned) {
+                      <nz-tag nzColor="gold" class="tsa-tag">
+                        <lucide-icon [img]="TrophyIcon" [size]="12" class="tsa-tag-icon"></lucide-icon>
+                        {{ t('teacherStudentAnalytics.certificate_earned') }}
+                      </nz-tag>
+                    }
+                    @if (analytics()?.studentJoinedDate) {
+                      <nz-tag class="tsa-tag">
+                        <lucide-icon [img]="UsersIcon" [size]="12" class="tsa-tag-icon"></lucide-icon>
+                        {{ t('teacherStudentAnalytics.since') }} {{ formatDate(analytics()?.studentJoinedDate) }}
+                      </nz-tag>
+                    }
+                  </div>
+                </div>
+              </div>
+              <div class="tsa-hero-right">
+                <div class="tsa-ring-wrap">
+                  <div
+                    class="tsa-progress-ring"
+                    [style.background]="'conic-gradient(' + progressColor(pct()) + ' ' + (pct() * 3.6) + 'deg, #f0f3fa 0)'">
+                    <div class="tsa-progress-inner">{{ pct() }}%</div>
+                  </div>
+                  <div class="tsa-progress-label">{{ t('teacherStudentAnalytics.overall_progress') }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="tsa-stats-grid">
+          @for (card of statCards(); track card.label) {
+            <div class="tsa-stat-card">
+              <div class="tsa-stat-icon" [style.background]="card.bg" [style.color]="card.color">
+                <lucide-icon [img]="card.icon" [size]="18"></lucide-icon>
+              </div>
+              <div class="tsa-stat-content">
+                <div class="tsa-stat-val" [style.color]="card.color">{{ card.value }}</div>
+                <div class="tsa-stat-label">{{ card.label }}</div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Main Layout -->
+        <div class="tsa-layout">
+          <div class="tsa-main">
+
+            <!-- Tabs -->
+            <nz-tabs
+              [nzSelectedIndex]="activeTabIndex()"
+              (nzSelectedIndexChange)="activeTabIndex.set($event)"
+              nzType="card"
+              class="tsa-tabs"
+              [nzTabPosition]="isRtl ? 'right' : 'left'">
+
+              <!-- ── Tab: Section Progress ── -->
+              <nz-tab [nzTitle]="progressTitle">
+                <ng-template #progressTitle>
+                  <span class="tsa-tab-title">
+                    <lucide-icon [img]="BarChart3Icon" [size]="14"></lucide-icon>
+                    {{ t('teacherStudentAnalytics.tab_progress') }}
+                  </span>
+                </ng-template>
+
+                <div class="tsa-tab-content tsa-fade-up">
+                  @if (sectionProgress().length === 0) {
+                    <div class="tsa-empty-state">
+                      <div class="tsa-empty-icon">📁</div>
+                      <div class="tsa-empty-title">{{ t('teacherStudentAnalytics.no_section_data') }}</div>
+                    </div>
+                  } @else {
+                    @for (section of sectionProgress(); track section.sectionId; let i = $index) {
+                      <div class="tsa-section-card">
+                        <div class="tsa-section-head">
+                          <div class="tsa-section-left">
+                            <div class="tsa-order-badge">{{ i + 1 }}</div>
+                            <div class="tsa-section-info">
+                              <div class="tsa-section-title">
+                                {{ section.sectionTitle || (t('teacherStudentAnalytics.section') + ' ' + (i + 1)) }}
+                              </div>
+                              <div class="tsa-section-meta">
+                                {{ section.completedLectures || 0 }} / {{ section.totalLectures || 0 }}
+                                {{ t('teacherStudentAnalytics.lectures_done') }}
+                                · {{ formatSeconds(section.totalWatchTimeSeconds || 0) }}
+                              </div>
+                            </div>
+                          </div>
+                          <div class="tsa-section-progress">
+                            <nz-progress
+                              [nzPercent]="round(section.progressPercentage || 0)"
+                              nzSize="small"
+                              [nzStrokeColor]="progressColor(section.progressPercentage || 0)"
+                              class="tsa-progress-bar">
+                            </nz-progress>
+                            <nz-tag [nzColor]="sectionTagColor(section.progressPercentage || 0)" class="tsa-tag">
+                              {{ round(section.progressPercentage || 0) }}%
+                            </nz-tag>
+                          </div>
+                        </div>
+
+                        <div class="tsa-section-metrics">
+                          <div class="tsa-metric-item">
+                            <div class="tsa-metric-icon" style="background:#0891b215;color:#0891b2">
+                              <lucide-icon [img]="ClockIcon" [size]="13"></lucide-icon>
+                            </div>
+                            <div class="tsa-metric-info">
+                              <div class="tsa-metric-label">{{ t('teacherStudentAnalytics.total_time') }}</div>
+                              <div class="tsa-metric-value" style="color:#0891b2">
+                                {{ formatSeconds(section.totalWatchTimeSeconds || 0) }}
+                              </div>
+                            </div>
+                          </div>
+                          <div class="tsa-metric-item">
+                            <div class="tsa-metric-icon" style="background:#722ed115;color:#722ed1">
+                              <lucide-icon [img]="VideoIcon" [size]="13"></lucide-icon>
+                            </div>
+                            <div class="tsa-metric-info">
+                              <div class="tsa-metric-label">{{ t('teacherStudentAnalytics.avg_per_lecture') }}</div>
+                              <div class="tsa-metric-value" style="color:#722ed1">
+                                {{ formatSeconds(round(section.averageWatchTime || 0)) }}
+                              </div>
+                            </div>
+                          </div>
+                          <div class="tsa-metric-item">
+                            <div
+                              class="tsa-metric-icon"
+                              [style.background]="progressColor(section.progressPercentage || 0) + '15'"
+                              [style.color]="progressColor(section.progressPercentage || 0)">
+                              <lucide-icon [img]="TrendingUpIcon" [size]="13"></lucide-icon>
+                            </div>
+                            <div class="tsa-metric-info">
+                              <div class="tsa-metric-label">{{ t('teacherStudentAnalytics.completion') }}</div>
+                              <div class="tsa-metric-value" [style.color]="progressColor(section.progressPercentage || 0)">
+                                {{ round(section.progressPercentage || 0) }}%
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        @if (section.lectures && section.lectures.length > 0) {
+                          <div class="tsa-lectures-list">
+                            @for (lec of section.lectures; track lec.lectureId; let li = $index) {
+                              <div class="tsa-lecture-item">
+                                <div class="tsa-lecture-icon">
+                                  @if (lec.isCompleted) {
+                                    <lucide-icon [img]="CheckCircleIcon" [size]="14" style="color:#27ae60"></lucide-icon>
+                                  } @else {
+                                    <lucide-icon [img]="PlayCircleIcon" [size]="14"></lucide-icon>
+                                  }
+                                </div>
+                                <div class="tsa-lecture-info">
+                                  <div class="tsa-lecture-title">
+                                    {{ lec.lectureTitle || (t('teacherStudentAnalytics.lecture') + ' ' + (li + 1)) }}
+                                  </div>
+                                  <div class="tsa-lecture-meta">{{ formatSeconds(lec.watchTimeSeconds || 0) }}</div>
+                                </div>
+                                <nz-tag [nzColor]="lec.isCompleted ? 'success' : 'default'" class="tsa-tag tsa-lecture-tag">
+                                  {{ lec.watchPercentage || 0 }}%
+                                </nz-tag>
+                              </div>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+                  }
+                </div>
+              </nz-tab>
+
+              <!-- ── Tab: Quizzes ── -->
+              <nz-tab [nzTitle]="quizzesTitle">
+                <ng-template #quizzesTitle>
+                  <span class="tsa-tab-title">
+                    <lucide-icon [img]="TrophyIcon" [size]="14"></lucide-icon>
+                    {{ t('teacherStudentAnalytics.tab_quizzes') }}
+                    @if ((analytics()?.quizPerformance?.length || 0) > 0) {
+                      <nz-badge
+                        [nzCount]="analytics()?.quizPerformance?.length"
+                        [nzStyle]="{ backgroundColor: '#3d5af1' }"
+                        class="tsa-badge">
+                      </nz-badge>
+                    }
+                  </span>
+                </ng-template>
+
+                <div class="tsa-tab-content tsa-fade-up">
+                  @if (quizPerformance().length === 0) {
+                    <div class="tsa-empty-state">
+                      <div class="tsa-empty-icon">❓</div>
+                      <div class="tsa-empty-title">{{ t('teacherStudentAnalytics.no_quiz_data') }}</div>
+                    </div>
+                  } @else {
+                    @if (analytics(); as a) {
+                      @if ((a.totalQuizAttempts ?? 0) > 0) {
+                        <div class="tsa-quiz-summary">
+                          <div class="tsa-stat-card">
+                            <div class="tsa-stat-icon" style="background:#fffbeb;color:#d97706">
+                              <lucide-icon [img]="HistoryIcon" [size]="18"></lucide-icon>
+                            </div>
+                            <div class="tsa-stat-content">
+                              <div class="tsa-stat-val" style="color:#d97706">{{ a.totalQuizAttempts }}</div>
+                              <div class="tsa-stat-label">{{ t('teacherStudentAnalytics.total_attempts') }}</div>
+                            </div>
+                          </div>
+                          <div class="tsa-stat-card">
+                            <div class="tsa-stat-icon" style="background:#ecfeff;color:#0891b2">
+                              <lucide-icon [img]="BarChart3Icon" [size]="18"></lucide-icon>
+                            </div>
+                            <div class="tsa-stat-content">
+                              <div class="tsa-stat-val" style="color:#0891b2">{{ round(a.averageQuizScore || 0) }}%</div>
+                              <div class="tsa-stat-label">{{ t('teacherStudentAnalytics.avg_score') }}</div>
+                            </div>
+                          </div>
+                          <div class="tsa-stat-card">
+                            <div class="tsa-stat-icon" style="background:#eef0ff;color:#3d5af1">
+                              <lucide-icon [img]="TrophyIcon" [size]="18"></lucide-icon>
+                            </div>
+                            <div class="tsa-stat-content">
+                              <div class="tsa-stat-val" style="color:#3d5af1">{{ quizPerformance().length }}</div>
+                              <div class="tsa-stat-label">{{ t('teacherStudentAnalytics.quizzes_taken') }}</div>
+                            </div>
+                          </div>
+                        </div>
+                      }
+                    }
+
+                    @for (quiz of quizPerformance(); track quiz.quizId; let i = $index) {
+                      <div class="tsa-quiz-card">
+                        <div class="tsa-quiz-left">
+                          <div class="tsa-quiz-icon">
+                            <lucide-icon [img]="HelpCircleIcon" [size]="14" style="color:#faad14"></lucide-icon>
+                          </div>
+                          <div class="tsa-quiz-info">
+                            <div class="tsa-quiz-title">
+                              {{ quiz.quizTitle || (t('teacherStudentAnalytics.quiz') + ' ' + (i + 1)) }}
+                            </div>
+                            <div class="tsa-quiz-meta">
+                              {{ quiz.attemptCount || 0 }} {{ t('teacherStudentAnalytics.attempts') }}
+                              · {{ t('teacherStudentAnalytics.last') }}: {{ formatDate(quiz.lastAttemptDate) }}
+                            </div>
+                          </div>
+                        </div>
+                        <div class="tsa-quiz-right">
+                          <div class="tsa-quiz-score-wrap">
+                            <div class="tsa-quiz-score-label">{{ t('teacherStudentAnalytics.avg_score') }}</div>
+                            <nz-progress [nzPercent]="round(quiz.averageScore || 0)" nzSize="small" nzStrokeColor="#3d5af1" class="tsa-progress-bar"></nz-progress>
+                          </div>
+                          <div class="tsa-quiz-scores">
+                            <div class="tsa-quiz-score-value">{{ round(quiz.averageScore || 0) }}%</div>
+                            <div class="tsa-quiz-best">{{ t('teacherStudentAnalytics.best') }}: {{ round(quiz.bestScore || 0) }}%</div>
+                          </div>
+                          <nz-tag
+                            [nzColor]="quiz.quizType === 'Graded' ? 'blue' : 'green'"
+                            class="tsa-tag">
+                            {{ quiz.quizType || t('teacherStudentAnalytics.quiz') }}
+                          </nz-tag>
+                        </div>
+                      </div>
+                    }
+                  }
+                </div>
+              </nz-tab>
+
+              <!-- ── Tab: Activity ── -->
+              <nz-tab [nzTitle]="activityTitle">
+                <ng-template #activityTitle>
+                  <span class="tsa-tab-title">
+                    <lucide-icon [img]="HistoryIcon" [size]="14"></lucide-icon>
+                    {{ t('teacherStudentAnalytics.tab_activity') }}
+                    @if ((analytics()?.watchPatterns?.length || 0) > 0) {
+                      <nz-badge
+                        [nzCount]="analytics()?.watchPatterns?.length"
+                        [nzStyle]="{ backgroundColor: '#0891b2' }"
+                        class="tsa-badge">
+                      </nz-badge>
+                    }
+                  </span>
+                </ng-template>
+
+                <div class="tsa-tab-content tsa-fade-up">
+                  @if (watchPatterns().length === 0) {
+                    <div class="tsa-empty-state">
+                      <div class="tsa-empty-icon">📅</div>
+                      <div class="tsa-empty-title">{{ t('teacherStudentAnalytics.no_activity_data') }}</div>
+                    </div>
+                  } @else {
+                    <div class="tsa-card">
+                      <div class="tsa-card-header">
+                        <div class="tsa-card-title">
+                          <div class="tsa-card-icon" style="background:linear-gradient(135deg, #0891b2, #06b6d4)">
+                            <lucide-icon [img]="HistoryIcon" [size]="14" style="color:#fff"></lucide-icon>
+                          </div>
+                          {{ t('teacherStudentAnalytics.activity_log') }}
+                          <span class="tsa-card-badge">({{ watchPatterns().length }} {{ t('teacherStudentAnalytics.days') }})</span>
+                        </div>
+                      </div>
+                      <div class="tsa-card-body">
+                        @for (p of watchPatterns(); track p.date) {
+                          <div class="tsa-activity-item">
+                            <div class="tsa-activity-dot" [style.background]="activityDotColor(p.totalWatchTimeSeconds || 0)"></div>
+                            <div class="tsa-activity-info">
+                              <div class="tsa-activity-header">
+                                <div class="tsa-activity-date">{{ formatDate(p.date) }}</div>
+                                <div class="tsa-activity-tags">
+                                  <nz-tag class="tsa-tag" nzColor="blue">
+                                    <lucide-icon [img]="ClockIcon" [size]="12" class="tsa-tag-icon"></lucide-icon>
+                                    {{ formatSeconds(p.totalWatchTimeSeconds || 0) }}
+                                  </nz-tag>
+                                  <nz-tag class="tsa-tag" nzColor="success">
+                                    <lucide-icon [img]="CheckCircleIcon" [size]="12" class="tsa-tag-icon"></lucide-icon>
+                                    {{ p.lecturesCompleted || 0 }} {{ t('teacherStudentAnalytics.done') }}
+                                  </nz-tag>
+                                </div>
+                              </div>
+                              @if (p.lectureCount > 0) {
+                                <div class="tsa-activity-sub">
+                                  {{ t('teacherStudentAnalytics.accessed') }} {{ p.lectureCount }}
+                                  {{ p.lectureCount === 1 ? t('teacherStudentAnalytics.lecture') : t('teacherStudentAnalytics.lectures') }}
+                                </div>
+                              }
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              </nz-tab>
+
+              <!-- ── Tab: Other Courses ── -->
+              <nz-tab [nzTitle]="coursesTitle">
+                <ng-template #coursesTitle>
+                  <span class="tsa-tab-title">
+                    <lucide-icon [img]="BookOpenIcon" [size]="14"></lucide-icon>
+                    {{ t('teacherStudentAnalytics.tab_courses') }}
+                    @if ((analytics()?.otherCoursesWithTeacher?.length || 0) > 0) {
+                      <nz-badge
+                        [nzCount]="analytics()?.otherCoursesWithTeacher?.length"
+                        [nzStyle]="{ backgroundColor: '#27ae60' }"
+                        class="tsa-badge">
+                      </nz-badge>
+                    }
+                  </span>
+                </ng-template>
+
+                <div class="tsa-tab-content tsa-fade-up">
+                  @if (otherCourses().length === 0) {
+                    <div class="tsa-empty-state">
+                      <div class="tsa-empty-icon">📚</div>
+                      <div class="tsa-empty-title">{{ t('teacherStudentAnalytics.no_other_courses') }}</div>
+                    </div>
+                  } @else {
+                    <div class="tsa-card">
+                      <div class="tsa-card-header">
+                        <div class="tsa-card-title">
+                          <div class="tsa-card-icon" style="background:linear-gradient(135deg, #27ae60, #2ecc71)">
+                            <lucide-icon [img]="BookOpenIcon" [size]="14" style="color:#fff"></lucide-icon>
+                          </div>
+                          {{ t('teacherStudentAnalytics.other_courses_title') }}
+                          <span class="tsa-card-badge">({{ otherCourses().length }})</span>
+                        </div>
+                      </div>
+                      <div class="tsa-card-body">
+                        @for (c of otherCourses(); track c.courseId) {
+                          <div class="tsa-course-item">
+                            <div class="tsa-course-thumb">
+                              <lucide-icon [img]="BookOpenIcon" [size]="14" style="color:#3d5af1"></lucide-icon>
+                            </div>
+                            <div class="tsa-course-info">
+                              <div class="tsa-course-title">{{ c.courseTitle }}</div>
+                              <nz-progress
+                                [nzPercent]="round(c.progressPercentage || 0)"
+                                nzSize="small"
+                                [nzStrokeColor]="progressColor(round(c.progressPercentage || 0))"
+                                class="tsa-progress-bar">
+                              </nz-progress>
+                              <div class="tsa-course-meta">
+                                <lucide-icon [img]="CalendarIcon" [size]="12" class="tsa-meta-icon"></lucide-icon>
+                                {{ t('teacherStudentAnalytics.enrolled') }}: {{ formatDate(c.enrollmentDate) }}
+                                @if (c.completedAt) {
+                                  <span class="tsa-course-completed">
+                                    <lucide-icon [img]="CheckCircleIcon" [size]="12" class="tsa-meta-icon"></lucide-icon>
+                                    {{ t('teacherStudentAnalytics.completed_on') }}: {{ formatDate(c.completedAt) }}
+                                  </span>
+                                }
+                              </div>
+                            </div>
+                            <div class="tsa-course-actions">
+                              <nz-tag [nzColor]="c.isCompleted ? 'success' : 'processing'" class="tsa-tag">
+                                {{ c.isCompleted ? t('teacherStudentAnalytics.completed') : t('teacherStudentAnalytics.in_progress') }}
+                              </nz-tag>
+                              <button class="tsa-btn-ghost tsa-btn-sm" (click)="navigateToCourse(c.courseId)">
+                                <lucide-icon [img]="EyeIcon" [size]="14"></lucide-icon>
+                                <span class="tsa-btn-label">{{ t('teacherStudentAnalytics.view') }}</span>
+                              </button>
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              </nz-tab>
+
+            </nz-tabs>
+          </div>
+
+          <!-- Desktop Sidebar -->
+          <div class="tsa-sidebar-desktop">
+            <ng-container *ngTemplateOutlet="sidebarTpl"></ng-container>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile Sidebar Overlay -->
+      @if (sidebarOpen()) {
+        <div class="tsa-sidebar-overlay" (click)="sidebarOpen.set(false)"></div>
+      }
+
+      <!-- Mobile Sidebar Drawer -->
+      <div class="tsa-sidebar-drawer" [class.open]="sidebarOpen()" [class.tsa-rtl]="isRtl">
+        <div class="tsa-drawer-header">
+          <div class="tsa-drawer-title">{{ t('teacherStudentAnalytics.student_info') }}</div>
+          <button class="tsa-btn-icon" (click)="sidebarOpen.set(false)">
+            <lucide-icon [img]="XIcon" [size]="16"></lucide-icon>
+          </button>
+        </div>
+        <div class="tsa-drawer-body">
+          <ng-container *ngTemplateOutlet="sidebarTpl"></ng-container>
+        </div>
+      </div>
+
+    </div>
+  }
+
+  <!-- ══ Sidebar Template ══ -->
+  <ng-template #sidebarTpl>
+    <div class="tsa-sidebar-content">
+
+      <!-- Enrollment Info -->
+      <div class="tsa-card">
+        <div class="tsa-card-header">
+          <div class="tsa-card-title">
+            <div class="tsa-card-icon" style="background:linear-gradient(135deg, #3d5af1, #5b78ff)">
+              <lucide-icon [img]="InfoIcon" [size]="14" style="color:#fff"></lucide-icon>
+            </div>
+            {{ t('teacherStudentAnalytics.enrollment_info') }}
+          </div>
+        </div>
+        <div class="tsa-card-body tsa-info-list">
+          <div class="tsa-info-row">
+            <span class="tsa-info-label">{{ t('teacherStudentAnalytics.enrolled_on') }}</span>
+            <span class="tsa-info-val">{{ formatDate(analytics()?.enrollmentDate) }}</span>
+          </div>
+          <div class="tsa-info-row">
+            <span class="tsa-info-label">{{ t('teacherStudentAnalytics.last_accessed') }}</span>
+            <span class="tsa-info-val">
+              {{ analytics()?.lastAccessed ? formatDate(analytics()?.lastAccessed) : t('teacherStudentAnalytics.never') }}
+            </span>
+          </div>
+          <div class="tsa-info-row">
+            <span class="tsa-info-label">{{ t('teacherStudentAnalytics.enroll_type') }}</span>
+            <span class="tsa-info-val">{{ cv()?.enrollmentType }}</span>
+          </div>
+          @if (analytics()?.isCompleted && analytics()?.completedAt) {
+            <div class="tsa-info-row">
+              <span class="tsa-info-label">{{ t('teacherStudentAnalytics.completed_on') }}</span>
+              <span class="tsa-info-val">{{ formatDate(analytics()?.completedAt) }}</span>
+            </div>
+          }
+          @if (analytics()?.certificateEarned && analytics()?.certificateIssuedAt) {
+            <div class="tsa-info-row">
+              <span class="tsa-info-label">{{ t('teacherStudentAnalytics.cert_issued') }}</span>
+              <span class="tsa-info-val">{{ formatDate(analytics()?.certificateIssuedAt) }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Completion Checklist -->
+      <div class="tsa-card">
+        <div class="tsa-card-header">
+          <div class="tsa-card-title">
+            <div class="tsa-card-icon" style="background:linear-gradient(135deg, #27ae60, #2ecc71)">
+              <lucide-icon [img]="CheckCircleIcon" [size]="14" style="color:#fff"></lucide-icon>
+            </div>
+            {{ t('teacherStudentAnalytics.checklist_title') }}
+          </div>
+        </div>
+        <div class="tsa-card-body">
+          <div class="tsa-checklist">
+            @for (item of checklistItems(); track item.key) {
+              <div class="tsa-checklist-item">
+                <div class="tsa-check-dot" [class.done]="item.done" [class.bad]="!item.done">
+                  {{ item.done ? '✓' : '○' }}
+                </div>
+                <span [style.color]="item.done ? '#0f172a' : '#94a3b8'">
+                  {{ t(item.key) }}
+                </span>
+              </div>
+            }
+          </div>
+          <button class="tsa-btn-green tsa-btn-full" (click)="navigateToChat()">
+            <lucide-icon [img]="MessageSquareIcon" [size]="14"></lucide-icon>
+            {{ t('teacherStudentAnalytics.contact_student') }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Course Info -->
+      <div class="tsa-card">
+        <div class="tsa-card-header">
+          <div class="tsa-card-title">
+            <div class="tsa-card-icon" style="background:linear-gradient(135deg, #d97706, #f39c12)">
+              <lucide-icon [img]="BookOpenIcon" [size]="14" style="color:#fff"></lucide-icon>
+            </div>
+            {{ t('teacherStudentAnalytics.course_info') }}
+          </div>
+        </div>
+        <div class="tsa-card-body">
+          <div class="tsa-course-info-title">{{ course()?.title }}</div>
+          <div class="tsa-info-list">
+            <div class="tsa-info-row">
+              <span class="tsa-info-label">{{ t('teacherStudentAnalytics.total_lectures') }}</span>
+              <span class="tsa-info-val">{{ cv()?.totalLectures || 0 }}</span>
+            </div>
+            <div class="tsa-info-row">
+              <span class="tsa-info-label">{{ t('teacherStudentAnalytics.total_hours') }}</span>
+              <span class="tsa-info-val">{{ course()?.totalHours || 0 }}h</span>
+            </div>
+            <div class="tsa-info-row">
+              <span class="tsa-info-label">{{ t('teacherStudentAnalytics.level') }}</span>
+              <span class="tsa-info-val">{{ course()?.level || '—' }}</span>
+            </div>
+            <div class="tsa-info-row">
+              <span class="tsa-info-label">{{ t('teacherStudentAnalytics.language') }}</span>
+              <span class="tsa-info-val">{{ course()?.language || '—' }}</span>
+            </div>
+          </div>
+          <button class="tsa-btn-ghost tsa-btn-full" (click)="navigateToCourse(courseId())">
+            <lucide-icon [img]="EyeIcon" [size]="14"></lucide-icon>
+            {{ t('teacherStudentAnalytics.view_course') }}
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </ng-template>
+
+</ng-container>

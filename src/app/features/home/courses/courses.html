@@ -1,0 +1,480 @@
+<ng-container *transloco="let t; scope: 'courses'">
+  <div class="cp" [attr.dir]="isRTL ? 'rtl' : 'ltr'">
+
+    <!-- ═══════ HERO ═══════ -->
+    <section class="cp-hero">
+      <div class="cp-hero-orb cp-orb-1"></div>
+      <div class="cp-hero-orb cp-orb-2"></div>
+      <div class="cp-hero-orb cp-orb-3"></div>
+      <div class="cp-hero-grid"></div>
+
+      <div class="cp-hero-content">
+        <h1 class="cp-hero-title">
+          {{ t('courses.heroFindThe') }}
+          <span class="cp-gradient-text">{{ t('courses.heroCourse') }}</span>
+          {{ t('courses.heroForYourCareer') }}
+        </h1>
+
+        <!-- Search Form -->
+        <form class="cp-hero-search" (ngSubmit)="handleSearch()">
+          <div class="cp-search-input-wrap">
+            <lucide-icon [img]="SearchIcon" [size]="20" class="cp-search-icon"></lucide-icon>
+            <input
+              type="text"
+              class="cp-search-input"
+              [placeholder]="t('courses.searchPlaceholder')"
+              [value]="filters().search"
+              (input)="onSearchInput($event)" />
+          </div>
+          <button type="submit" class="cp-search-btn">
+            <lucide-icon [img]="SearchIcon" [size]="16" class="cp-search-btn-icon"></lucide-icon>
+            <span class="cp-search-btn-text">{{ t('courses.searchBtn') }}</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Scroll Indicator -->
+      <div class="cp-scroll-indicator">
+        <span>{{ t('courses.scrollToExplore') }}</span>
+        <lucide-icon [img]="ChevronDownIcon" [size]="18"></lucide-icon>
+      </div>
+    </section>
+
+    <!-- ═══════ MAIN ═══════ -->
+    <section class="cp-main">
+      <div class="cp-container">
+
+        <!-- Toolbar -->
+        <div class="cp-toolbar">
+          <div class="cp-toolbar-left">
+            <!-- Filter Toggle -->
+            <button
+              class="cp-btn-filter-toggle"
+              [class.active]="showFilters()"
+              (click)="toggleFilters()">
+              <lucide-icon [img]="SlidersHorizontalIcon" [size]="18"></lucide-icon>
+              <span class="cp-filter-toggle-text">{{ t('courses.filters') }}</span>
+              @if (activeFilterCount() > 0) {
+                <span class="cp-filter-count-badge">{{ activeFilterCount() }}</span>
+              }
+            </button>
+            <!-- Results count -->
+            <span class="cp-results-count">
+              <strong>{{ totalCount().toLocaleString() }}</strong>
+<span class="cp-results-count-text">
+  {{ getCoursesFoundText(totalCount()) }}
+</span>
+            </span>
+          </div>
+
+          <div class="cp-toolbar-right">
+            <!-- Sort Dropdown -->
+            <div class="cp-sort-wrap" #sortDropdownRef>
+              <button class="cp-sort-btn" (click)="toggleSortDropdown()">
+                <lucide-icon [img]="currentSortIcon()" [size]="16" class="cp-sort-current-icon"></lucide-icon>
+                <span class="cp-sort-current-text">{{ currentSortLabel() }}</span>
+                <lucide-icon [img]="ChevronDownIcon" [size]="14"></lucide-icon>
+              </button>
+              @if (sortDropdownOpen()) {
+                <ul class="cp-sort-menu">
+                  @for (opt of sortOptions; track opt.id) {
+                    <li
+                      class="cp-sort-menu-item"
+                      [class.active]="filters().sortBy === opt.id"
+                      (click)="onSortChange(opt.id)">
+                      <lucide-icon [img]="opt.icon" [size]="16"></lucide-icon>
+                      <span>{{ isRTL ? opt.nameAr : opt.name }}</span>
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+
+            <!-- View Toggle -->
+            <div class="cp-view-toggle">
+              <button
+                class="cp-view-btn"
+                [class.active]="viewMode() === 'grid'"
+                [title]="t('courses.viewGrid')"
+                (click)="setViewMode('grid')">
+                <lucide-icon [img]="LayoutGridIcon" [size]="18"></lucide-icon>
+              </button>
+              <button
+                class="cp-view-btn"
+                [class.active]="viewMode() === 'list'"
+                [title]="t('courses.viewList')"
+                (click)="setViewMode('list')">
+                <lucide-icon [img]="ListIcon" [size]="18"></lucide-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Layout: Sidebar + Content -->
+        <div class="cp-layout">
+
+          <!-- ── Filters Sidebar ── -->
+          <aside class="cp-filters-sidebar" [class.open]="showFilters()">
+            <div class="cp-filters-header">
+              <h3>
+                <lucide-icon [img]="FilterIcon" [size]="16"></lucide-icon>
+                {{ t('courses.filters') }}
+              </h3>
+              <button class="cp-btn-clear-filters" (click)="clearFilters()">{{ t('courses.clearAll') }}</button>
+              <button class="cp-btn-close-filters" (click)="closeFilters()">
+                <lucide-icon [img]="XIcon" [size]="20"></lucide-icon>
+              </button>
+            </div>
+
+            <!-- Price Type -->
+            <div class="cp-filter-group">
+              <label class="cp-filter-label">{{ t('courses.filterPrice') }}</label>
+              <div class="cp-filter-options cp-price-options">
+                <button
+                  class="cp-filter-chip"
+                  [class.active]="filters().isFree === null && filters().hasDiscount === null"
+                  (click)="clearPriceFilter()">
+                  {{ t('courses.priceAll') }}
+                </button>
+                <button
+                  class="cp-filter-chip"
+                  [class.active]="filters().isFree === true"
+                  (click)="onIsFreeChange(true)">
+                  {{ t('courses.priceFree') }}
+                </button>
+                <button
+                  class="cp-filter-chip"
+                  [class.active]="filters().isFree === false"
+                  (click)="onIsFreeChange(false)">
+                  {{ t('courses.pricePaid') }}
+                </button>
+                <button
+                  class="cp-filter-chip"
+                  [class.active]="filters().hasDiscount === true"
+                  (click)="onHasDiscountChange(true)">
+                  {{ t('courses.priceDiscounted') }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Minimum Rating -->
+            <div class="cp-filter-group">
+              <label class="cp-filter-label">{{ t('courses.filterMinRating') }}</label>
+              <div class="cp-rating-options">
+                @for (r of ratingOptions; track r) {
+                  <button
+                    class="cp-rating-chip"
+                    [class.active]="filters().minRating === r"
+                    (click)="onRatingChange(r)">
+                    {{ r }}+
+                    <lucide-icon [img]="StarIcon" [size]="12" class="cp-star-filled"></lucide-icon>
+                  </button>
+                }
+              </div>
+            </div>
+
+            <!-- Price Range -->
+            <div class="cp-filter-group">
+              <label class="cp-filter-label">{{ t('courses.filterPriceRange') }}</label>
+              <div class="cp-price-range-inputs">
+                <div class="cp-price-input-wrap">
+                  <lucide-icon [img]="DollarSignIcon" [size]="14" class="cp-price-input-icon"></lucide-icon>
+                  <input
+                    type="number"
+                    class="cp-price-input"
+                    [placeholder]="t('courses.priceMin')"
+                    [value]="filters().minPrice"
+                    min="0"
+                    (input)="onMinPriceChange($event)" />
+                </div>
+                <span class="cp-price-separator">-</span>
+                <div class="cp-price-input-wrap">
+                  <lucide-icon [img]="DollarSignIcon" [size]="14" class="cp-price-input-icon"></lucide-icon>
+                  <input
+                    type="number"
+                    class="cp-price-input"
+                    [placeholder]="t('courses.priceMax')"
+                    [value]="filters().maxPrice"
+                    min="0"
+                    (input)="onMaxPriceChange($event)" />
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <!-- Mobile overlay -->
+          @if (showFilters()) {
+            <div class="cp-filters-overlay" (click)="closeFilters()"></div>
+          }
+
+          <!-- ── Courses Content ── -->
+          <main class="cp-courses-content">
+
+            @if (loading()) {
+              <!-- Skeleton -->
+              <div [class]="viewMode() === 'grid' ? 'cp-courses-grid' : 'cp-courses-list'">
+                @for (_ of skeletonItems; track $index) {
+                  @if (viewMode() === 'grid') {
+                    <div class="cp-course-card cp-skeleton-card">
+                      <div class="cp-course-card-image cp-skel-img"></div>
+                      <div class="cp-course-card-body">
+                        <div class="cp-skel-line" style="width:80px; height:14px"></div>
+                        <div class="cp-skel-line" style="width:100%; height:18px; margin-top:10px"></div>
+                        <div class="cp-skel-line" style="width:60%; height:14px; margin-top:6px"></div>
+                        <div style="display:flex; gap:10px; margin-top:12px">
+                          <div class="cp-skel-line" style="width:55px; height:13px"></div>
+                          <div class="cp-skel-line" style="width:55px; height:13px"></div>
+                          <div class="cp-skel-line" style="width:55px; height:13px"></div>
+                        </div>
+                        <div style="display:flex; gap:8px; margin-top:14px">
+                          <div class="cp-skel-line" style="width:60px; height:22px; border-radius:6px"></div>
+                          <div class="cp-skel-line" style="width:40px; height:22px; border-radius:6px"></div>
+                        </div>
+                      </div>
+                    </div>
+                  } @else {
+                    <div class="cp-course-list-item cp-skeleton-card">
+                      <div class="cp-list-item-image cp-skel-img"></div>
+                      <div class="cp-list-item-content">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:12px">
+                          <div class="cp-skel-line" style="width:80px; height:14px"></div>
+                          <div class="cp-skel-line" style="width:60px; height:14px"></div>
+                        </div>
+                        <div class="cp-skel-line" style="width:80%; height:18px"></div>
+                        <div class="cp-skel-line" style="width:100%; height:13px; margin-top:8px"></div>
+                        <div class="cp-skel-line" style="width:100%; height:13px; margin-top:6px"></div>
+                        <div class="cp-skel-line" style="width:40%; height:13px; margin-top:6px"></div>
+                      </div>
+                    </div>
+                  }
+                }
+              </div>
+
+            } @else if (error()) {
+              <!-- Error State -->
+              <div class="cp-error-state">
+                <div class="cp-error-icon">
+                  <lucide-icon [img]="XIcon" [size]="32"></lucide-icon>
+                </div>
+                <h3>{{ t('courses.errorTitle') }}</h3>
+                <p>{{ error() }}</p>
+                <button class="cp-btn-retry" (click)="fetchCourses()">{{ t('courses.retry') }}</button>
+              </div>
+
+            } @else if (courses().length === 0) {
+              <!-- Empty State -->
+              <div class="cp-empty-state">
+                <lucide-icon [img]="BookOpenIcon" [size]="56" class="cp-empty-icon"></lucide-icon>
+                <h3>{{ t('courses.emptyTitle') }}</h3>
+                <p>{{ t('courses.emptyDesc') }}</p>
+                <button class="cp-btn-clear" (click)="clearFilters()">{{ t('courses.clearAllFilters') }}</button>
+              </div>
+
+            } @else {
+              <!-- Grid or List -->
+              <div [class]="viewMode() === 'grid' ? 'cp-courses-grid' : 'cp-courses-list'">
+                @for (course of courses(); track course.id) {
+                  @if (viewMode() === 'grid') {
+
+                    <!-- ── Grid Card ── -->
+                    <div class="cp-course-card" (click)="navigateToCourse(course.id)">
+                      <div class="cp-course-card-image">
+                        <img
+                          [src]="getCourseImage(course)"
+                          [alt]="course.title"
+                          loading="lazy"
+                          width="600"
+                          height="400" />
+                        @if (course.isPlatformCourse) {
+                          <span class="cp-course-badge cp-badge-platform">
+                            <lucide-icon [img]="Building2Icon" [size]="12"></lucide-icon>
+                            {{ t('courses.badgeEolOfficial') }}
+                          </span>
+                        }
+                        @if (course.hasDiscount) {
+                          <span class="cp-course-badge cp-badge-discount">-{{ course.discountPercentage }}%</span>
+                        }
+                        @if (course.isNew) {
+                          <span class="cp-course-badge cp-badge-new">{{ t('courses.badgeNew') }}</span>
+                        }
+                        <div class="cp-course-price-tag">
+                          @if (course.hasDiscount) {
+                            <span class="cp-original-price">${{ course.price.toFixed(2) }}</span>
+                          }
+                          <span class="cp-current-price">
+                            {{ course.isFree ? t('courses.free') : '$' + (course.discountPrice ?? course.price).toFixed(2) }}
+                          </span>
+                        </div>
+                      </div>
+                      <div class="cp-course-card-body">
+                        <div class="cp-course-card-header">
+                          <span class="cp-course-category-label">{{ course.categoryName }}</span>
+                          @if (course.isPlatformCourse) {
+                            <lucide-icon [img]="BadgeCheckIcon" [size]="14" class="cp-platform-verified-icon"></lucide-icon>
+                          }
+                        </div>
+                        <h3 class="cp-course-card-title">{{ course.title }}</h3>
+                        <p class="cp-course-card-instructor">
+                          @if (course.isPlatformCourse) {
+                            <span class="cp-platform-instructor">
+                              <lucide-icon [img]="ShieldIcon" [size]="12"></lucide-icon>
+                              EOL
+                            </span>
+                          } @else {
+                            {{ course.instructorName }}
+                          }
+                        </p>
+                        <div class="cp-course-card-stats">
+                          <span class="cp-stat-item">
+                            <lucide-icon [img]="StarIcon" [size]="13" class="cp-star-filled"></lucide-icon>
+                            <strong>{{ course.rating }}</strong>
+                            <span class="cp-stat-muted">({{ course.ratingCount }})</span>
+                          </span>
+                          <span class="cp-stat-item">
+                            <lucide-icon [img]="UsersIcon" [size]="13"></lucide-icon>
+                            {{ course.studentCount.toLocaleString() }}
+                          </span>
+                          <span class="cp-stat-item">
+                            <lucide-icon [img]="ClockIcon" [size]="13"></lucide-icon>
+                            {{ course.totalHours }}h
+                          </span>
+                        </div>
+                        <div class="cp-course-card-footer">
+                          <span class="cp-level-badge">{{ course.categoryName }}</span>
+                          @if (course.isPlatformCourse) {
+                            <span class="cp-platform-badge">
+                              <lucide-icon [img]="Building2Icon" [size]="10"></lucide-icon>
+                              {{ t('courses.platform') }}
+                            </span>
+                          }
+                        </div>
+                      </div>
+                    </div>
+
+                  } @else {
+
+                    <!-- ── List Item ── -->
+                    <div class="cp-course-list-item" (click)="navigateToCourse(course.id)">
+                      <div class="cp-list-item-image">
+                        <img
+                          [src]="getCourseImage(course)"
+                          [alt]="course.title"
+                          loading="lazy"
+                          width="300"
+                          height="220" />
+                        @if (course.isPlatformCourse) {
+                          <span class="cp-course-badge cp-badge-platform">
+                            <lucide-icon [img]="Building2Icon" [size]="12"></lucide-icon>
+                            {{ t('courses.badgeEolOfficial') }}
+                          </span>
+                        }
+                        @if (course.hasDiscount) {
+                          <span class="cp-course-badge cp-badge-discount">-{{ course.discountPercentage }}%</span>
+                        }
+                      </div>
+                      <div class="cp-list-item-content">
+                        <div class="cp-list-item-header">
+                          <div class="cp-list-item-category-wrap">
+                            <span class="cp-course-category-label">{{ course.categoryName }}</span>
+                            @if (course.isPlatformCourse) {
+                              <lucide-icon [img]="BadgeCheckIcon" [size]="14" class="cp-platform-verified-icon"></lucide-icon>
+                            }
+                          </div>
+                          <div class="cp-list-item-price">
+                            @if (course.isFree) {
+                              <span class="cp-free-badge">{{ t('courses.free') }}</span>
+                            } @else {
+                              @if (course.hasDiscount) {
+                                <span class="cp-original-price">${{ course.price.toFixed(2) }}</span>
+                              }
+                              <span class="cp-current-price">${{ (course.discountPrice ?? course.price).toFixed(2) }}</span>
+                            }
+                          </div>
+                        </div>
+                        <h3 class="cp-course-card-title">{{ course.title }}</h3>
+                        <p class="cp-list-item-description">{{ course.description?.substring(0, 180) }}...</p>
+                        <div class="cp-list-item-meta">
+                          <span class="cp-instructor-name">
+                            @if (course.isPlatformCourse) {
+                              <span class="cp-platform-instructor">
+                                <lucide-icon [img]="ShieldIcon" [size]="12"></lucide-icon>
+                                EOL
+                              </span>
+                            } @else {
+                              {{ course.instructorName }}
+                            }
+                          </span>
+                          <div class="cp-list-item-stats">
+                            <span>
+                              <lucide-icon [img]="StarIcon" [size]="13" class="cp-star-filled"></lucide-icon>
+                              {{ course.rating }} ({{ course.ratingCount }})
+                            </span>
+                            <span>
+                              <lucide-icon [img]="UsersIcon" [size]="13"></lucide-icon>
+                              {{ course.studentCount.toLocaleString() }}
+                            </span>
+                            <span>
+                              <lucide-icon [img]="ClockIcon" [size]="13"></lucide-icon>
+                              {{ course.totalHours }}h
+                            </span>
+                            <span>
+                              <lucide-icon [img]="BookOpenIcon" [size]="13"></lucide-icon>
+                              {{ course.totalLectures }} {{ t('courses.lectures') }}
+                            </span>
+                          </div>
+                          <div class="cp-list-item-badges">
+                            <span class="cp-level-badge">{{ course.level }}</span>
+                            <span class="cp-lang-badge">{{ course.language?.toUpperCase() }}</span>
+                            @if (course.isPlatformCourse) {
+                              <span class="cp-platform-badge">
+                                <lucide-icon [img]="Building2Icon" [size]="10"></lucide-icon>
+                                {{ t('courses.platform') }}
+                              </span>
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                  }
+                }
+              </div>
+
+              <!-- Pagination -->
+              @if (totalPages() > 1) {
+                <div class="cp-pagination">
+                  <button
+                    class="cp-page-btn"
+                    [disabled]="currentPage() === 1"
+                    (click)="onPageChange(currentPage() - 1)">
+                    {{ t('courses.previous') }}
+                  </button>
+                  @for (page of paginationPages(); track $index) {
+                    @if (page === '...') {
+                      <span class="cp-page-ellipsis">...</span>
+                    } @else {
+                      <button
+                        class="cp-page-btn"
+                        [class.active]="currentPage() === page"
+                        (click)="onPageChange(+page)">
+                        {{ page }}
+                      </button>
+                    }
+                  }
+                  <button
+                    class="cp-page-btn"
+                    [disabled]="currentPage() === totalPages()"
+                    (click)="onPageChange(currentPage() + 1)">
+                    {{ t('courses.next') }}
+                  </button>
+                </div>
+              }
+            }
+
+          </main>
+        </div><!-- /cp-layout -->
+      </div><!-- /cp-container -->
+    </section>
+
+  </div>
+</ng-container>

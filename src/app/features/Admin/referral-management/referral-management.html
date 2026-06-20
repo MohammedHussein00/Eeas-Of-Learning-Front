@@ -1,0 +1,535 @@
+<ng-container *transloco="let t; scope: 'referralManagement'">
+
+  <!-- ══════════════════════════════════════════════════════════
+       LOADING / ERROR GUARDS
+  ══════════════════════════════════════════════════════════ -->
+  @if (initialLoading()) {
+    <div class="am-center-screen">
+      <nz-spin nzSize="large"></nz-spin>
+      <p style="color:#6366f1; font-weight:500; margin-top:16px; font-size:13px">
+        {{ t('referralManagement.loading') }}
+      </p>
+    </div>
+  }
+
+  @else if (fatalError()) {
+    <div class="am-center-screen am-guard">
+      <div class="am-guard-ico" style="background:linear-gradient(135deg,#fee2e2,#fecaca)">⚠️</div>
+      <h2 class="am-guard-title">{{ t('referralManagement.errorTitle') }}</h2>
+      <p class="am-guard-desc">{{ t('referralManagement.errorDesc') }}</p>
+      <div style="display:flex; gap:12px; justify-content:center">
+        <button class="am-btn-primary" (click)="fetchAll()">
+          <lucide-icon [img]="RefreshCwIcon" [size]="14"></lucide-icon>
+          {{ t('referralManagement.retry') }}
+        </button>
+      </div>
+    </div>
+  }
+
+  @else {
+  <!-- ════════════════════════════════════════════════════════
+       MAIN LAYOUT
+  ════════════════════════════════════════════════════════ -->
+  <div class="am-root">
+    <div class="am-bg"></div>
+
+    <!-- ══ Header ══ -->
+    <div class="am-header">
+      <div class="am-brand">
+        <div class="am-logo">
+          <lucide-icon [img]="GiftIcon" [size]="20" style="color:#fff"></lucide-icon>
+        </div>
+        <div>
+          <div class="am-brand-title">{{ t('referralManagement.title') }}</div>
+          <div class="am-brand-sub">{{ t('referralManagement.subtitle') }}</div>
+        </div>
+      </div>
+      <div class="am-hright">
+        <button
+          class="am-btn-ghost"
+          [class.spinning]="refreshing()"
+          (click)="handleRefresh()"
+          nz-tooltip
+          [nzTooltipTitle]="t('referralManagement.refresh')"
+        >
+          <lucide-icon [img]="RefreshCwIcon" [size]="14"></lucide-icon>
+        </button>
+        <!-- Toggle Program Active/Inactive -->
+        <button
+          class="am-btn-ghost"
+          [class.active-toggle]="setting()?.isActive"
+          (click)="openToggleModal()"
+          nz-tooltip
+          [nzTooltipTitle]="setting()?.isActive ? t('referralManagement.deactivate') : t('referralManagement.activate')"
+        >
+          <lucide-icon [img]="setting()?.isActive ? ToggleRightIcon : ToggleLeftIcon" [size]="16"></lucide-icon>
+          {{ setting()?.isActive ? t('referralManagement.active') : t('referralManagement.inactive') }}
+        </button>
+        <button class="am-btn-primary" (click)="openEditRewardModal()">
+          <lucide-icon [img]="PencilIcon" [size]="14"></lucide-icon>
+          {{ t('referralManagement.editReward') }}
+        </button>
+      </div>
+    </div>
+
+    <!-- ══ Body ══ -->
+    <div class="am-rel">
+      <div class="am-body">
+
+        <!-- Section Label -->
+        <div class="am-sec">
+          <div class="am-sec-ico">
+            <lucide-icon [img]="LayersIcon" [size]="11"></lucide-icon>
+          </div>
+          {{ t('referralManagement.overviewLabel') }}
+        </div>
+
+        <!-- ══ Stat Cards ══ -->
+        <div class="am-stats">
+          <div class="am-stat blue">
+            <div class="am-stat-top">
+              <div class="am-stat-ico">
+                <lucide-icon [img]="UsersIcon" [size]="19"></lucide-icon>
+              </div>
+              <span class="am-stat-badge">{{ t('referralManagement.referrals') }}</span>
+            </div>
+            <div class="am-stat-val">{{ statsData().totalReferrals }}</div>
+            <div class="am-stat-lbl">{{ t('referralManagement.totalReferrals') }}</div>
+          </div>
+          <div class="am-stat teal">
+            <div class="am-stat-top">
+              <div class="am-stat-ico">
+                <lucide-icon [img]="CheckCircleIcon" [size]="19"></lucide-icon>
+              </div>
+              <span class="am-stat-badge">{{ t('referralManagement.completed') }}</span>
+            </div>
+            <div class="am-stat-val">{{ statsData().completedReferrals }}</div>
+            <div class="am-stat-lbl">{{ t('referralManagement.completedReferrals') }}</div>
+          </div>
+          <div class="am-stat violet">
+            <div class="am-stat-top">
+              <div class="am-stat-ico">
+                <lucide-icon [img]="CoinsIcon" [size]="19"></lucide-icon>
+              </div>
+              <span class="am-stat-badge">EGP</span>
+            </div>
+            <div class="am-stat-val">{{ statsData().totalRewardsGiven }}</div>
+            <div class="am-stat-lbl">{{ t('referralManagement.totalRewards') }}</div>
+          </div>
+          <div class="am-stat amber">
+            <div class="am-stat-top">
+              <div class="am-stat-ico">
+                <lucide-icon [img]="TrendingUpIcon" [size]="19"></lucide-icon>
+              </div>
+              <span class="am-stat-badge">EGP</span>
+            </div>
+            <div class="am-stat-val">{{ setting()?.rewardAmount ?? 0 }}</div>
+            <div class="am-stat-lbl">{{ t('referralManagement.currentReward') }}</div>
+          </div>
+        </div>
+
+        <!-- ══ Main Card ══ -->
+        <div class="am-card">
+
+          <!-- Tabs -->
+          <div class="am-tabs">
+            <button
+              class="am-tab"
+              [class.active]="activeTab() === 'referrals'"
+              (click)="setTab('referrals')"
+            >
+              <lucide-icon [img]="UsersIcon" [size]="15"></lucide-icon>
+              {{ t('referralManagement.referrals') }}
+              <span class="am-tab-badge">{{ statsData().totalReferrals }}</span>
+            </button>
+            <button
+              class="am-tab"
+              [class.active]="activeTab() === 'completed'"
+              (click)="setTab('completed')"
+            >
+              <lucide-icon [img]="CheckCircleIcon" [size]="15"></lucide-icon>
+              {{ t('referralManagement.completed') }}
+              <span class="am-tab-badge">{{ statsData().completedReferrals }}</span>
+            </button>
+            <button
+              class="am-tab"
+              [class.active]="activeTab() === 'pending'"
+              (click)="setTab('pending')"
+            >
+              <lucide-icon [img]="ClockIcon" [size]="15"></lucide-icon>
+              {{ t('referralManagement.pending') }}
+              <span class="am-tab-badge">{{ statsData().pendingReferrals }}</span>
+            </button>
+          </div>
+
+          <!-- Toolbar -->
+          <div class="am-toolbar">
+            <div class="am-search">
+              <lucide-icon [img]="SearchIcon" [size]="15"></lucide-icon>
+              <input
+                [value]="searchQuery()"
+                (input)="onSearch($event)"
+                [placeholder]="t('referralManagement.searchPlaceholder')"
+              />
+              @if (searchQuery()) {
+                <button class="clear-btn" (click)="clearSearch()">
+                  <lucide-icon [img]="XIcon" [size]="13"></lucide-icon>
+                </button>
+              }
+            </div>
+            <div style="font-size:12px; color:#94a3b8; font-weight:500;">
+              {{ currentData().length }} {{ t('referralManagement.records') }}
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div class="am-table-wrap">
+            @if (isLoading()) {
+              <div>
+                @for (item of skeletonRows; track $index) {
+                  <div class="am-skel-row am-skeleton">
+                    <div class="am-skel-box" style="width:36px; height:36px; border-radius:50%"></div>
+                    <div style="flex:1; display:flex; flex-direction:column; gap:5px">
+                      <div class="am-skel-box" style="width:160px; height:14px"></div>
+                      <div class="am-skel-box" style="width:110px; height:12px"></div>
+                    </div>
+                    <div class="am-skel-box" style="width:130px; height:14px"></div>
+                    <div class="am-skel-box" style="width:80px; height:24px; border-radius:20px"></div>
+                    <div class="am-skel-box" style="width:60px; height:24px; border-radius:20px"></div>
+                    <div style="margin-left:auto">
+                      <div class="am-skel-box" style="width:32px; height:32px; border-radius:8px"></div>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+
+            @else if (currentData().length === 0) {
+              <div class="am-empty">
+                <lucide-icon [img]="GiftIcon" [size]="48" style="opacity:.3; display:block; margin:0 auto 12px"></lucide-icon>
+                <p>{{ t('referralManagement.noDataFound') }}</p>
+              </div>
+            }
+
+            @else {
+              <table class="am-table">
+                <thead>
+                  <tr>
+                    <th>{{ t('referralManagement.referrer') }}</th>
+                    <th>{{ t('referralManagement.invitedFriend') }}</th>
+                    <th>{{ t('referralManagement.code') }}</th>
+                    <th style="text-align:center">{{ t('referralManagement.reward') }}</th>
+                    <th style="text-align:center">{{ t('referralManagement.status') }}</th>
+                    <th style="text-align:center">{{ t('referralManagement.date') }}</th>
+                    <th style="width:60px; text-align:center">{{ t('referralManagement.actions') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of pagedData(); track row.id) {
+                    <tr>
+                      <!-- Referrer -->
+                      <td>
+                        <div class="am-user-cell">
+                          <div class="am-avatar">{{ avatarLetter(row.referrerName) }}</div>
+                          <div>
+                            <div class="am-cell-name">{{ row.referrerName }}</div>
+                            <div class="am-cell-sub">{{ row.referrerEmail }}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <!-- Invited Friend -->
+                      <td>
+                        <div class="am-user-cell">
+                          <div class="am-avatar violet">{{ avatarLetter(row.referredName) }}</div>
+                          <div>
+                            <div class="am-cell-name">{{ row.referredName }}</div>
+                            <div class="am-cell-sub">{{ row.referredEmail }}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <!-- Code -->
+                      <td>
+                        <span class="am-code-badge">{{ row.referralCode }}</span>
+                      </td>
+                      <!-- Reward -->
+                      <td style="text-align:center">
+                        <span class="am-tag teal">
+                          <lucide-icon [img]="CoinsIcon" [size]="11"></lucide-icon>
+                          {{ row.rewardAmount }} EGP
+                        </span>
+                      </td>
+                      <!-- Status -->
+                      <td style="text-align:center">
+                        @if (row.status === 1) {
+                          <span class="am-tag teal">
+                            <lucide-icon [img]="CheckCircleIcon" [size]="11"></lucide-icon>
+                            {{ t('referralManagement.completed') }}
+                          </span>
+                        } @else if (row.status === 0) {
+                          <span class="am-tag amber">
+                            <lucide-icon [img]="ClockIcon" [size]="11"></lucide-icon>
+                            {{ t('referralManagement.pending') }}
+                          </span>
+                        } @else {
+                          <span class="am-tag gray">
+                            <lucide-icon [img]="XCircleIcon" [size]="11"></lucide-icon>
+                            {{ t('referralManagement.rejected') }}
+                          </span>
+                        }
+                      </td>
+                      <!-- Date -->
+                      <td style="text-align:center">
+                        <div class="am-cell-name" style="font-size:12px">{{ formatDate(row.createdAt) }}</div>
+                        @if (row.rewardedAt) {
+                          <div class="am-cell-sub">✓ {{ formatDate(row.rewardedAt) }}</div>
+                        }
+                      </td>
+                      <!-- Actions -->
+                      <td>
+                        <div class="am-actions" style="justify-content:center">
+                          <button class="am-action-btn" (click)="openDetails(row)" nz-tooltip [nzTooltipTitle]="t('referralManagement.viewDetails')">
+                            <lucide-icon [img]="EyeIcon" [size]="14"></lucide-icon>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+          </div>
+
+          <!-- Pagination -->
+          @if (!isLoading() && currentData().length > PAGE_SIZE) {
+            <div class="am-pagination">
+              <span class="am-page-info">
+                {{ (currentPage() - 1) * PAGE_SIZE + 1 }}–{{ pageEnd() }}
+                {{ t('referralManagement.of') }} {{ currentData().length }}
+                {{ t('referralManagement.records') }}
+              </span>
+              <div class="am-page-btns">
+                <button class="am-page-btn" [disabled]="currentPage() === 1" (click)="setPage(currentPage() - 1)">‹</button>
+                @for (n of pageNumbers(); track n) {
+                  <button
+                    class="am-page-btn"
+                    [class.active]="currentPage() === n"
+                    (click)="setPage(n)"
+                  >{{ n }}</button>
+                }
+                <button class="am-page-btn" [disabled]="currentPage() === totalPages()" (click)="setPage(currentPage() + 1)">›</button>
+              </div>
+            </div>
+          }
+
+        </div><!-- /am-card -->
+      </div><!-- /am-body -->
+    </div><!-- /am-rel -->
+  </div><!-- /am-root -->
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       DETAILS MODAL
+  ══════════════════════════════════════════════════════════ -->
+  @if (detailsState().visible && detailsState().data) {
+    <div class="am-overlay" (click)="closeDetails()">
+      <div class="am-modal" (click)="$event.stopPropagation()">
+        <div class="am-modal-header">
+          <div class="am-modal-title">
+            <div class="am-modal-title-ico" style="background:rgba(99,102,241,.1)">
+              <lucide-icon [img]="GiftIcon" [size]="16" style="color:#6366f1"></lucide-icon>
+            </div>
+            {{ t('referralManagement.referralDetails') }}
+          </div>
+          <button class="am-modal-close" (click)="closeDetails()">
+            <lucide-icon [img]="XIcon" [size]="14"></lucide-icon>
+          </button>
+        </div>
+        <div class="am-modal-body">
+          <div class="am-desc-grid">
+            <div class="am-desc-row">
+              <div class="am-desc-label">{{ t('referralManagement.referrer') }}</div>
+              <div class="am-desc-val" style="font-weight:700">{{ detailsData().referrerName }}</div>
+            </div>
+            <div class="am-desc-row">
+              <div class="am-desc-label">{{ t('referralManagement.invitedFriend') }}</div>
+              <div class="am-desc-val">{{ detailsData().referredName }}</div>
+            </div>
+            <div class="am-desc-row">
+              <div class="am-desc-label">{{ t('referralManagement.code') }}</div>
+              <div class="am-desc-val"><span class="am-code-badge">{{ detailsData().referralCode }}</span></div>
+            </div>
+            <div class="am-desc-row">
+              <div class="am-desc-label">{{ t('referralManagement.reward') }}</div>
+              <div class="am-desc-val"><span class="am-tag teal">{{ detailsData().rewardAmount }} EGP</span></div>
+            </div>
+            <div class="am-desc-row">
+              <div class="am-desc-label">{{ t('referralManagement.status') }}</div>
+              <div class="am-desc-val">
+                @if (detailsData().status === 1) {
+                  <span class="am-tag teal">{{ t('referralManagement.completed') }}</span>
+                } @else if (detailsData().status === 0) {
+                  <span class="am-tag amber">{{ t('referralManagement.pending') }}</span>
+                } @else {
+                  <span class="am-tag gray">{{ t('referralManagement.rejected') }}</span>
+                }
+              </div>
+            </div>
+            <div class="am-desc-row">
+              <div class="am-desc-label">{{ t('referralManagement.createdAt') }}</div>
+              <div class="am-desc-val">{{ formatDate(detailsData().createdAt) }}</div>
+            </div>
+            @if (detailsData().rewardedAt) {
+              <div class="am-desc-row">
+                <div class="am-desc-label">{{ t('referralManagement.rewardedAt') }}</div>
+                <div class="am-desc-val">{{ formatDate(detailsData().rewardedAt) }}</div>
+              </div>
+            }
+            @if (detailsData().referredDeviceId) {
+              <div class="am-desc-row">
+                <div class="am-desc-label">{{ t('referralManagement.deviceId') }}</div>
+                <div class="am-desc-val" style="font-size:11px; word-break:break-all">{{ detailsData().referredDeviceId }}</div>
+              </div>
+            }
+            @if (detailsData().failReason) {
+              <div class="am-desc-row">
+                <div class="am-desc-label">{{ t('referralManagement.failReason') }}</div>
+                <div class="am-desc-val" style="color:#f43f5e">{{ detailsData().failReason }}</div>
+              </div>
+            }
+          </div>
+        </div>
+        <div class="am-modal-footer">
+          <button class="am-btn-cancel" (click)="closeDetails()">{{ t('referralManagement.close') }}</button>
+        </div>
+      </div>
+    </div>
+  }
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       EDIT REWARD MODAL
+  ══════════════════════════════════════════════════════════ -->
+  @if (editRewardState().visible) {
+    <div class="am-overlay" (click)="closeEditReward()">
+      <div class="am-modal" (click)="$event.stopPropagation()">
+        <div class="am-modal-header">
+          <div class="am-modal-title">
+            <div class="am-modal-title-ico" style="background:rgba(20,184,166,.1)">
+              <lucide-icon [img]="CoinsIcon" [size]="16" style="color:#14b8a6"></lucide-icon>
+            </div>
+            {{ t('referralManagement.editRewardTitle') }}
+          </div>
+          @if (!editRewardState().loading) {
+            <button class="am-modal-close" (click)="closeEditReward()">
+              <lucide-icon [img]="XIcon" [size]="14"></lucide-icon>
+            </button>
+          }
+        </div>
+        <div class="am-modal-body">
+          @if (editRewardState().error) {
+            <div class="am-alert error">
+              <lucide-icon [img]="AlertTriangleIcon" [size]="15"></lucide-icon>
+              <span>{{ editRewardState().error }}</span>
+            </div>
+          }
+          <div class="am-desc-grid" style="margin-bottom:16px">
+            <div class="am-desc-row">
+              <div class="am-desc-label">{{ t('referralManagement.currentReward') }}</div>
+              <div class="am-desc-val"><span class="am-tag teal">{{ setting()?.rewardAmount }} EGP</span></div>
+            </div>
+          </div>
+          <div class="am-field">
+            <label class="am-field-label">{{ t('referralManagement.newRewardAmount') }}</label>
+            <div class="am-input-wrap">
+              <input
+                class="am-input"
+                type="number"
+                min="0.01"
+                step="0.01"
+                [value]="editRewardState().value"
+                (input)="onRewardInput($event)"
+                [placeholder]="t('referralManagement.rewardPlaceholder')"
+              />
+              <span class="am-input-suffix">EGP</span>
+            </div>
+          </div>
+          <div class="am-confirm-box">{{ t('referralManagement.rewardNote') }}</div>
+        </div>
+        <div class="am-modal-footer">
+          <button class="am-btn-cancel" (click)="closeEditReward()" [disabled]="editRewardState().loading">
+            {{ t('referralManagement.cancel') }}
+          </button>
+          <button class="am-btn-primary" (click)="handleUpdateReward()" [disabled]="editRewardState().loading">
+            @if (editRewardState().loading) {
+              <lucide-icon [img]="RefreshCwIcon" [size]="14" class="spin-icon"></lucide-icon>
+              {{ t('referralManagement.saving') }}
+            } @else {
+              <lucide-icon [img]="SaveIcon" [size]="14"></lucide-icon>
+              {{ t('referralManagement.save') }}
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       TOGGLE ACTIVE MODAL
+  ══════════════════════════════════════════════════════════ -->
+  @if (toggleState().visible) {
+    <div class="am-overlay" (click)="closeToggle()">
+      <div class="am-modal" (click)="$event.stopPropagation()">
+        <div class="am-modal-header">
+          <div class="am-modal-title">
+            <div class="am-modal-title-ico" [style.background]="setting()?.isActive ? 'rgba(244,63,94,.1)' : 'rgba(20,184,166,.1)'">
+              <lucide-icon
+                [img]="setting()?.isActive ? ToggleLeftIcon : ToggleRightIcon"
+                [size]="16"
+                [style.color]="setting()?.isActive ? '#f43f5e' : '#14b8a6'"
+              ></lucide-icon>
+            </div>
+            {{ setting()?.isActive ? t('referralManagement.deactivateTitle') : t('referralManagement.activateTitle') }}
+          </div>
+          @if (!toggleState().loading) {
+            <button class="am-modal-close" (click)="closeToggle()">
+              <lucide-icon [img]="XIcon" [size]="14"></lucide-icon>
+            </button>
+          }
+        </div>
+        <div class="am-modal-body">
+          @if (toggleState().error) {
+            <div class="am-alert error">
+              <lucide-icon [img]="AlertTriangleIcon" [size]="15"></lucide-icon>
+              <span>{{ toggleState().error }}</span>
+            </div>
+          }
+          <div class="am-confirm-box" [style.background]="setting()?.isActive ? '#fff0f3' : '#f0fdf4'" [style.color]="setting()?.isActive ? '#be185d' : '#166534'" [style.border-color]="setting()?.isActive ? 'rgba(244,63,94,.2)' : 'rgba(20,184,166,.2)'">
+            {{ setting()?.isActive ? t('referralManagement.deactivateConfirm') : t('referralManagement.activateConfirm') }}
+          </div>
+        </div>
+        <div class="am-modal-footer">
+          <button class="am-btn-cancel" (click)="closeToggle()" [disabled]="toggleState().loading">
+            {{ t('referralManagement.cancel') }}
+          </button>
+          <button
+            [class]="setting()?.isActive ? 'am-btn-danger' : 'am-btn-success'"
+            (click)="handleToggleActive()"
+            [disabled]="toggleState().loading"
+          >
+            @if (toggleState().loading) {
+              <lucide-icon [img]="RefreshCwIcon" [size]="14" class="spin-icon"></lucide-icon>
+              {{ t('referralManagement.saving') }}
+            } @else {
+              <lucide-icon [img]="setting()?.isActive ? ToggleLeftIcon : ToggleRightIcon" [size]="14"></lucide-icon>
+              {{ setting()?.isActive ? t('referralManagement.deactivate') : t('referralManagement.activate') }}
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  }<!-- /else main -->
+
+</ng-container>

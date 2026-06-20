@@ -1,0 +1,51 @@
+{
+    "pageTitle": "My Courses",
+    "pageSubtitle": "Manage and track all your courses",
+    "createCourse": "Create Course",
+
+    "statTotalCourses": "Total Courses",
+    "statPublished": "Published",
+    "statDraft": "Drafts",
+    "statTotalStudents": "Total Students",
+    "statTotalRevenue": "Total Revenue",
+    "statAvgRating": "Avg. Rating",
+
+    "searchPlaceholder": "Search courses…",
+    "filterStatus": "All Statuses",
+    "filterLevel": "All Levels",
+    "refreshBtn": "Refresh",
+
+    "statusPublished": "Published",
+    "statusDraft": "Draft",
+    "levelBeginner": "Beginner",
+    "levelIntermediate": "Intermediate",
+    "levelAdvanced": "Advanced",
+
+    "tableTitle": "Course",
+    "tableCategory": "Category",
+    "tableStatus": "Status",
+    "tableStudents": "Students",
+    "tableRevenue": "Revenue",
+    "tableRating": "Rating",
+    "tableActions": "Actions",
+
+    "actionView": "View Builder",
+    "actionEdit": "Edit Details",
+    "actionDelete": "Delete",
+    "cancel": "Cancel",
+
+    "deleteConfirmTitle": "Delete this course?",
+    "deleteConfirmDesc": "This action cannot be undone. All sections, lectures and quizzes will be permanently removed.",
+    "deleteHasStudents": "This course has enrolled students and cannot be deleted.",
+    "permissionDenied": "You do not have permission to delete this course.",
+    "deleteFailed": "Failed to delete the course. Please try again.",
+    "deleteSuccess": "Course deleted successfully.",
+    "deletedCourseLabel": "Course",
+
+    "loadFailed": "Failed to load courses. Please refresh the page.",
+
+    "paginationTotal": "{total} courses total",
+
+    "noCoursesTitle": "No Courses Yet",
+    "noCoursesDesc": "Start building your first course and share your knowledge with the world."
+}

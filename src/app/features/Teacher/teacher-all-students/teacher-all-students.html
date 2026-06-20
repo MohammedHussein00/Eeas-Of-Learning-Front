@@ -1,0 +1,409 @@
+<ng-container *transloco="let t; scope: 'teacherAllStudents'">
+
+  <!-- ══ Loading ══ -->
+  @if (loading()) {
+    <div class="tas-center-screen">
+      <nz-spin nzSize="large"></nz-spin>
+      <p class="tas-loading-text">{{ t('teacherAllStudents.loading_students') }}</p>
+    </div>
+  } @else {
+
+  <div class="tas-root">
+
+    <!-- ══ Header ══ -->
+    <header class="tas-header">
+      <div class="tas-header-left">
+        <button class="tas-back-btn" (click)="goBack()">
+          <lucide-icon [img]="ArrowLeftIcon" [size]="15"></lucide-icon>
+          <span class="tas-back-label">{{ t('teacherAllStudents.back_to_dashboard') }}</span>
+        </button>
+        <div class="tas-header-divider"></div>
+        <div>
+          <p class="tas-header-title">{{ t('teacherAllStudents.page_title') }}</p>
+          <p class="tas-header-sub">{{ t('teacherAllStudents.page_subtitle') }}</p>
+        </div>
+      </div>
+
+      <div class="tas-header-actions">
+        <nz-tag nzColor="blue" class="tas-students-tag">
+          <lucide-icon [img]="UsersIcon" [size]="12"></lucide-icon>
+          {{ statistics().totalStudents }} {{ t('teacherAllStudents.students') }}
+        </nz-tag>
+        <button class="tas-btn-ghost" (click)="fetchAllData()">
+          <lucide-icon [img]="RefreshIcon" [size]="14"></lucide-icon>
+          <span class="tas-btn-label">{{ t('teacherAllStudents.refresh') }}</span>
+        </button>
+        <button class="tas-btn-primary"
+          [disabled]="filtered().length === 0"
+          (click)="openExportModal()">
+          <lucide-icon [img]="DownloadIcon" [size]="14"></lucide-icon>
+          <span class="tas-btn-label">{{ t('teacherAllStudents.export') }}</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="tas-body">
+
+      <!-- ══ Stats ══ -->
+      <div class="tas-stats-row">
+        @for (card of statCards(); track card.labelKey) {
+          <div class="tas-stat-card">
+            <div class="tas-stat-icon" [style.background]="card.bg" [style.color]="card.color">
+              <lucide-icon [img]="card.icon" [size]="18"></lucide-icon>
+            </div>
+            <div>
+              <div class="tas-stat-val" [style.color]="card.color">{{ card.value }}</div>
+              <div class="tas-stat-label">{{ t('teacherAllStudents.' + card.labelKey) }}</div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- ══ Filters Card ══ -->
+      <div class="tas-card tas-fade-up">
+        <div class="tas-card-header">
+          <div class="tas-card-title">
+            <div class="tas-card-icon">
+              <lucide-icon [img]="FilterIcon" [size]="14"></lucide-icon>
+            </div>
+            {{ t('teacherAllStudents.filters_title') }}
+          </div>
+          <button class="tas-filters-toggle" (click)="filtersVisible.set(!filtersVisible())">
+            <lucide-icon [img]="filtersVisible() ? ChevUpIcon : ChevDownIcon" [size]="14"></lucide-icon>
+            {{ filtersVisible() ? t('teacherAllStudents.hide_filters') : t('teacherAllStudents.show_filters') }}
+          </button>
+        </div>
+
+        @if (filtersVisible()) {
+          <div class="tas-card-body">
+            <div class="tas-filters-grid">
+
+              <!-- Search -->
+              <div class="tas-search-wrap">
+                <lucide-icon [img]="SearchIcon" [size]="14" class="tas-search-ico"></lucide-icon>
+                <input
+                  class="tas-search-input"
+                  [placeholder]="t('teacherAllStudents.search_placeholder')"
+                  [ngModel]="searchText()"
+                  (ngModelChange)="onSearchChange($event)" />
+                @if (searchText()) {
+                  <button class="tas-search-clear" (click)="onSearchChange('')">
+                    <lucide-icon [img]="XIcon" [size]="12"></lucide-icon>
+                  </button>
+                }
+              </div>
+
+              <!-- Course filter -->
+              <nz-select
+                class="tas-filter-select"
+                nzSize="large"
+                [ngModel]="selectedCourse()"
+                (ngModelChange)="onCourseChange($event)">
+                <nz-option nzValue="all" [nzLabel]="t('teacherAllStudents.all_courses')"></nz-option>
+                @for (c of courses(); track c.id) {
+                  <nz-option [nzValue]="c.id" [nzLabel]="c.title"></nz-option>
+                }
+              </nz-select>
+
+              <!-- Date range -->
+              <nz-range-picker
+                class="tas-date-picker"
+                [nzPlaceHolder]="[t('teacherAllStudents.start_date'), t('teacherAllStudents.end_date')]"
+                [ngModel]="dateRange()"
+                (ngModelChange)="onDateRangeChange($event)"
+                nzSize="large">
+              </nz-range-picker>
+
+              <!-- Reset -->
+              <button class="tas-btn-ghost" (click)="resetFilters()" style="white-space:nowrap">
+                <lucide-icon [img]="FilterIcon" [size]="13"></lucide-icon>
+                {{ t('teacherAllStudents.reset') }}
+              </button>
+
+            </div><!-- /filters-grid -->
+
+            <!-- Sort bar -->
+            <div class="tas-sort-bar">
+              <span class="tas-sort-count">
+                {{ t('teacherAllStudents.showing_enrollments')
+                    .replace('{current}', paginated().length.toString())
+                    .replace('{total}',   filtered().length.toString()) }}
+              </span>
+              <div class="tas-sort-controls">
+                <span class="tas-sort-label">{{ t('teacherAllStudents.sort_by') }}:</span>
+                <nz-select nzSize="small" style="width:130px"
+                  [ngModel]="sortBy()"
+                  (ngModelChange)="onSortByChange($event)">
+                  <nz-option nzValue="name"     [nzLabel]="t('teacherAllStudents.name')"></nz-option>
+                  <nz-option nzValue="enrolled" [nzLabel]="t('teacherAllStudents.enrolled_date')"></nz-option>
+                  <nz-option nzValue="amount"   [nzLabel]="t('teacherAllStudents.amount')"></nz-option>
+                </nz-select>
+                <nz-select nzSize="small" style="width:110px"
+                  [ngModel]="sortOrder()"
+                  (ngModelChange)="onSortOrderChange($event)">
+                  <nz-option nzValue="asc"  [nzLabel]="t('teacherAllStudents.ascending')"></nz-option>
+                  <nz-option nzValue="desc" [nzLabel]="t('teacherAllStudents.descending')"></nz-option>
+                </nz-select>
+              </div>
+            </div>
+
+          </div><!-- /card-body -->
+        }
+      </div><!-- /filters card -->
+
+      <!-- ══ Table Card ══ -->
+      <div class="tas-card tas-fade-up">
+        <div class="tas-card-header">
+          <div class="tas-card-title">
+            <div class="tas-card-icon">
+              <lucide-icon [img]="UsersIcon" [size]="14"></lucide-icon>
+            </div>
+            {{ t('teacherAllStudents.enrollments_title') }}
+            <span class="tas-table-count">({{ filtered().length }})</span>
+          </div>
+        </div>
+
+        @if (filtered().length === 0) {
+          <!-- Empty state -->
+          <div class="tas-empty">
+            <div class="tas-empty-ico">
+              <lucide-icon [img]="UsersIcon" [size]="28" style="color:#3d5af1"></lucide-icon>
+            </div>
+            <p class="tas-empty-title">
+              {{ enrollments().length === 0
+                  ? t('teacherAllStudents.no_enrollments_yet')
+                  : t('teacherAllStudents.no_enrollments_found') }}
+            </p>
+            @if (enrollments().length > 0) {
+              <button class="tas-btn-primary" (click)="resetFilters()">
+                {{ t('teacherAllStudents.clear_filters') }}
+              </button>
+            }
+          </div>
+        } @else {
+
+          <!-- Desktop table -->
+          <div class="tas-table-wrap">
+            <nz-table
+              #nzTable
+              [nzData]="paginated()"
+              [nzShowPagination]="false"
+              nzSize="middle"
+              [nzScroll]="{ x: '800px' }">
+              <thead>
+                <tr>
+                  <th style="width:260px">{{ t('teacherAllStudents.student') }}</th>
+                  <th style="width:240px" class="tas-col-md">{{ t('teacherAllStudents.course') }}</th>
+                  <th style="width:140px" class="tas-col-lg">{{ t('teacherAllStudents.enrolled_date') }}</th>
+                  <th style="width:140px; text-align:center">{{ t('teacherAllStudents.progress') }}</th>
+                  <th style="width:140px; text-align:center">{{ t('teacherAllStudents.amount') }}</th>
+                  <th style="width:90px;  text-align:center">{{ t('teacherAllStudents.actions') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of paginated(); track row.id) {
+                  <tr>
+                    <!-- Student -->
+                    <td>
+                      <div class="tas-student-cell">
+                        <div class="tas-avatar">{{ initial(row.userName) }}</div>
+                        <div class="tas-student-info">
+                          <div class="tas-student-name">{{ row.userName }}</div>
+                          <div class="tas-student-email">
+                            {{ row.userEmail }}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    <!-- Course -->
+                    <td class="tas-col-md">
+                      <div class="tas-course-cell">
+                        <div class="tas-course-ico">
+                          <lucide-icon [img]="BookIcon" [size]="12"></lucide-icon>
+                        </div>
+                        <span class="tas-course-title" [nz-tooltip]="row.courseTitle">{{ row.courseTitle }}</span>
+                      </div>
+                    </td>
+
+                    <!-- Date -->
+                    <td class="tas-col-lg">
+                      <span class="tas-date-cell">
+                        <lucide-icon [img]="ClockIcon" [size]="10"></lucide-icon>
+                        {{ formatDate(row.enrolledAt) }}
+                      </span>
+                    </td>
+
+                    <!-- Progress -->
+                    <td style="text-align:center">
+                      <div class="tas-progress-wrap">
+                        <span class="tas-progress-pct" [style.color]="progressColor(row.progressPercentage || 0)">
+                          {{ row.progressPercentage || 0 }}%
+                        </span>
+                        <div class="tas-progress-bar">
+                          <div class="tas-progress-fill"
+                            [style.width.%]="row.progressPercentage || 0"
+                            [style.background]="progressColor(row.progressPercentage || 0)">
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    <!-- Amount -->
+                    <td style="text-align:center">
+                      <span class="tas-amount">${{ (row.amount || 0).toFixed(2) }}</span>
+                    </td>
+
+                    <!-- Actions -->
+                    <td style="text-align:center">
+                      <button class="tas-icon-btn"
+                        [nz-tooltip]="t('teacherAllStudents.view_analytics')"
+                        (click)="viewStudent(row.userId, row.courseId)">
+                        <lucide-icon [img]="EyeIcon" [size]="14"></lucide-icon>
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </nz-table>
+          </div>
+
+          <!-- Mobile cards -->
+          <div class="tas-mlist">
+            @for (row of paginated(); track row.id) {
+              <div class="tas-mc">
+                <div class="tas-mc-hd">
+                  <div style="display:flex; align-items:center; gap:12px; min-width:0">
+                    <div class="tas-avatar">{{ initial(row.userName) }}</div>
+                    <div style="min-width:0">
+                      <div class="tas-student-name">{{ row.userName }}</div>
+                      <div class="tas-student-email" style="font-size:11px">
+                        <lucide-icon [img]="MailIcon" [size]="10"></lucide-icon>
+                        {{ row.userEmail }}
+                      </div>
+                    </div>
+                  </div>
+                  <button class="tas-icon-btn" (click)="viewStudent(row.userId, row.courseId)">
+                    <lucide-icon [img]="EyeIcon" [size]="14"></lucide-icon>
+                  </button>
+                </div>
+
+                <div class="tas-mc-course">
+                  <lucide-icon [img]="BookIcon" [size]="11" style="color:#3d5af1"></lucide-icon>
+                  {{ row.courseTitle }}
+                </div>
+
+                <div class="tas-mc-meta">
+                  <span class="tas-mc-mi">
+                    <lucide-icon [img]="ClockIcon" [size]="10"></lucide-icon>
+                    {{ formatDate(row.enrolledAt) }}
+                  </span>
+                  <span class="tas-amount">${{ (row.amount || 0).toFixed(2) }}</span>
+                </div>
+
+                <div class="tas-progress-wrap" style="margin-top:10px">
+                  <span class="tas-progress-pct" [style.color]="progressColor(row.progressPercentage || 0)">
+                    {{ row.progressPercentage || 0 }}%
+                  </span>
+                  <div class="tas-progress-bar">
+                    <div class="tas-progress-fill"
+                      [style.width.%]="row.progressPercentage || 0"
+                      [style.background]="progressColor(row.progressPercentage || 0)">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Pagination -->
+          <div class="tas-pagination-row">
+            <span class="tas-sort-count">
+              {{ t('teacherAllStudents.total_enrollments_count')
+                  .replace('{total}', filtered().length.toString()) }}
+            </span>
+            <nz-pagination
+              [nzPageIndex]="currentPage()"
+              [nzPageSize]="pageSize()"
+              [nzTotal]="filtered().length"
+              nzShowSizeChanger
+              [nzPageSizeOptions]="[10, 20, 50]"
+              (nzPageIndexChange)="onPageChange($event)"
+              (nzPageSizeChange)="onPageSizeChange($event)">
+            </nz-pagination>
+          </div>
+
+        }<!-- /else has data -->
+      </div><!-- /table card -->
+
+    </div><!-- /body -->
+  </div><!-- /root -->
+
+  <!-- ══ Export Modal ══ -->
+  <nz-modal
+    [nzVisible]="exportVisible()"
+    [nzWidth]="460"
+    nzCentered
+    [nzTitle]="exportModalTitle"
+    [nzFooter]="exportModalFooter"
+    (nzOnCancel)="closeExportModal()"
+    nzClassName="tas-modal">
+
+    <ng-template #exportModalTitle>
+      <div style="display:flex; align-items:center; gap:12px">
+        <div style="
+          width:36px; height:36px; border-radius:10px; flex-shrink:0;
+          background:linear-gradient(135deg,#27ae60,#2ecc71);
+          display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px">
+          <lucide-icon [img]="DownloadIcon" [size]="16"></lucide-icon>
+        </div>
+        <div>
+          <div style="font-family:'Sora',sans-serif; font-weight:700; font-size:15px; color:#1a2342; line-height:1.2">
+            {{ t('teacherAllStudents.export_enrollments') }}
+          </div>
+          <div style="font-size:11px; color:#8a94b2; font-weight:400; margin-top:2px">
+            {{ t('teacherAllStudents.export_modal_subtitle') }}
+          </div>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-container *nzModalContent>
+      <div style="text-align:center; padding:24px 20px">
+        <div style="
+          width:72px; height:72px; border-radius:20px;
+          background:#e8faf0; border:2px solid #a7f3d0;
+          display:flex; align-items:center; justify-content:center;
+          margin:0 auto 16px; font-size:32px; color:#27ae60">
+          <lucide-icon [img]="DownloadIcon" [size]="32"></lucide-icon>
+        </div>
+        <div style="font-family:'Sora',sans-serif; font-weight:700; font-size:17px; color:#1a2342; margin-bottom:8px">
+          {{ t('teacherAllStudents.export_enrollments_data') }}
+        </div>
+        <div style="font-size:13px; color:#8a94b2; line-height:1.6; max-width:300px; margin:0 auto">
+          {{ t('teacherAllStudents.export_description').replace('{count}', filtered().length.toString()) }}
+        </div>
+      </div>
+    </ng-container>
+
+    <ng-template #exportModalFooter>
+      <button class="tas-btn-ghost" (click)="closeExportModal()">
+        {{ t('teacherAllStudents.cancel') }}
+      </button>
+      <button class="tas-btn-primary"
+        [disabled]="exportLoading()"
+        (click)="handleExport()">
+        <lucide-icon [img]="DownloadIcon" [size]="13"></lucide-icon>
+        {{ exportLoading() ? t('teacherAllStudents.exporting') : t('teacherAllStudents.export') }}
+      </button>
+    </ng-template>
+
+  </nz-modal>
+
+  }<!-- /else not loading -->
+</ng-container>
+
+
+<button (click)="testNotification()" style="position: fixed; top: 100px; left: 100px; z-index: 9999; padding: 8px 16px;">
+  Test Notification
+</button>

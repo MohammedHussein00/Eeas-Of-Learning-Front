@@ -1,0 +1,436 @@
+<!-- features/admin/admin-layout/admin-layout.html -->
+<div class="tl-root" [class.rtl]="isRtl()">
+  <!-- Desktop Sidebar -->
+  @if (!isMobile()) {
+    <aside class="tl-sidebar" [class.collapsed]="isCollapsed()" [style.width.px]="sidebarWidth()">
+      <div class="tl-logo-wrap" [class.centered]="isCollapsed()">
+        <div class="tl-logo-ring">
+          <img src="/logo.jpeg" alt="EOL">
+        </div>
+        @if (!isCollapsed()) {
+          <a routerLink="/dash/dashboard" class="tl-brand">EOL</a>
+        }
+      </div>
+
+      <div class="tl-menu-scroll">
+        <!-- DASHBOARD -->
+        <div class="tl-section-label">{{ 'dashboard' | transloco }}</div>
+        <div class="tl-menu-item" (click)="navigateTo('/dash/dashboard')" [class.active]="isActive('/dash/dashboard')">
+          <lucide-icon [img]="GaugeIcon" [size]="18"></lucide-icon>
+          @if (!isCollapsed()) {
+            <span>{{ 'dashboard' | transloco }}</span>
+          }
+        </div>
+
+        <!-- ACADEMIC MANAGEMENT -->
+        @if (!isCollapsed()) {
+          <div class="tl-section-label">{{ 'academic_management' | transloco }}</div>
+        }
+        <div class="tl-submenu">
+          <div class="tl-menu-item" (click)="toggleAcademics()">
+            <lucide-icon [img]="GraduationCapIcon" [size]="18"></lucide-icon>
+            @if (!isCollapsed()) {
+              <span>{{ 'academics' | transloco }}</span>
+              <lucide-icon
+                [img]="ChevronDownIcon"
+                [size]="14"
+                class="submenu-chevron"
+                [class.rotated]="academicsOpen()">
+              </lucide-icon>
+            }
+          </div>
+          @if (!isCollapsed()) {
+            <div class="tl-submenu-items" [@submenuAnimation]="academicsOpen() ? 'open' : 'closed'">
+              <div class="tl-submenu-inner">
+                <div class="tl-submenu-item" (click)="navigateTo('/dash/academics')" [class.active]="isActive('/dash/academics')">
+                  <lucide-icon [img]="ListIcon" [size]="14"></lucide-icon>
+                  <span>{{ 'list' | transloco }}</span>
+                </div>
+                <div class="tl-submenu-item" (click)="navigateTo('/dash/add-stage')" [class.active]="isActive('/dash/add-stage')">
+                  <lucide-icon [img]="PlusIcon" [size]="14"></lucide-icon>
+                  <span>{{ 'add_stage' | transloco }}</span>
+                </div>
+                <div class="tl-submenu-item" (click)="navigateTo('/dash/add-year')" [class.active]="isActive('/dash/add-year')">
+                  <lucide-icon [img]="PlusIcon" [size]="14"></lucide-icon>
+                  <span>{{ 'add_year' | transloco }}</span>
+                </div>
+                <div class="tl-submenu-item" (click)="navigateTo('/dash/add-section')" [class.active]="isActive('/dash/add-section')">
+                  <lucide-icon [img]="PlusIcon" [size]="14"></lucide-icon>
+                  <span>{{ 'add_section' | transloco }}</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+
+        <!-- QUESTIONS MANAGEMENT -->
+        @if (!isCollapsed()) {
+          <div class="tl-section-label">{{ 'questions_management' | transloco }}</div>
+        }
+        <div class="tl-submenu">
+          <div class="tl-menu-item" (click)="toggleQuestions()">
+            <lucide-icon [img]="HelpCircleIcon" [size]="18"></lucide-icon>
+            @if (!isCollapsed()) {
+              <span>{{ 'questions' | transloco }}</span>
+              <lucide-icon
+                [img]="ChevronDownIcon"
+                [size]="14"
+                class="submenu-chevron"
+                [class.rotated]="questionsOpen()">
+              </lucide-icon>
+            }
+          </div>
+          @if (!isCollapsed()) {
+            <div class="tl-submenu-items" [@submenuAnimation]="questionsOpen() ? 'open' : 'closed'">
+              <div class="tl-submenu-inner">
+                <div class="tl-submenu-item" (click)="navigateTo('/dash/questions')" [class.active]="isActive('/dash/questions')">
+                  <lucide-icon [img]="ListIcon" [size]="14"></lucide-icon>
+                  <span>{{ 'list' | transloco }}</span>
+                </div>
+                <div class="tl-submenu-item" (click)="navigateTo('/dash/add-question')" [class.active]="isActive('/dash/add-question')">
+                  <lucide-icon [img]="PlusIcon" [size]="14"></lucide-icon>
+                  <span>{{ 'add_question' | transloco }}</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- USER MANAGEMENT -->
+        @if (!isCollapsed()) {
+          <div class="tl-section-label">{{ 'user_management' | transloco }}</div>
+        }
+        <div class="tl-menu-item" (click)="navigateTo('/dash/users')" [class.active]="isActive('/dash/users')">
+          <lucide-icon [img]="UsersIcon" [size]="18"></lucide-icon>
+          @if (!isCollapsed()) {
+            <span>{{ 'user_list' | transloco }}</span>
+          }
+        </div>
+        <div class="tl-menu-item" (click)="navigateTo('/dash/teachers')" [class.active]="isActive('/dash/teachers')">
+          <lucide-icon [img]="UserCheckIcon" [size]="18"></lucide-icon>
+          @if (!isCollapsed()) {
+            <span>{{ 'teachers' | transloco }}</span>
+          }
+        </div>
+
+        <!-- SUBJECT MANAGEMENT -->
+        @if (!isCollapsed()) {
+          <div class="tl-section-label">{{ 'subject_management' | transloco }}</div>
+        }
+        <div class="tl-submenu">
+          <div class="tl-menu-item" (click)="toggleSubjects()">
+            <lucide-icon [img]="BookOpenIcon" [size]="18"></lucide-icon>
+            @if (!isCollapsed()) {
+              <span>{{ 'subjects' | transloco }}</span>
+              <lucide-icon
+                [img]="ChevronDownIcon"
+                [size]="14"
+                class="submenu-chevron"
+                [class.rotated]="subjectsOpen()">
+              </lucide-icon>
+            }
+          </div>
+          @if (!isCollapsed()) {
+            <div class="tl-submenu-items" [@submenuAnimation]="subjectsOpen() ? 'open' : 'closed'">
+              <div class="tl-submenu-inner">
+                <div class="tl-submenu-item" (click)="navigateTo('/dash/subjects')" [class.active]="isActive('/dash/subjects')">
+                  <lucide-icon [img]="ListIcon" [size]="14"></lucide-icon>
+                  <span>{{ 'list' | transloco }}</span>
+                </div>
+                <div class="tl-submenu-item" (click)="navigateTo('/dash/add-subject')" [class.active]="isActive('/dash/add-subject')">
+                  <lucide-icon [img]="PlusIcon" [size]="14"></lucide-icon>
+                  <span>{{ 'add_subject' | transloco }}</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- COURSES -->
+        @if (!isCollapsed()) {
+          <div class="tl-section-label">{{ 'courses' | transloco }}</div>
+        }
+        <div class="tl-submenu">
+          <div class="tl-menu-item" (click)="toggleCourses()">
+            <lucide-icon [img]="SchoolIcon" [size]="18"></lucide-icon>
+            @if (!isCollapsed()) {
+              <span>{{ 'courses' | transloco }}</span>
+              <lucide-icon
+                [img]="ChevronDownIcon"
+                [size]="14"
+                class="submenu-chevron"
+                [class.rotated]="coursesOpen()">
+              </lucide-icon>
+            }
+          </div>
+          @if (!isCollapsed()) {
+            <div class="tl-submenu-items" [@submenuAnimation]="coursesOpen() ? 'open' : 'closed'">
+              <div class="tl-submenu-inner">
+                <div class="tl-submenu-item" (click)="navigateTo('/dash/courses')" [class.active]="isActive('/dash/courses')">
+                  <lucide-icon [img]="ListIcon" [size]="14"></lucide-icon>
+                  <span>{{ 'courses_list' | transloco }}</span>
+                </div>
+                <div class="tl-submenu-item" (click)="navigateTo('/dash/add-course')" [class.active]="isActive('/dash/add-course')">
+                  <lucide-icon [img]="PlusIcon" [size]="14"></lucide-icon>
+                  <span>{{ 'add_course' | transloco }}</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- PLANS -->
+        @if (!isCollapsed()) {
+          <div class="tl-section-label">{{ 'plans' | transloco }}</div>
+        }
+        <div class="tl-submenu">
+          <div class="tl-menu-item" (click)="togglePlans()">
+            <lucide-icon [img]="CreditCardIcon" [size]="18"></lucide-icon>
+            @if (!isCollapsed()) {
+              <span>{{ 'plans' | transloco }}</span>
+              <lucide-icon
+                [img]="ChevronDownIcon"
+                [size]="14"
+                class="submenu-chevron"
+                [class.rotated]="plansOpen()">
+              </lucide-icon>
+            }
+          </div>
+          @if (!isCollapsed()) {
+            <div class="tl-submenu-items" [@submenuAnimation]="plansOpen() ? 'open' : 'closed'">
+              <div class="tl-submenu-inner">
+                <div class="tl-submenu-item" (click)="navigateTo('/dash/plans')" [class.active]="isActive('/dash/plans')">
+                  <lucide-icon [img]="ListIcon" [size]="14"></lucide-icon>
+                  <span>{{ 'list' | transloco }}</span>
+                </div>
+                <div class="tl-submenu-item" (click)="navigateTo('/dash/add-plan')" [class.active]="isActive('/dash/add-plan')">
+                  <lucide-icon [img]="PlusIcon" [size]="14"></lucide-icon>
+                  <span>{{ 'add_new' | transloco }}</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- EARNINGS -->
+        @if (!isCollapsed()) {
+          <div class="tl-section-label">{{ 'earnings' | transloco }}</div>
+        }
+        <div class="tl-menu-item" (click)="navigateTo('/dash/earning')" [class.active]="isActive('/dash/earning')">
+          <lucide-icon [img]="DollarSignIcon" [size]="18"></lucide-icon>
+          @if (!isCollapsed()) {
+            <span>{{ 'earnings' | transloco }}</span>
+          }
+        </div>
+
+        <!-- NOTIFICATIONS -->
+        @if (!isCollapsed()) {
+          <div class="tl-section-label">{{ 'notifications' | transloco }}</div>
+        }
+        <div class="tl-menu-item" (click)="navigateTo('/dash/notifications')" [class.active]="isActive('/dash/notifications')">
+          <lucide-icon [img]="BellIcon" [size]="18"></lucide-icon>
+          @if (!isCollapsed()) {
+            <span>{{ 'notifications' | transloco }}</span>
+          }
+        </div>
+
+        <!-- ADVERTISEMENTS -->
+        @if (!isCollapsed()) {
+          <div class="tl-section-label">{{ 'advertisements' | transloco }}</div>
+        }
+        <div class="tl-menu-item" (click)="navigateTo('/dash/advertisements')" [class.active]="isActive('/dash/advertisements')">
+          <lucide-icon [img]="MegaphoneIcon" [size]="18"></lucide-icon>
+          @if (!isCollapsed()) {
+            <span>{{ 'advertisements' | transloco }}</span>
+          }
+        </div>
+
+        <!-- XP & RANKINGS -->
+        @if (!isCollapsed()) {
+          <div class="tl-section-label">{{ 'xp_rankings' | transloco }}</div>
+        }
+        <div class="tl-submenu">
+          <div class="tl-menu-item" (click)="toggleXp()">
+            <lucide-icon [img]="TrophyIcon" [size]="18"></lucide-icon>
+            @if (!isCollapsed()) {
+              <span>{{ 'xp_rank' | transloco }}</span>
+              <lucide-icon
+                [img]="ChevronDownIcon"
+                [size]="14"
+                class="submenu-chevron"
+                [class.rotated]="xpOpen()">
+              </lucide-icon>
+            }
+          </div>
+          @if (!isCollapsed()) {
+            <div class="tl-submenu-items" [@submenuAnimation]="xpOpen() ? 'open' : 'closed'">
+              <div class="tl-submenu-inner">
+                <div class="tl-submenu-item" (click)="navigateTo('/dash/xp-rank')" [class.active]="isActive('/dash/xp-rank')">
+                  <lucide-icon [img]="TrophyIcon" [size]="14"></lucide-icon>
+                  <span>{{ 'leaderboard' | transloco }}</span>
+                </div>
+                <div class="tl-submenu-item" (click)="navigateTo('/dash/rank-management')" [class.active]="isActive('/dash/rank-management')">
+                  <lucide-icon [img]="ZapIcon" [size]="14"></lucide-icon>
+                  <span>{{ 'xp_triggers' | transloco }}</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- ADMIN MANAGEMENT -->
+        @if (!isCollapsed()) {
+          <div class="tl-section-label">{{ 'admin_management' | transloco }}</div>
+        }
+        <div class="tl-menu-item" (click)="navigateTo('/dash/admin-management')" [class.active]="isActive('/dash/admin-management')">
+          <lucide-icon [img]="Users2Icon" [size]="18"></lucide-icon>
+          @if (!isCollapsed()) {
+            <span>{{ 'admins' | transloco }}</span>
+          }
+        </div>
+        <!-- REFERRAL MANAGEMENT -->
+        @if (!isCollapsed()) {
+          <div class="tl-section-label">{{ 'referral_management' | transloco }}</div>
+        }
+        <div class="tl-submenu">
+          <!-- FIX: Added [class.active] to highlight when on any referral route -->
+          <div class="tl-menu-item" (click)="toggleReferrals()" [class.active]="isActive('/dash/referrals')">
+            <lucide-icon [img]="GiftIcon" [size]="18"></lucide-icon>
+            @if (!isCollapsed()) {
+              <span>{{ 'referrals' | transloco }}</span>
+              <lucide-icon
+                [img]="ChevronDownIcon"
+                [size]="14"
+                class="submenu-chevron"
+                [class.rotated]="referralsOpen()">
+              </lucide-icon>
+            }
+          </div>
+          @if (!isCollapsed()) {
+            <div class="tl-submenu-items" [@submenuAnimation]="referralsOpen() ? 'open' : 'closed'">
+              <div class="tl-submenu-inner">
+                <div class="tl-submenu-item" (click)="navigateTo('/dash/referrals')" [class.active]="isActive('/dash/referrals')">
+                  <lucide-icon [img]="ListIcon" [size]="14"></lucide-icon>
+                  <span>{{ 'all_referrals' | transloco }}</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- PAYMENT HISTORY -->
+        @if (!isCollapsed()) {
+          <div class="tl-section-label">{{ 'payment_history' | transloco }}</div>
+        }
+        <div class="tl-menu-item" (click)="navigateTo('/dash/payment-history')" [class.active]="isActive('/dash/payment-history')">
+          <lucide-icon [img]="ReceiptIcon" [size]="18"></lucide-icon>
+          @if (!isCollapsed()) {
+            <span>{{ 'payment_history' | transloco }}</span>
+          }
+        </div>
+      </div>
+    </aside>
+  }
+
+  <!-- Mobile Drawer -->
+  @if (isMobile()) {
+    <div class="tl-mobile-drawer-overlay" *ngIf="drawerOpen()" (click)="closeDrawer()"></div>
+    <div class="tl-mobile-drawer" [class.open]="drawerOpen()">
+      <div class="tl-mobile-drawer-header">
+        <div class="tl-logo-wrap">
+          <div class="tl-logo-ring">
+            <img src="/logo.jpeg" alt="EOL">
+          </div>
+          <span class="tl-brand">EOL</span>
+        </div>
+        <button class="close-btn" (click)="closeDrawer()">
+          <lucide-icon [img]="PanelLeftCloseIcon" [size]="18"></lucide-icon>
+        </button>
+      </div>
+      <div class="tl-menu-scroll">
+        <div class="tl-menu-item" (click)="navigateTo('/dash/dashboard')">
+          <lucide-icon [img]="GaugeIcon" [size]="18"></lucide-icon>
+          <span>{{ 'dashboard' | transloco }}</span>
+        </div>
+        <div class="tl-menu-item" (click)="navigateTo('/dash/referrals')">
+          <lucide-icon [img]="GiftIcon" [size]="18"></lucide-icon>
+          <span>{{ 'referrals' | transloco }}</span>
+        </div>
+        <div class="tl-menu-item" (click)="navigateTo('/dash/users')">
+          <lucide-icon [img]="UsersIcon" [size]="18"></lucide-icon>
+          <span>{{ 'user_list' | transloco }}</span>
+        </div>
+        <div class="tl-menu-item" (click)="navigateTo('/dash/teachers')">
+          <lucide-icon [img]="UserCheckIcon" [size]="18"></lucide-icon>
+          <span>{{ 'teachers' | transloco }}</span>
+        </div>
+        <div class="tl-submenu">
+          <div class="tl-menu-item" (click)="toggleMobileCourses()">
+            <lucide-icon [img]="SchoolIcon" [size]="18"></lucide-icon>
+            <span>{{ 'courses' | transloco }}</span>
+            <lucide-icon
+              [img]="ChevronDownIcon"
+              [size]="14"
+              class="submenu-chevron"
+              [class.rotated]="mobileCoursesOpen()">
+            </lucide-icon>
+          </div>
+          <div class="tl-submenu-items" [@submenuAnimation]="mobileCoursesOpen() ? 'open' : 'closed'">
+            <div class="tl-submenu-inner">
+              <div class="tl-submenu-item" (click)="navigateTo('/dash/courses')">
+                <lucide-icon [img]="ListIcon" [size]="14"></lucide-icon>
+                <span>{{ 'courses_list' | transloco }}</span>
+              </div>
+              <div class="tl-submenu-item" (click)="navigateTo('/dash/add-course')">
+                <lucide-icon [img]="PlusIcon" [size]="14"></lucide-icon>
+                <span>{{ 'add_course' | transloco }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tl-menu-item" (click)="navigateTo('/dash/earning')">
+          <lucide-icon [img]="DollarSignIcon" [size]="18"></lucide-icon>
+          <span>{{ 'earnings' | transloco }}</span>
+        </div>
+        <div class="tl-menu-item" (click)="navigateTo('/dash/notifications')">
+          <lucide-icon [img]="BellIcon" [size]="18"></lucide-icon>
+          <span>{{ 'notifications' | transloco }}</span>
+        </div>
+        <div class="tl-menu-item" (click)="navigateTo('/dash/advertisements')">
+          <lucide-icon [img]="MegaphoneIcon" [size]="18"></lucide-icon>
+          <span>{{ 'advertisements' | transloco }}</span>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Main Content -->
+  <div class="tl-main" [style.margin-left.px]="!isMobile() ? sidebarWidth() : 0">
+    <header class="tl-header">
+      <div class="tl-header-left">
+        @if (isMobile()) {
+          <button class="tl-menu-btn" (click)="toggleDrawer()">
+            <lucide-icon [img]="MenuIcon" [size]="18"></lucide-icon>
+          </button>
+        } @else {
+          <button class="tl-menu-btn" (click)="toggleCollapse()" [title]="isCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'">
+            <lucide-icon [img]="isCollapsed() ? PanelLeftOpenIcon : PanelLeftCloseIcon" [size]="18"></lucide-icon>
+          </button>
+        }
+        @if (isMobile()) {
+          <div class="tl-mobile-logo">
+            <div class="tl-logo-ring-small">
+              <img src="/logo.jpeg" alt="EOL">
+            </div>
+            <span class="tl-brand-small">EOL</span>
+          </div>
+        }
+      </div>
+      <app-admin-header />
+    </header>
+    <main class="tl-content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

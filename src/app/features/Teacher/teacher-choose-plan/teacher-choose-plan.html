@@ -1,0 +1,308 @@
+<ng-container *transloco="let t; scope: 'teacherChoosePlan'">
+
+  <!-- ════════════════════════════════════════════════════════
+       LOADING STATE
+  ════════════════════════════════════════════════════════ -->
+  @if (loading()) {
+    <div class="cp-center-screen">
+      <nz-spin nzSize="large"></nz-spin>
+      <p style="color:#8a94b2; font-size:13px; margin-top:16px">{{ t('teacherChoosePlan.loading') }}</p>
+    </div>
+  }
+
+  @else {
+  <div class="cp-root" [attr.dir]="dir()">
+
+    <!-- ══ Header ══ -->
+    <header class="cp-header">
+      <div class="cp-header-content">
+
+        <div class="cp-header-left">
+          <button class="cp-back-btn" (click)="router.navigate(['/teacher/plans/my-plan'])"
+            [attr.aria-label]="lang() === 'ar' ? 'العودة' : 'Go back'">
+            <lucide-icon [img]="ArrowLeftIcon" [size]="16"></lucide-icon>
+          </button>
+          <div>
+            <h1 class="cp-title">{{ t('teacherChoosePlan.planComparison') }}</h1>
+            <p class="cp-subtitle">
+              {{ lang() === 'ar'
+                  ? 'اختر الخطة التي تناسب احتياجاتك'
+                  : 'Select the plan that fits your needs' }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Billing period toggle -->
+        <div class="cp-billing-toggle">
+          @for (opt of billingOptions; track opt.key) {
+            <button
+              class="cp-billing-btn"
+              [class.active]="billing() === opt.key"
+              (click)="setBilling(opt.key)">
+              {{ lang() === 'ar' ? opt.ar : opt.en }}
+            </button>
+          }
+        </div>
+
+      </div>
+    </header>
+
+    <!-- ══ Body ══ -->
+    <main class="cp-body">
+
+      <!-- ── Empty state ── -->
+      @if (plans().length === 0) {
+        <div class="cp-empty">
+          <div class="cp-empty-icon">
+            <lucide-icon [img]="InfoIcon" [size]="32"></lucide-icon>
+          </div>
+          <h2 class="cp-empty-title">
+            {{ lang() === 'ar' ? 'لا توجد خطط متاحة' : 'No Plans Available' }}
+          </h2>
+          <p class="cp-empty-text">
+            {{ lang() === 'ar'
+                ? 'لم يتم العثور على خطط في الوقت الحالي. يرجى المحاولة لاحقاً.'
+                : 'No plans found at this time. Please check back later.' }}
+          </p>
+          <button class="cp-btn-ghost cp-empty-back"
+            (click)="router.navigate(['/teacher/plans/my-plan'])">
+            {{ lang() === 'ar' ? 'العودة' : 'Go Back' }}
+          </button>
+        </div>
+      }
+
+      <!-- ── Plans grid ── -->
+      @else {
+        <div [ngClass]="gridClass()">
+          @for (plan of plans(); track plan.id) {
+
+            <!-- Plan card -->
+            <div [ngClass]="getPlanCardClass(plan, isCurrent(plan))">
+
+              <!-- Ribbon -->
+              @if (getPlanRibbonLabel(plan, isCurrent(plan))) {
+                <div [ngClass]="getPlanRibbonClass(plan, isCurrent(plan))">
+                  {{ getPlanRibbonLabel(plan, isCurrent(plan)) }}
+                </div>
+              }
+
+              <!-- Card body -->
+              <div class="cp-card-body">
+                <div class="cp-plan-name">{{ plan.name }}</div>
+
+                @if (plan.planType) {
+                  <div class="cp-plan-type">
+                    <nz-tag nzColor="purple">{{ plan.planType }}</nz-tag>
+                  </div>
+                }
+
+                <div class="cp-plan-desc">
+                  {{ plan.description || (lang() === 'ar' ? 'لا يوجد وصف' : 'No description available') }}
+                </div>
+
+                <!-- Price block -->
+                <div class="cp-price-block">
+                  @if (isFreePlan(plan)) {
+                    <div class="cp-price-amount free">
+                      {{ lang() === 'ar' ? 'مجاني' : 'Free' }}
+                    </div>
+                  } @else {
+                    <div class="cp-price-amount">
+                      <span class="cp-price-currency">{{ plan.currency || 'EGP' }}</span>
+                      <span>{{ getPrice(plan, billing()).toLocaleString() }}</span>
+                    </div>
+                    <div class="cp-price-period">
+                      @if (billing() === 'monthly') {
+                        {{ lang() === 'ar' ? '/شهر' : '/month' }}
+                      } @else {
+                        /{{ getBillingLabel(billing()) }}
+                      }
+                    </div>
+                    @if (calcSaving(plan, billing()); as saving) {
+                      @if (saving > 0) {
+                        <div class="cp-save-badge">
+                          <lucide-icon [img]="FlameIcon" [size]="12"></lucide-icon>
+                          {{ lang() === 'ar' ? 'وفّر ' + saving + '%' : 'Save ' + saving + '%' }}
+                        </div>
+                      }
+                    }
+                  }
+                </div>
+
+                <!-- Divider -->
+                <div class="cp-divider"></div>
+
+                <!-- Features list -->
+                <div class="cp-features-list">
+                  <div class="cp-features-title">
+                    {{ lang() === 'ar' ? 'الميزات المضمّنة' : 'Included Features' }}
+                  </div>
+
+                  @if (getAdResources(plan).length > 0) {
+                    @for (resource of getAdResources(plan); track resource.id) {
+                      <div class="cp-feature-row"
+                        [ngClass]="resource.isAllowed !== false ? 'yes' : 'no'">
+                        <span class="cp-feat-icon"
+                          [ngClass]="resource.isAllowed !== false ? 'yes' : 'no'">
+                          {{ resource.isAllowed !== false
+                              ? getResourceIcon(resource.resourceKey)
+                              : '✗' }}
+                        </span>
+                        <span>{{ formatResource(resource) }}</span>
+                        @if (resource.isUnlimited) {
+                          <nz-tag nzColor="green"
+                            style="margin-left:auto; font-size:10px; padding:0 6px; line-height:18px">
+                            ∞
+                          </nz-tag>
+                        }
+                      </div>
+                    }
+                  } @else {
+                    <div class="cp-feature-row yes">
+                      <span class="cp-feat-icon yes">✓</span>
+                      <span>{{ lang() === 'ar' ? 'وصول أساسي' : 'Basic Access' }}</span>
+                    </div>
+                  }
+
+                  @if (getOtherCount(plan) > 0) {
+                    <div class="cp-feature-row more">
+                      <lucide-icon [img]="InfoIcon" [size]="14" class="cp-feat-icon more"></lucide-icon>
+                      <span>
+                        +{{ getOtherCount(plan) }}
+                        {{ lang() === 'ar' ? ' ميزات إضافية' : ' more features' }}
+                      </span>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- Card footer -->
+              <div class="cp-card-footer">
+                <button
+                  [ngClass]="getSelectBtnClass(plan, isCurrent(plan))"
+                  [disabled]="isCurrent(plan)"
+                  (click)="!isCurrent(plan) && openModal(plan)">
+                  {{ getSelectBtnLabel(plan, isCurrent(plan)) }}
+                </button>
+              </div>
+
+            </div><!-- /cp-plan-card -->
+          }
+        </div><!-- /cp-plans-grid -->
+      }
+
+    </main><!-- /cp-body -->
+
+  </div><!-- /cp-root -->
+  }
+
+  <!-- ════════════════════════════════════════════════════════
+       SUBSCRIBE MODAL
+  ════════════════════════════════════════════════════════ -->
+  <nz-modal
+    class="cp-modal"
+    [nzVisible]="modal().visible"
+    [nzTitle]="modalTitle"
+    [nzFooter]="modalFooter"
+    nzWidth="480"
+    nzDestroyOnClose
+    (nzOnCancel)="closeModal()">
+
+    <ng-template #modalTitle>
+      <div class="cp-modal-title">
+        <lucide-icon [img]="RocketIcon" [size]="20" style="color:#3d5af1; flex-shrink:0"></lucide-icon>
+        <div>
+          <div class="cp-modal-name">
+            {{ lang() === 'ar' ? 'تأكيد الاشتراك' : 'Confirm Subscription' }}
+          </div>
+          <div class="cp-modal-sub">{{ modal().plan?.name }}</div>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-container *nzModalContent>
+      <!-- Summary table -->
+      <div class="cp-modal-summary">
+        <div class="cp-modal-row">
+          <span>{{ lang() === 'ar' ? 'الخطة' : 'Plan' }}</span>
+          <span class="cp-modal-val">{{ modal().plan?.name }}</span>
+        </div>
+        <div class="cp-modal-row">
+          <span>{{ t('teacherChoosePlan.billingPeriod') }}</span>
+          <span class="cp-modal-val">{{ getBillingLabel(billing()) }}</span>
+        </div>
+        @if (!isModalFree()) {
+          <div class="cp-modal-row total">
+            <span>{{ lang() === 'ar' ? 'الإجمالي' : 'Total' }}</span>
+            <span class="cp-modal-val price">
+              {{ billedPrice() }} {{ modal().plan?.currency || 'EGP' }}
+            </span>
+          </div>
+        }
+      </div>
+
+      <!-- Upgrade options (only shown when user already has a subscription) -->
+      @if (currentSub()) {
+        <div class="cp-modal-options">
+          <!-- Start immediately toggle -->
+          <div class="cp-opt-row">
+            <div>
+              <div class="cp-opt-label">
+                {{ lang() === 'ar' ? 'البدء فوراً' : 'Start Immediately' }}
+              </div>
+              <div class="cp-opt-sub">
+                {{ lang() === 'ar'
+                    ? 'تبدأ الخطة الجديدة فوراً بعد التأكيد'
+                    : 'New plan starts right away after confirmation' }}
+              </div>
+            </div>
+            <nz-switch
+              [ngModel]="modal().immediate"
+              (ngModelChange)="setImmediate($event)">
+            </nz-switch>
+          </div>
+
+          <!-- Pro-rata toggle (only when immediate) -->
+          @if (modal().immediate) {
+            <div class="cp-opt-row">
+              <div>
+                <div class="cp-opt-label">
+                  {{ lang() === 'ar' ? 'رصيد تناسبي' : 'Pro-Rata Credit' }}
+                </div>
+                <div class="cp-opt-sub">
+                  {{ lang() === 'ar'
+                      ? 'احصل على رصيد عن المدة المتبقية في خطتك الحالية'
+                      : 'Get credit for the remaining time on your current plan' }}
+                </div>
+              </div>
+              <nz-switch
+                [ngModel]="modal().proRata"
+                (ngModelChange)="setProRata($event)">
+              </nz-switch>
+            </div>
+          }
+        </div>
+      }
+    </ng-container>
+
+    <ng-template #modalFooter>
+      <button class="cp-btn-ghost" (click)="closeModal()">
+        {{ lang() === 'ar' ? 'إلغاء' : 'Cancel' }}
+      </button>
+      <button class="cp-btn-primary"
+        [disabled]="modal().loading"
+        (click)="handleSubscribe()">
+        @if (modal().loading) {
+          <nz-spin nzSize="small"></nz-spin>
+        } @else {
+          <lucide-icon [img]="RocketIcon" [size]="14"></lucide-icon>
+        }
+        {{ isModalFree()
+            ? (lang() === 'ar' ? 'تفعيل مجاناً' : 'Activate Free')
+            : (lang() === 'ar' ? 'المتابعة للدفع' : 'Proceed to Payment') }}
+      </button>
+    </ng-template>
+
+  </nz-modal>
+
+</ng-container>

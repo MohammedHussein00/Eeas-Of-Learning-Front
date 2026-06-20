@@ -1,0 +1,17 @@
+{
+  "notifications": "Notifications",
+  "markAllRead": "Mark all as read",
+  "noNotifications": "No notifications",
+  "notificationsWillAppear": "Your notifications will appear here",
+  "viewAllNotifications": "View all notifications",
+  "verified": "Verified",
+  "myProfile": "My Profile",
+  "myCourses": "My Courses",
+  "myStudents": "My Students",
+  "reviews": "Reviews",
+  "earnings": "Earnings",
+  "dashboard": "Dashboard",
+  "logout": "Logout",
+  "teacher": "Teacher",
+  "loading": "Loading..."
+}

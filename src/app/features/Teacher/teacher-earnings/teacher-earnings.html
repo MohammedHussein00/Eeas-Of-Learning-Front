@@ -1,0 +1,693 @@
+<ng-container *transloco="let t; scope: 'teacherEarnings'">
+
+  <!-- ══ Loading State ══ -->
+  @if (loading()) {
+    <div class="te-center-screen">
+      <nz-spin nzSize="large"></nz-spin>
+      <p class="te-loading-text">{{ t('teacherEarnings.loading') }}</p>
+    </div>
+  } @else {
+
+  <div class="te-root">
+
+    <!-- ══ Header ══ -->
+    <header class="te-header">
+      <div class="te-header-left">
+        <button class="te-back-btn" (click)="goBack()">
+          <lucide-icon [img]="ArrowLeftIcon" [size]="16"></lucide-icon>
+          <span class="te-back-label">{{ t('teacherEarnings.back_to_dashboard') }}</span>
+        </button>
+        <div class="te-header-sep"></div>
+        <div class="te-header-info">
+          <h1 class="te-header-title">{{ t('teacherEarnings.page_title') }}</h1>
+          <p class="te-header-sub">{{ t('teacherEarnings.page_subtitle') }}</p>
+        </div>
+      </div>
+
+      <div class="te-header-right">
+        <button class="te-ghost-btn" (click)="exportCSV()" [disabled]="filteredEarnings().length === 0">
+          <lucide-icon [img]="DownloadIcon" [size]="14"></lucide-icon>
+          <span class="te-btn-label">{{ t('teacherEarnings.export') }}</span>
+        </button>
+
+        <button
+          class="te-withdraw-btn"
+          (click)="openWithdrawal()"
+          [disabled]="!cv().canWithdraw"
+          [nz-tooltip]="!cv().canWithdraw ? ('Need at least ' + fmtMoney(cv().minimum)) : ''">
+          <lucide-icon [img]="WalletIcon" [size]="15"></lucide-icon>
+          <span>{{ t('teacherEarnings.request_payout') }}</span>
+        </button>
+
+        <button class="te-icon-btn" (click)="onRefresh()">
+          <lucide-icon [img]="RefreshIcon" [size]="15"></lucide-icon>
+        </button>
+      </div>
+    </header>
+
+    <div class="te-body">
+
+      <!-- ══ Welcome Alert ══ -->
+      @if (showWelcome()) {
+        <nz-alert
+          class="te-welcome-alert"
+          nzType="info"
+          nzShowIcon
+          nzCloseable
+          [nzMessage]="welcomeTitle"
+          [nzDescription]="welcomeDesc">
+        </nz-alert>
+        <ng-template #welcomeTitle>
+          <span class="te-welcome-alert-title">{{ t('teacherEarnings.welcome_title') }} 🎉</span>
+        </ng-template>
+        <ng-template #welcomeDesc>
+          <p>💡 {{ t('teacherEarnings.welcome_msg1') }}</p>
+          <p>💳 {{ t('teacherEarnings.welcome_msg2') }}</p>
+          <p>💸 {{ t('teacherEarnings.welcome_msg3') }}</p>
+        </ng-template>
+      }
+
+      <!-- ══ Hero Balance Card ══ -->
+      <div class="te-hero">
+        <div class="te-hero-accent"></div>
+        <div class="te-hero-content">
+          <div class="te-hero-left">
+            <div class="te-balance-label">
+              <lucide-icon [img]="WalletIcon" [size]="14"></lucide-icon>
+              {{ t('teacherEarnings.available_to_withdraw') }}
+            </div>
+            <div class="te-balance-amount" [class.green]="cv().canWithdraw">
+              {{ fmtMoney(cv().available) }}
+            </div>
+            <div class="te-balance-breakdown">
+              <span>
+                <lucide-icon [img]="DollarIcon" [size]="12"></lucide-icon>
+                {{ t('teacherEarnings.total_sales') }}: {{ fmtMoney(cv().total) }}
+              </span>
+              <span class="te-breakdown-fee">
+                − {{ t('teacherEarnings.fees') }}: {{ fmtMoney(cv().fees) }}
+              </span>
+              @if (cv().paidOut > 0) {
+                <span>− {{ t('teacherEarnings.already_paid') }}: {{ fmtMoney(cv().paidOut) }}</span>
+              }
+            </div>
+            @if (!cv().canWithdraw && cv().available > 0) {
+              <div class="te-balance-hint">
+                <lucide-icon [img]="InfoIcon" [size]="13"></lucide-icon>
+                {{ t('teacherEarnings.need_more') }}
+                {{ fmtMoney(cv().minimum - cv().available) }}
+                {{ t('teacherEarnings.to_reach_minimum') }}
+              </div>
+            }
+          </div>
+          <div class="te-hero-right">
+            <button
+              class="te-hero-withdraw-btn"
+              (click)="openWithdrawal()"
+              [disabled]="!cv().canWithdraw">
+              <lucide-icon [img]="WalletIcon" [size]="16"></lucide-icon>
+              <span>{{ t('teacherEarnings.request_payout') }}</span>
+            </button>
+            <div class="te-min-note">
+              {{ t('teacherEarnings.min_payout') }}: {{ fmtMoney(cv().minimum) }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ Progress Bar ══ -->
+      <div class="te-progress-card">
+        <div class="te-progress-head">
+          <span class="te-progress-title">
+            <lucide-icon [img]="ZapIcon" [size]="14"></lucide-icon>
+            {{ t('teacherEarnings.progress_to_payout') }}
+          </span>
+          <span class="te-progress-val" [class.ready]="cv().canWithdraw">
+            {{ fmtMoney(cv().available) }} / {{ fmtMoney(cv().minimum) }}
+          </span>
+        </div>
+        <nz-progress
+          [nzPercent]="progressPct()"
+          [nzStrokeColor]="cv().canWithdraw ? '#16a34a' : '#4f6ef7'"
+          [nzShowInfo]="false"
+          [nzStrokeWidth]="8">
+        </nz-progress>
+        <div class="te-progress-footer">
+          @if (cv().canWithdraw) {
+            <span class="te-progress-ready">✓ {{ t('teacherEarnings.ready_to_payout') }}</span>
+          } @else {
+            <span>{{ t('teacherEarnings.minimum_required') }}: {{ fmtMoney(cv().minimum) }}</span>
+          }
+          <span>{{ progressPct() }}% {{ t('teacherEarnings.reached') }}</span>
+        </div>
+      </div>
+
+      <!-- ══ Stat Cards ══ -->
+      <div class="te-stats-grid">
+        @for (card of statCards(); track card.label) {
+          <div class="te-stat-card" [ngClass]="card.cls">
+            <div class="te-stat-icon">
+              <lucide-icon [img]="card.icon" [size]="20"></lucide-icon>
+            </div>
+            <div class="te-stat-body">
+              <div class="te-stat-value">
+                {{ card.noMoney ? card.val : fmtMoney(+card.val) }}
+              </div>
+              <div class="te-stat-label">{{ card.label }}</div>
+              @if (card['sub']) {
+                <div class="te-stat-sub" [ngClass]="card['subCls']">{{ card['sub'] }}</div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- ══ Main Grid ══ -->
+      <div class="te-main-grid">
+
+        <!-- ── Content Column ── -->
+        <div class="te-content-col">
+
+          <!-- Monthly Chart placeholder (recharts equivalent not used in Angular, show summary) -->
+          @if (monthlyData().length > 0) {
+            <div class="te-card te-chart-card">
+              <div class="te-card-head">
+                <div class="te-card-heading">
+                  <span class="te-card-chip blue">
+                    <lucide-icon [img]="BarChartIcon" [size]="13"></lucide-icon>
+                  </span>
+                  <span>{{ t('teacherEarnings.revenue_overview') }}</span>
+                  <span class="te-count">({{ t('teacherEarnings.last_12_months') }})</span>
+                </div>
+              </div>
+              <div class="te-card-body">
+                <div class="te-monthly-bars">
+                  @for (item of monthlyData(); track item.month) {
+                    <div class="te-month-col">
+                      <div class="te-month-bar-wrap" [nz-tooltip]="fmtMoney(item.grossRevenue) + ' · ' + item.newStudents + ' students'">
+                        <div
+                          class="te-month-bar"
+                          [style.height.%]="(item.grossRevenue / maxRevenue()) * 100">
+                        </div>
+                      </div>
+                      <div class="te-month-label">{{ item.month }}</div>
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- Tabs + Table Card -->
+          <div class="te-card">
+
+            <!-- Tabs Nav -->
+            <div class="te-tabs-nav">
+              <button
+                class="te-tab"
+                [class.active]="activeTab() === 'history'"
+                (click)="activeTab.set('history')">
+                <lucide-icon [img]="HistoryIcon" [size]="14"></lucide-icon>
+                <span class="te-tab-text">{{ t('teacherEarnings.earnings_history') }}</span>
+                <span class="te-tab-count">{{ filteredEarnings().length }}</span>
+              </button>
+              <button
+                class="te-tab"
+                [class.active]="activeTab() === 'payouts'"
+                (click)="activeTab.set('payouts')">
+                <lucide-icon [img]="WalletIcon" [size]="14"></lucide-icon>
+                <span class="te-tab-text">{{ t('teacherEarnings.payout_history') }}</span>
+                <span class="te-tab-count">{{ payouts().length }}</span>
+              </button>
+            </div>
+
+            <!-- Filters -->
+            <div class="te-filters">
+              <div class="te-search-wrap">
+                <lucide-icon [img]="FilterIcon" [size]="13" class="te-search-ico"></lucide-icon>
+                <input
+                  class="te-search-input"
+                  type="search"
+                  [placeholder]="t('teacherEarnings.search_placeholder')"
+                  [ngModel]="filterSearch()"
+                  (ngModelChange)="filterSearch.set($event)" />
+                @if (filterSearch()) {
+                  <button class="te-search-clear" (click)="filterSearch.set('')">
+                    <lucide-icon [img]="XIcon" [size]="11"></lucide-icon>
+                  </button>
+                }
+              </div>
+
+              <nz-select
+                class="te-filter-select"
+                [ngModel]="filterCourse()"
+                (ngModelChange)="filterCourse.set($event)">
+                <nz-option nzValue="all" [nzLabel]="t('teacherEarnings.all_courses')"></nz-option>
+                @for (c of courses(); track c.id) {
+                  <nz-option [nzValue]="c.id" [nzLabel]="c.title"></nz-option>
+                }
+              </nz-select>
+
+              <nz-select
+                class="te-filter-select te-filter-status"
+                [ngModel]="filterStatus()"
+                (ngModelChange)="filterStatus.set($event)">
+                <nz-option nzValue="all" [nzLabel]="t('teacherEarnings.all_statuses')"></nz-option>
+                @for (entry of statusEntries(); track entry.key) {
+                  <nz-option [nzValue]="entry.key" [nzLabel]="entry.label"></nz-option>
+                }
+              </nz-select>
+
+              @if (filterSearch() || filterCourse() !== 'all' || filterStatus() !== 'all') {
+                <button class="te-reset-btn" (click)="resetFilters()">
+                  <lucide-icon [img]="XIcon" [size]="11"></lucide-icon>
+                  {{ t('teacherEarnings.reset') }}
+                </button>
+              }
+            </div>
+
+            <!-- ── Earnings History Table ── -->
+            @if (activeTab() === 'history') {
+              <div class="te-table-wrap">
+                <nz-table
+                  #earningsTable
+                  [nzData]="filteredEarnings()"
+                  [nzPageSize]="15"
+                  [nzShowSizeChanger]="true"
+                  nzSize="middle"
+                  [nzScroll]="{ x: '800px' }">
+                  <thead>
+                    <tr>
+                      <th nzWidth="100px">{{ t('teacherEarnings.date') }}</th>
+                      <th>{{ t('teacherEarnings.course') }}</th>
+                      <th>{{ t('teacherEarnings.student') }}</th>
+                      <th nzAlign="right">{{ t('teacherEarnings.gross_amount') }}</th>
+                      <th nzAlign="right">{{ t('teacherEarnings.fee') }}</th>
+                      <th nzAlign="right">{{ t('teacherEarnings.net_amount') }}</th>
+                      <th>{{ t('teacherEarnings.status') }}</th>
+                      <th nzWidth="50px"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (e of earningsTable.data; track e.id) {
+                      <tr>
+                        <td>{{ formatDate(e.createdAt) }}</td>
+                        <td><span class="te-table-course">{{ e.courseTitle }}</span></td>
+                        <td>
+                          <div class="te-table-student">
+                            <div class="te-student-avatar">{{ initial(e.studentName) }}</div>
+                            <div>
+                              <div>{{ e.studentName }}</div>
+                              <div class="te-student-email">{{ e.studentEmail }}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td nzAlign="right"><span class="te-amount-gross">{{ fmtMoney(e.amount) }}</span></td>
+                        <td nzAlign="right"><span class="te-amount-fee">−{{ fmtMoney(e.platformFee) }}</span></td>
+                        <td nzAlign="right"><span class="te-amount-net">{{ fmtMoney(e.netAmount) }}</span></td>
+                        <td>
+                          <nz-tag [nzColor]="statusTagColor(e.status)">{{ statusLabel(e.status) }}</nz-tag>
+                        </td>
+                        <td>
+                          <button class="te-icon-btn sm" (click)="viewDetails(e.id)">
+                            <lucide-icon [img]="EyeIcon" [size]="13"></lucide-icon>
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </nz-table>
+
+                @if (filteredEarnings().length === 0) {
+                  <div class="te-empty">
+                    <div class="te-empty-ico">
+                      <lucide-icon [img]="DollarIcon" [size]="28"></lucide-icon>
+                    </div>
+                    <p class="te-empty-title">{{ t('teacherEarnings.no_earnings') }}</p>
+                  </div>
+                }
+              </div>
+            }
+
+            <!-- ── Payout History Table ── -->
+            @if (activeTab() === 'payouts') {
+              <div class="te-table-wrap">
+                <nz-table
+                  #payoutsTable
+                  [nzData]="payouts()"
+                  [nzPageSize]="10"
+                  nzSize="middle"
+                  [nzScroll]="{ x: '700px' }">
+                  <thead>
+                    <tr>
+                      <th nzWidth="100px">{{ t('teacherEarnings.date') }}</th>
+                      <th>{{ t('teacherEarnings.requested_amount') }}</th>
+                      <th>{{ t('teacherEarnings.received_amount') }}</th>
+                      <th>{{ t('teacherEarnings.method') }}</th>
+                      <th>{{ t('teacherEarnings.recipient') }}</th>
+                      <th>{{ t('teacherEarnings.status') }}</th>
+                      <th>{{ t('teacherEarnings.completed_on') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (p of payoutsTable.data; track p.id) {
+                      <tr>
+                        <td>{{ formatDate(p.createdAt) }}</td>
+                        <td><span class="te-amount-gross">{{ fmtMoney(p.totalAmount) }}</span></td>
+                        <td><span class="te-amount-net">{{ fmtMoney(p.netAmount) }}</span></td>
+                        <td>
+                          <div class="te-wallet-method-cell">
+                            <div class="te-wallet-badge-sm" [style.background]="walletColor(p.payoutMethod)">
+                              {{ walletAbbr(p.payoutMethod) }}
+                            </div>
+                            <span class="te-wallet-method-name">{{ walletLabel(p.payoutMethod) }}</span>
+                          </div>
+                        </td>
+                        <td><code class="te-recipient-code">{{ p.recipentNumber || '—' }}</code></td>
+                        <td>
+                          <nz-tag [nzColor]="statusTagColor(p.status)">{{ statusLabel(p.status) }}</nz-tag>
+                        </td>
+                        <td>{{ p.paidAt ? formatDate(p.paidAt) : '—' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </nz-table>
+
+                @if (payouts().length === 0) {
+                  <div class="te-empty">
+                    <div class="te-empty-ico">
+                      <lucide-icon [img]="WalletIcon" [size]="28"></lucide-icon>
+                    </div>
+                    <p class="te-empty-title">{{ t('teacherEarnings.no_payouts') }}</p>
+                    <button
+                      class="te-hero-withdraw-btn"
+                      [disabled]="!cv().canWithdraw"
+                      (click)="openWithdrawal()">
+                      <lucide-icon [img]="WalletIcon" [size]="14"></lucide-icon>
+                      {{ t('teacherEarnings.request_first_payout') }}
+                    </button>
+                  </div>
+                }
+              </div>
+            }
+
+          </div><!-- /card -->
+        </div><!-- /content-col -->
+
+        <!-- ── Sidebar ── -->
+        <aside class="te-sidebar">
+
+          <!-- Summary -->
+          <div class="te-sidebar-card">
+            <div class="te-sidebar-card-title">
+              <lucide-icon [img]="BarChartIcon" [size]="14"></lucide-icon>
+              <span>{{ t('teacherEarnings.summary') }}</span>
+            </div>
+            <div class="te-summary-item">
+              <span>{{ t('teacherEarnings.total_earned') }}</span>
+              <strong>{{ fmtMoney(cv().total) }}</strong>
+            </div>
+            <div class="te-summary-item">
+              <span>{{ t('teacherEarnings.platform_fees') }}</span>
+              <span class="te-fee">−{{ fmtMoney(cv().fees) }}</span>
+            </div>
+            <div class="te-summary-item">
+              <span>{{ t('teacherEarnings.already_paid') }}</span>
+              <span>{{ fmtMoney(cv().paidOut) }}</span>
+            </div>
+            <nz-divider style="margin: 10px 0"></nz-divider>
+            <div class="te-summary-item highlight">
+              <span>{{ t('teacherEarnings.available_now') }}</span>
+              <strong class="te-positive">{{ fmtMoney(cv().available) }}</strong>
+            </div>
+          </div>
+
+          <!-- How It Works -->
+          <div class="te-sidebar-card">
+            <div class="te-sidebar-card-title">
+              <lucide-icon [img]="InfoIcon" [size]="14"></lucide-icon>
+              <span>{{ t('teacherEarnings.how_it_works_title') }}</span>
+            </div>
+            <div class="te-how-it-works">
+              <div class="te-how-title">💡 {{ t('teacherEarnings.simple_process') }}</div>
+              <div class="te-how-desc">{{ t('teacherEarnings.how_it_works_desc') }}</div>
+            </div>
+            <div class="te-info-row">
+              <span>{{ t('teacherEarnings.minimum_amount') }}</span>
+              <strong>{{ fmtMoney(cv().minimum) }}</strong>
+            </div>
+            <div class="te-info-row">
+              <span>{{ t('teacherEarnings.fee_rate') }}</span>
+              <strong>{{ settings().platformFeePercentage || 20 }}%</strong>
+            </div>
+            <div class="te-info-row">
+              <span>{{ t('teacherEarnings.cooldown') }}</span>
+              <strong>{{ t('teacherEarnings.every_x_days') }}</strong></div>
+          </div>
+
+          <!-- Payment Methods -->
+          <div class="te-sidebar-card">
+            <div class="te-sidebar-card-title">
+              <lucide-icon [img]="PhoneIcon" [size]="14"></lucide-icon>
+              <span>{{ t('teacherEarnings.payment_methods') }}</span>
+            </div>
+            <div class="te-wallet-methods-list">
+              @for (m of walletMethods; track m.value) {
+                <div class="te-wallet-method-tag" [nz-tooltip]="m.hint">
+                  <div class="te-wallet-badge-sm" [style.background]="m.color">{{ m.abbr }}</div>
+                  <span class="te-wallet-method-name">{{ m.label }}</span>
+                </div>
+              }
+            </div>
+            <div class="te-wallet-hint">
+              <lucide-icon [img]="GlobeIcon" [size]="12"></lucide-icon>
+              {{ t('teacherEarnings.egypt_wallets_only') }}
+            </div>
+          </div>
+
+        </aside>
+      </div><!-- /main-grid -->
+    </div><!-- /body -->
+  </div><!-- /root -->
+
+  <!-- ══ Transaction Details Modal ══ -->
+  <nz-modal
+    [nzVisible]="detailModalOpen()"
+    [nzWidth]="500"
+    nzCentered
+    [nzTitle]="detailTitle"
+    [nzFooter]="detailFooter"
+    (nzOnCancel)="closeDetail()"
+    nzClassName="te-modal">
+
+    <ng-template #detailTitle>
+      <div style="display:flex; align-items:center; gap:12px">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#4f6ef7,#7c9cff);display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0">
+          <lucide-icon [img]="EyeIcon" [size]="16"></lucide-icon>
+        </div>
+        <div>
+          <div style="font-family:'Sora',sans-serif;font-weight:700;font-size:15px;color:#1a2342;line-height:1.2">
+            {{ t('teacherEarnings.transaction_details') }}
+          </div>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-container *nzModalContent>
+      @if (detailLoading()) {
+        <div style="text-align:center;padding:40px"><nz-spin></nz-spin></div>
+      }
+      @if (!detailLoading() && selectedEarning(); as earning) {
+        <nz-descriptions [nzBordered]="true" [nzColumn]="1" nzSize="small">
+          <nz-descriptions-item [nzTitle]="t('teacherEarnings.course')">
+            {{ earning.courseTitle }}
+          </nz-descriptions-item>
+          <nz-descriptions-item [nzTitle]="t('teacherEarnings.student')">
+            {{ earning.studentName }}
+            <br /><small style="color:#718096">{{ earning.studentEmail }}</small>
+          </nz-descriptions-item>
+          <nz-descriptions-item [nzTitle]="t('teacherEarnings.gross_amount')">
+            {{ fmtMoney(earning.amount) }}
+          </nz-descriptions-item>
+          <nz-descriptions-item [nzTitle]="t('teacherEarnings.platform_fee')">
+            <span class="te-amount-fee">−{{ fmtMoney(earning.platformFee) }} ({{ earning.platformFeePercentage || 0 }}%)</span>
+          </nz-descriptions-item>
+          <nz-descriptions-item [nzTitle]="t('teacherEarnings.net_amount')">
+            <strong class="te-amount-net" style="font-size:16px">{{ fmtMoney(earning.netAmount) }}</strong>
+          </nz-descriptions-item>
+          <nz-descriptions-item [nzTitle]="t('teacherEarnings.date')">
+            {{ formatDateTime(earning.createdAt) }}
+          </nz-descriptions-item>
+          <nz-descriptions-item [nzTitle]="t('teacherEarnings.status')">
+            <nz-tag [nzColor]="statusTagColor(earning.status)">{{ statusLabel(earning.status) }}</nz-tag>
+          </nz-descriptions-item>
+        </nz-descriptions>
+      }
+    </ng-container>
+
+    <ng-template #detailFooter>
+      <button class="te-ghost-btn" (click)="closeDetail()">{{ t('teacherEarnings.close') }}</button>
+    </ng-template>
+  </nz-modal>
+
+  <!-- ══ Request Payout Modal ══ -->
+  <nz-modal
+    [nzVisible]="payoutModalOpen()"
+    [nzWidth]="560"
+    nzCentered
+    [nzTitle]="payoutTitle"
+    [nzFooter]="null"
+    (nzOnCancel)="closeWithdrawal()"
+    nzClassName="te-modal">
+
+    <ng-template #payoutTitle>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#4f6ef7,#7c9cff);display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0">
+          <lucide-icon [img]="WalletIcon" [size]="16"></lucide-icon>
+        </div>
+        <div>
+          <div style="font-family:'Sora',sans-serif;font-weight:700;font-size:15px;color:#1a2342;line-height:1.2">
+            {{ t('teacherEarnings.request_payout') }}
+          </div>
+          <div style="font-size:11px;color:#8a94b2;margin-top:2px">
+            {{ t('teacherEarnings.payout_subtitle') }}
+          </div>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-container *nzModalContent>
+      <nz-alert
+        class="te-modal-alert"
+        nzType="success"
+        nzShowIcon
+        [nzMessage]="balanceMsg">
+      </nz-alert>
+      <ng-template #balanceMsg>
+        <span class="te-modal-alert-balance">
+          {{ t('teacherEarnings.available_to_withdraw') }}:
+          <span class="te-amount-net">{{ fmtMoney(cv().available) }}</span>
+        </span>
+      </ng-template>
+
+      <form [formGroup]="payoutForm" class="te-form">
+
+        <!-- Amount -->
+        <nz-form-item>
+          <nz-form-label [nzRequired]="true">{{ t('teacherEarnings.payout_amount') }}</nz-form-label>
+          <nz-form-control>
+            <nz-input-number
+              formControlName="amount"
+              [nzMin]="cv().minimum"
+              [nzMax]="cv().available"
+              [nzStep]="10"
+              [nzFormatter]="formatAmount"
+              [nzParser]="parseAmount"
+              style="width:100%"
+              nzSize="large">
+            </nz-input-number>
+          </nz-form-control>
+        </nz-form-item>
+
+        <!-- Quick Fill -->
+        <div class="te-quick-fill">
+          @for (pct of [25, 50, 75, 100]; track pct) {
+            <button
+              type="button"
+              class="te-quick-fill-btn"
+              [disabled]="(cv().available * pct / 100) < cv().minimum"
+              (click)="setQuickFill(pct)">
+              {{ pct }}%
+            </button>
+          }
+        </div>
+
+        <!-- Wallet Method -->
+        <nz-form-item>
+          <nz-form-label [nzRequired]="true">{{ t('teacherEarnings.payment_method') }}</nz-form-label>
+          <nz-form-control>
+            <div class="te-wallet-cards">
+              @for (m of walletMethods; track m.value) {
+                <div
+                  class="te-wallet-card"
+                  [class.active]="selectedMethod() === m.value"
+                  (click)="selectMethod(m.value)">
+                  <div class="te-wallet-badge" [style.background]="m.color">{{ m.abbr }}</div>
+                  <div>
+                    <div class="te-wallet-card-name">{{ m.label }}</div>
+                    <div class="te-wallet-card-hint">{{ m.hint }}</div>
+                  </div>
+                  @if (selectedMethod() === m.value) {
+                    <div class="te-wallet-card-check">✓</div>
+                  }
+                </div>
+              }
+            </div>
+          </nz-form-control>
+        </nz-form-item>
+
+        <!-- Account Number -->
+        <nz-form-item>
+          <nz-form-label [nzRequired]="true">
+            {{ selectedMethodInfo().label }} — {{ t('teacherEarnings.account_number') }}
+          </nz-form-label>
+          <nz-form-control [nzExtra]="accountExtra">
+            <input
+              nz-input
+              formControlName="recipentNumber"
+              [placeholder]="selectedMethodInfo().placeholder"
+              nzSize="large" />
+          </nz-form-control>
+          <ng-template #accountExtra>
+            <span style="font-size:11px">
+              <lucide-icon [img]="InfoIcon" [size]="11"></lucide-icon>
+              {{ selectedMethodInfo().hint }}
+            </span>
+          </ng-template>
+        </nz-form-item>
+
+        <!-- Notes -->
+        <nz-form-item>
+          <nz-form-label>{{ t('teacherEarnings.notes_optional') }}</nz-form-label>
+          <nz-form-control>
+            <textarea
+              nz-input
+              formControlName="notes"
+              [placeholder]="t('teacherEarnings.additional_info')"
+              [nzAutosize]="{ minRows: 2, maxRows: 3 }">
+            </textarea>
+          </nz-form-control>
+        </nz-form-item>
+
+        <!-- Payout Summary -->
+        <div class="te-payout-summary">
+          <div class="te-payout-summary-title">{{ t('teacherEarnings.you_will_receive') }}</div>
+          <div class="te-payout-summary-amount">{{ fmtMoney(payoutForm.value.amount || 0) }}</div>
+          <div class="te-payout-summary-note">✓ {{ t('teacherEarnings.fee_already_deducted') }}</div>
+        </div>
+
+        <!-- Footer -->
+        <div class="te-modal-footer">
+          <button type="button" class="te-ghost-btn" (click)="closeWithdrawal()">
+            {{ t('teacherEarnings.cancel') }}
+          </button>
+          <button
+            type="button"
+            class="te-submit-btn"
+            [disabled]="payoutLoading()"
+            (click)="submitWithdrawal()">
+            @if (payoutLoading()) {
+              <nz-spin nzSize="small"></nz-spin>
+            } @else {
+              <lucide-icon [img]="SendIcon" [size]="14"></lucide-icon>
+            }
+            {{ t('teacherEarnings.submit_request') }}
+          </button>
+        </div>
+
+      </form>
+    </ng-container>
+  </nz-modal>
+
+  }<!-- /else not loading -->
+</ng-container>

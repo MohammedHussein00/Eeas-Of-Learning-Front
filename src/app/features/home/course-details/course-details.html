@@ -1,0 +1,783 @@
+<ng-container *transloco="let t; scope: 'courseDetails'">
+<div #pageRef class="course-details-page" [attr.dir]="isRTL ? 'rtl' : 'ltr'">
+
+  <!-- ═══════════════════════════ HERO ═══════════════════════════ -->
+  <section class="cd-hero">
+    <div class="cd-hero-bg-orb cd-orb-1"></div>
+    <div class="cd-hero-bg-orb cd-orb-2"></div>
+    <div class="cd-hero-bg-orb cd-orb-3"></div>
+    <div class="cd-hero-grid-overlay"></div>
+
+    <div class="cd-container">
+      <!-- LEFT COLUMN -->
+      <div class="cd-hero-content">
+        <div class="cd-top-bar">
+          <button class="cd-btn-back" (click)="goBack()">
+            <lucide-icon [img]="ArrowLeftIcon" [size]="16"></lucide-icon>
+            {{ t('backToCourses') }}
+          </button>
+        </div>
+
+        <!-- Loading Skeleton -->
+        @if (loading()) {
+          <div class="cd-skeleton-content">
+            <div class="cd-skel-line" style="width:140px; height:36px; border-radius:8px"></div>
+            <div class="cd-skel-line" style="width:110px; height:28px; border-radius:100px"></div>
+            <div class="cd-skel-line" style="width:100px; height:28px; border-radius:100px"></div>
+            <div class="cd-skel-line" style="width:70px; height:28px; border-radius:100px"></div>
+            <div class="cd-skel-line" style="width:70%; height:36px"></div>
+            <div class="cd-skel-line" style="width:50%; height:24px"></div>
+            <div class="cd-skel-line" style="width:100%; height:20px"></div>
+            <div class="cd-skel-line" style="width:95%; height:20px"></div>
+            <div class="cd-skel-line" style="width:60%; height:20px"></div>
+            <div style="display:flex; gap:20px">
+              <div class="cd-skel-line" style="width:100px; height:24px"></div>
+              <div class="cd-skel-line" style="width:90px; height:24px"></div>
+              <div class="cd-skel-line" style="width:70px; height:24px"></div>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px">
+              <div class="cd-skel-avatar"></div>
+              <div>
+                <div class="cd-skel-line" style="width:60px; height:14px; margin-bottom:4px"></div>
+                <div class="cd-skel-line" style="width:100px; height:20px"></div>
+              </div>
+            </div>
+            <div class="cd-skel-line" style="width:200px; height:20px"></div>
+            <div style="display:flex; gap:8px">
+              <div class="cd-skel-line" style="width:80px; height:28px; border-radius:8px"></div>
+              <div class="cd-skel-line" style="width:80px; height:28px; border-radius:8px"></div>
+              <div class="cd-skel-line" style="width:80px; height:28px; border-radius:8px"></div>
+            </div>
+          </div>
+        }
+
+        <!-- Content -->
+        @if (!loading() && !error() && course()) {
+          <ng-container>
+            <div class="cd-badges-row">
+              @if (course()?.subject) {
+                <span class="cd-badge-category">
+                  <lucide-icon [img]="BookOpenIcon" [size]="14"></lucide-icon>
+                  {{ isRTL && course()?.subject?.nameInAr ? course()?.subject?.nameInAr : course()?.subject?.name }}
+                </span>
+              }
+              @if (course()?.instructorId) {
+                <span
+                  class="cd-badge-instructor"
+                  [class.platform]="platform()"
+                  (click)="navigateToInstructor()">
+                  <lucide-icon [img]="platform() ? Building2Icon : GraduationCapIcon" [size]="14"></lucide-icon>
+                  {{ displayName() }}
+                  @if (platform()) {
+                    <lucide-icon [img]="BadgeCheckIcon" [size]="12"></lucide-icon>
+                  }
+                </span>
+              }
+              @if (course()?.isNew) {
+                <span class="cd-badge-new">
+                  <lucide-icon [img]="SparklesIcon" [size]="12"></lucide-icon>
+                  {{ t('new') }}
+                </span>
+              }
+              @if (platform()) {
+                <span class="cd-badge-official">
+                  <lucide-icon [img]="Building2Icon" [size]="12"></lucide-icon>
+                  {{ t('official') }}
+                </span>
+              }
+            </div>
+
+            <h1 class="cd-hero-title">{{ course()?.title }}</h1>
+            @if (course()?.subtitle) {
+              <p class="cd-hero-subtitle">{{ course()?.subtitle }}</p>
+            }
+            <p class="cd-hero-desc">
+              @if (showFullDescription()) {
+                {{ course()?.description }}
+              } @else {
+                {{ (course()?.description || '').substring(0, 250) }}
+                @if ((course()?.description || '').length > 250) {
+                  ...
+                }
+              }
+            </p>
+
+            <div class="cd-quick-stats">
+              <div class="cd-stat">
+                <lucide-icon [img]="StarIcon" [size]="16" style="color:#f59e0b; fill:#f59e0b"></lucide-icon>
+                <strong>{{ (course()?.rating || 0) > 0 ? (course()?.rating || 0).toFixed(1) : '—' }}</strong>
+                @if ((course()?.ratingCount || 0) > 0) {
+                  <span>({{ course()?.ratingCount }})</span>
+                }
+              </div>
+              <div class="cd-stat">
+                <lucide-icon [img]="UsersIcon" [size]="16"></lucide-icon>
+                <strong>{{ (course()?.studentCount || 0).toLocaleString() }}</strong>
+                <span>{{ t('students') }}</span>
+              </div>
+              <div class="cd-stat">
+                <lucide-icon [img]="ClockIcon" [size]="16"></lucide-icon>
+                <strong>{{ course()?.totalHours }}h</strong>
+              </div>
+              @if ((course()?.shareCount || 0) > 0) {
+                <div class="cd-stat">
+                  <lucide-icon [img]="Share2Icon" [size]="14"></lucide-icon>
+                  <span>{{ course()?.shareCount }} {{ t('shares') }}</span>
+                </div>
+              }
+            </div>
+
+            <div class="cd-instructor-row">
+              <div
+                class="cd-instructor-avatar"
+                [class.platform]="platform()"
+                (click)="navigateToInstructor()">
+                @if (platform()) {
+                  <lucide-icon [img]="Building2Icon" [size]="20"></lucide-icon>
+                } @else {
+                  {{ getInitials(displayName()) }}
+                }
+              </div>
+              <div class="cd-instructor-info">
+                <span class="cd-instructor-label">
+                  {{ platform() ? t('platform') : t('createdBy') }}
+                </span>
+                <span class="cd-instructor-name-link" (click)="navigateToInstructor()">
+                  @if (platform()) {
+                    <lucide-icon [img]="BadgeCheckIcon" [size]="14"></lucide-icon>
+                  }
+                  {{ displayName() }}
+                </span>
+              </div>
+            </div>
+
+            <div class="cd-meta-row">
+              <span class="cd-date">
+                <lucide-icon [img]="CalendarIcon" [size]="14"></lucide-icon>
+                {{ t('lastUpdated') }}:
+                {{ formatDate(course()?.lastUpdatedAt || course()?.publishedAt || course()?.createdAt) }}
+              </span>
+            </div>
+
+            <div class="cd-tags-row">
+              <span class="cd-tag">
+                <lucide-icon [img]="GlobeIcon" [size]="14"></lucide-icon>
+                {{ course()?.language === 'ar' ? 'العربية' : 'English' }}
+              </span>
+              <span class="cd-tag">
+                <lucide-icon [img]="BarChart3Icon" [size]="14"></lucide-icon>
+                {{ course()?.level }}
+              </span>
+              @if (course()?.subject?.gradeLevel) {
+                <span class="cd-tag">
+                  <lucide-icon [img]="GraduationCapIcon" [size]="14"></lucide-icon>
+                  {{ isRTL && course()?.subject?.gradeLevelInAr ? course()?.subject?.gradeLevelInAr : course()?.subject?.gradeLevel }}
+                </span>
+              }
+            </div>
+          </ng-container>
+        }
+
+        <!-- Error State -->
+        @if (error()) {
+          <div class="cd-error-inline">
+            <div class="cd-error-icon-small">
+              <lucide-icon [img]="AlertCircleIcon" [size]="32"></lucide-icon>
+            </div>
+            <h2>{{ error() }}</h2>
+            <p>{{ t('courseNotFoundDesc') }}</p>
+            <button class="cd-btn-primary" (click)="goBack()">
+              <lucide-icon [img]="ArrowLeftIcon" [size]="16"></lucide-icon>
+              {{ t('backToCourses') }}
+            </button>
+          </div>
+        }
+      </div>
+
+      <!-- RIGHT COLUMN - PRICE SIDEBAR -->
+      <div class="cd-price-sidebar">
+        @if (loading()) {
+          <div class="cd-preview-image">
+            <div class="cd-skel-img"></div>
+          </div>
+          <div class="cd-price-card">
+            <div class="cd-skel-line" style="width:100px; height:32px; margin-bottom:16px"></div>
+            <div class="cd-skel-line" style="width:100%; height:48px; border-radius:12px; margin-bottom:12px"></div>
+            <div style="border-top:1px solid rgba(0,0,0,0.06); padding-top:16px">
+              <div class="cd-skel-line" style="width:80px; height:16px; margin-bottom:12px"></div>
+              @for (i of [1,2,3,4,5]; track i) {
+                <div class="cd-skel-line" style="width:90%; height:16px; margin-bottom:8px"></div>
+              }
+            </div>
+            <div style="display:flex; gap:8px; border-top:1px solid rgba(0,0,0,0.06); padding-top:16px; margin-top:8px">
+              <div class="cd-skel-line" style="width:40px; height:40px; border-radius:10px"></div>
+              <div class="cd-skel-line" style="width:40px; height:40px; border-radius:10px"></div>
+              <div class="cd-skel-line" style="width:40px; height:40px; border-radius:10px"></div>
+            </div>
+          </div>
+        }
+
+        @if (!loading() && !error() && course()) {
+          <ng-container>
+            <div class="cd-preview-image">
+              @if (showVideoPreview() && videoUrl()) {
+                <video
+                  #videoRef
+                  [src]="videoUrl()"
+                  class="cd-preview-video"
+                  controls
+                  (ended)="showVideoPreview.set(false)">
+                </video>
+              } @else {
+                <img [src]="imageUrl()" [alt]="course()?.title || 'Course image'">
+              }
+              @if (!showVideoPreview()) {
+                <div class="cd-preview-overlay" (click)="toggleVideo()">
+                  @if (hasVideo()) {
+                    <lucide-icon [img]="PlayIcon" [size]="48" style="color:#fff; fill:#fff"></lucide-icon>
+                    <span>{{ t('previewThisCourse') }}</span>
+                  } @else {
+                    <lucide-icon [img]="EyeIcon" [size]="48" style="color:#fff"></lucide-icon>
+                    <span>{{ t('courseImage') }}</span>
+                  }
+                </div>
+              }
+              @if (showVideoPreview()) {
+                <button class="cd-close-video" (click)="toggleVideo()">
+                  <lucide-icon [img]="XIcon" [size]="20"></lucide-icon>
+                </button>
+              }
+            </div>
+
+            <div class="cd-price-card">
+              <!-- Price -->
+              @if (course()?.isFree) {
+                <div class="cd-price-amount free">
+                  <span class="cd-price-value">{{ t('free') }}</span>
+                </div>
+              } @else {
+                <div class="cd-price-amount">
+                  @if (course()?.hasDiscount) {
+                    <span class="cd-price-original">${{ (course()?.price || 0).toFixed(2) }}</span>
+                  }
+                  <span class="cd-price-value">${{ course()?.currentPrice || (course()?.price || 0).toFixed(2) }}</span>
+                  @if (course()?.hasDiscount && (course()?.discountPercentage || 0) > 0) {
+                    <span class="cd-price-discount">-{{ course()?.discountPercentage }}%</span>
+                  }
+                </div>
+              }
+
+              <!-- Enroll Button -->
+              <button
+                class="cd-btn-enroll"
+                [disabled]="!course()?.isPublished"
+                (click)="handleEnroll()">
+                @if (course()?.isEnrolled) {
+                  {{ t('goToCourse') }}
+                } @else if (!course()?.isPublished) {
+                  {{ t('comingSoon') }}
+                } @else if (course()?.isFree) {
+                  {{ t('enrollForFree') }}
+                } @else {
+                  {{ t('enrollNow') }}
+                }
+              </button>
+
+              <!-- Course Includes -->
+              <div class="cd-includes">
+                <h4>{{ t('thisCourseIncludes') }}</h4>
+                <ul>
+                  <li>
+                    <lucide-icon [img]="VideoIcon" [size]="14"></lucide-icon>
+                    {{ course()?.totalHours }}h {{ t('onDemandVideo') }}
+                  </li>
+                  <li>
+                    <lucide-icon [img]="BookOpenIcon" [size]="14"></lucide-icon>
+                    {{ course()?.totalLectures }} {{ t('lectures') }}
+                  </li>
+                  <li>
+                    <lucide-icon [img]="DownloadIcon" [size]="14"></lucide-icon>
+                    {{ getTotalPreviewLectures() }} {{ t('downloadableResources') }}
+                  </li>
+                  <li>
+                    <lucide-icon [img]="GlobeIcon" [size]="14"></lucide-icon>
+                    {{ course()?.language === 'ar' ? 'العربية' : 'English' }}
+                  </li>
+                  <li>
+                    <lucide-icon [img]="AwardIcon" [size]="14"></lucide-icon>
+                    {{ t('certificateOfCompletion') }}
+                  </li>
+                  <li>
+                    <lucide-icon [img]="MonitorIcon" [size]="14"></lucide-icon>
+                    {{ t('fullLifetimeAccess') }}
+                  </li>
+                  <li>
+                    <lucide-icon [img]="SmartphoneIcon" [size]="14"></lucide-icon>
+                    {{ t('accessOnMobileAndTV') }}
+                  </li>
+                  @if (platform()) {
+                    <li>
+                      <lucide-icon [img]="Building2Icon" [size]="14"></lucide-icon>
+                      {{ t('officialEOLContent') }}
+                    </li>
+                  }
+                </ul>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="cd-actions">
+                <button
+                  class="cd-action-btn"
+                  [class.active]="isWishlisted()"
+                  (click)="toggleWishlist()"
+                  [disabled]="actionLoading().wishlist"
+                  [title]="isWishlisted() ? t('removeFromWishlist') : t('addToWishlist')">
+                  <lucide-icon
+                    [img]="HeartIcon"
+                    [size]="18"
+                    [style.fill]="isWishlisted() ? 'currentColor' : 'none'"
+                    [class.cd-spin]="actionLoading().wishlist">
+                  </lucide-icon>
+                </button>
+
+                <button
+                  class="cd-action-btn"
+                  [class.active]="isBookmarked()"
+                  (click)="toggleBookmark()"
+                  [disabled]="actionLoading().bookmark"
+                  [title]="isBookmarked() ? t('removeBookmark') : t('saveCourse')">
+                  <lucide-icon
+                    [img]="BookmarkIcon"
+                    [size]="18"
+                    [style.fill]="isBookmarked() ? 'currentColor' : 'none'">
+                  </lucide-icon>
+                </button>
+
+                <button
+                  class="cd-action-btn"
+                  (click)="showShareModal.set(true)"
+                  [title]="t('shareCourse')">
+                  <lucide-icon [img]="Share2Icon" [size]="18"></lucide-icon>
+                </button>
+              </div>
+
+              <!-- Social Proof -->
+              <div class="cd-social-proof">
+                <div class="cd-social-stat">
+                  <lucide-icon [img]="HeartIcon" [size]="12"></lucide-icon>
+                  <span>{{ course()?.wishlistCount || 0 }} {{ t('saved') }}</span>
+                </div>
+                <div class="cd-social-stat">
+                  <lucide-icon [img]="Share2Icon" [size]="12"></lucide-icon>
+                  <span>{{ course()?.shareCount || 0 }} {{ t('shares') }}</span>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════ CONTENT ═══════════════════════════ -->
+  <section class="cd-content">
+    <div class="cd-container">
+      <div class="cd-content-grid">
+        <div class="cd-content-main">
+
+          @if (!loading() && !error() && course()) {
+
+            <!-- What You'll Learn -->
+            @if (getLearnItems().length > 0) {
+              <div class="cd-content-section">
+                <h2 class="cd-section-title">
+                  <lucide-icon [img]="CheckCircleIcon" [size]="20" style="color:#059669"></lucide-icon>
+                  {{ t('whatYouWillLearn') }}
+                </h2>
+                <div class="cd-learn-grid">
+                  @for (item of getLearnItems(); track $index) {
+                    <div class="cd-learn-item">
+                      <lucide-icon [img]="CheckCircleIcon" [size]="16" style="color:#059669"></lucide-icon>
+                      <span>{{ item.trim() }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Course Content -->
+            @if ((course()?.sectionsPreview || []).length > 0) {
+              <div class="cd-content-section">
+                <h2 class="cd-section-title">
+                  <lucide-icon [img]="BookOpenIcon" [size]="20" style="color:#4f46e5"></lucide-icon>
+                  {{ t('courseContent') }}
+                </h2>
+                <div class="cd-sections-info">
+                  <span>{{ (course()?.sectionsPreview || []).length }} {{ t('sections') }}</span>
+                  <span class="cd-dot">•</span>
+                  <span>{{ course()?.totalLectures }} {{ t('lectures') }}</span>
+                  <span class="cd-dot">•</span>
+                  <span>{{ course()?.totalHours }}h {{ t('total') }}</span>
+                </div>
+                <div class="cd-sections-list">
+                  @for (section of course()?.sectionsPreview || []; track section.id) {
+                    <div class="cd-section-item">
+                      <button class="cd-section-header" (click)="toggleSection(section.id)">
+                        <div class="cd-section-left">
+                          @if (expandedSections().has(section.id)) {
+                            <lucide-icon [img]="ChevronDownIcon" [size]="16"></lucide-icon>
+                          } @else {
+                            <lucide-icon [img]="ChevronRightIcon" [size]="16"></lucide-icon>
+                          }
+                          <div>
+                            <h3>{{ section.title }}</h3>
+                            <span class="cd-section-meta">
+                              {{ section.totalLectures }} {{ t('lectures') }} •
+                              {{ formatDuration(section.totalDuration) }}
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                      @if (expandedSections().has(section.id)) {
+                        <div class="cd-lectures-list">
+                          @if ((section.previewLectures || []).length > 0) {
+                            @for (lecture of section.previewLectures || []; track lecture.id) {
+                              <div class="cd-lecture-item">
+                                <div class="cd-lecture-left">
+                                  @if (lecture.isPreview) {
+                                    <lucide-icon [img]="PlayIcon" [size]="14" style="color:#4f46e5"></lucide-icon>
+                                  } @else {
+                                    <lucide-icon [img]="MonitorIcon" [size]="14" style="color:#94a3b8"></lucide-icon>
+                                  }
+                                  <span>{{ lecture.title }}</span>
+                                </div>
+                                <div class="cd-lecture-right">
+                                  @if (lecture.isPreview) {
+                                    <span class="cd-preview-tag">{{ t('preview') }}</span>
+                                  }
+                                  <span>{{ formatDuration(lecture.durationMinutes) }}</span>
+                                </div>
+                              </div>
+                            }
+                          } @else {
+                            <div class="cd-lecture-item">
+                              <span style="color:#94a3b8; font-style:italic">{{ t('noPreviewAvailable') }}</span>
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Requirements -->
+            @if (getRequirementItems().length > 0) {
+              <div class="cd-content-section">
+                <h2 class="cd-section-title">
+                  <lucide-icon [img]="AlertCircleIcon" [size]="20" style="color:#f59e0b"></lucide-icon>
+                  {{ t('requirements') }}
+                </h2>
+                <ul class="cd-requirements">
+                  @for (req of getRequirementItems(); track $index) {
+                    <li>
+                      <lucide-icon [img]="CheckCircleIcon" [size]="14" style="color:#059669"></lucide-icon>
+                      <span>{{ req.trim() }}</span>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+
+            <!-- Description -->
+            <div class="cd-content-section">
+              <h2 class="cd-section-title">
+                <lucide-icon [img]="BookOpenIcon" [size]="20" style="color:#64748b"></lucide-icon>
+                {{ t('description') }}
+              </h2>
+              <div class="cd-desc-text" [class.collapsed]="!showFullDescription()">
+                <p>{{ course()?.description }}</p>
+                @if (course()?.longDescription && showFullDescription()) {
+                  <div [innerHTML]="course()?.longDescription || ''"></div>
+                }
+              </div>
+              @if (((course()?.description || '').length > 250 || course()?.longDescription)) {
+                <button class="cd-show-more" (click)="showFullDescription.set(!showFullDescription())">
+                  {{ showFullDescription() ? t('showLess') : t('showMore') }}
+                  <lucide-icon
+                    [img]="ChevronDownIcon"
+                    [size]="14"
+                    [class.rotated]="showFullDescription()">
+                  </lucide-icon>
+                </button>
+              }
+            </div>
+
+            <!-- Instructor -->
+            <div class="cd-content-section">
+              <h2 class="cd-section-title">
+                @if (platform()) {
+                  <lucide-icon [img]="Building2Icon" [size]="20" style="color:#6366f1"></lucide-icon>
+                  {{ t('eolPlatform') }}
+                } @else {
+                  <lucide-icon [img]="GraduationCapIcon" [size]="20" style="color:#4f46e5"></lucide-icon>
+                  {{ t('yourInstructor') }}
+                }
+              </h2>
+              <div class="cd-instructor-card" [class.platform]="platform()" (click)="navigateToInstructor()">
+                <div class="cd-instructor-card-avatar" [class.platform]="platform()">
+                  @if (platform()) {
+                    <lucide-icon [img]="Building2Icon" [size]="32"></lucide-icon>
+                  } @else {
+                    {{ getInitials(displayName()) }}
+                  }
+                </div>
+                <div class="cd-instructor-card-info">
+                  <h3>
+                    @if (platform()) {
+                      <lucide-icon [img]="BadgeCheckIcon" [size]="16"></lucide-icon>
+                    }
+                    {{ displayName() }}
+                  </h3>
+                  @if (instructorBio()) {
+                    <p class="cd-instructor-bio">{{ instructorBio() }}</p>
+                  } @else {
+                    <p class="cd-instructor-bio" style="color:#94a3b8; font-style:italic">
+                      {{ t('noBioAvailable') }}
+                    </p>
+                  }
+                  <span class="cd-view-profile">
+                    {{ platform() ? t('viewPlatformPage') : t('viewInstructorProfile') }}
+                    <lucide-icon [img]="ArrowRightIcon" [size]="14"></lucide-icon>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Reviews -->
+            <div class="cd-content-section">
+              <h2 class="cd-section-title">
+                <lucide-icon [img]="MessageSquareIcon" [size]="20" style="color:#f59e0b"></lucide-icon>
+                {{ t('studentReviews') }}
+                @if ((course()?.reviews || []).length > 0) {
+                  <span class="cd-review-badge">
+                    <lucide-icon [img]="StarIcon" [size]="14" style="color:#f59e0b; fill:#f59e0b"></lucide-icon>
+                    @if ((course()?.rating || 0) > 0) {
+                      {{ (course()?.rating || 0).toFixed(1) }} ({{ course()?.ratingCount }})
+                    } @else {
+                      0 (0)
+                    }
+                  </span>
+                }
+              </h2>
+              @if ((course()?.reviews || []).length > 0) {
+                <div class="cd-reviews-list">
+                  @for (review of course()?.reviews || []; track review.id) {
+                    <div class="cd-review-card">
+                      <div class="cd-review-head">
+                        <img
+                          [src]="review.userAvatar ? config.baseUrl + review.userAvatar : 'https://ui-avatars.com/api/?name=' + review.userName + '&background=6366f1&color=fff&size=40'"
+                          [alt]="review.userName"
+                          class="cd-review-avatar"
+                          (error)="$event.target.src = 'https://ui-avatars.com/api/?name=' + review.userName + '&background=6366f1&color=fff&size=40'">
+                        <div>
+                          <h4>{{ review.userName }}</h4>
+                          <div class="cd-review-stars">
+                            @for (star of renderStars(review.rating, 12); track $index) {
+                              <lucide-icon
+                                [img]="StarIcon"
+                                [size]="12"
+                                [style.color]="star.filled ? '#f59e0b' : '#d1d5db'"
+                                [style.fill]="star.filled ? '#f59e0b' : 'none'">
+                              </lucide-icon>
+                            }
+                          </div>
+                        </div>
+                        <span class="cd-review-time">{{ review.createdFrom }}</span>
+                      </div>
+                      <p class="cd-review-comment">{{ review.comment }}</p>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="cd-no-reviews">
+                  <lucide-icon [img]="MessageSquareIcon" [size]="40"></lucide-icon>
+                  <p>{{ t('noReviewsYet') }}</p>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════ MOBILE BAR ═══════════════════════════ -->
+  @if (!loading() && !error() && course()) {
+    <div class="cd-mobile-bar">
+      <div class="cd-mobile-content">
+        <div class="cd-mobile-price-row">
+          @if (course()?.isFree) {
+            <span class="cd-mobile-price free">{{ t('free') }}</span>
+          } @else {
+            <div class="cd-mobile-price-info">
+              <span class="cd-price-value">${{ course()?.currentPrice || (course()?.price || 0).toFixed(2) }}</span>
+              @if (course()?.hasDiscount) {
+                <span class="cd-price-original">${{ (course()?.price || 0).toFixed(2) }}</span>
+              }
+              @if (course()?.hasDiscount && (course()?.discountPercentage || 0) > 0) {
+                <span class="cd-price-discount">-{{ course()?.discountPercentage }}%</span>
+              }
+            </div>
+          }
+        </div>
+        <div class="cd-mobile-actions">
+          <button
+            class="cd-btn-enroll-mobile"
+            [disabled]="!course()?.isPublished"
+            (click)="handleEnroll()">
+            @if (course()?.isEnrolled) {
+              {{ t('goToCourse') }}
+            } @else if (!course()?.isPublished) {
+              {{ t('comingSoon') }}
+            } @else if (course()?.isFree) {
+              {{ t('enrollFree') }}
+            } @else {
+              {{ t('enrollNow') }}
+            }
+          </button>
+          <div class="cd-mobile-icon-actions">
+            <button
+              class="cd-mobile-icon-btn"
+              [class.active]="isWishlisted()"
+              (click)="toggleWishlist()">
+              <lucide-icon [img]="HeartIcon" [size]="18" [style.fill]="isWishlisted() ? 'currentColor' : 'none'"></lucide-icon>
+            </button>
+            <button
+              class="cd-mobile-icon-btn"
+              [class.active]="isBookmarked()"
+              (click)="toggleBookmark()">
+              <lucide-icon [img]="BookmarkIcon" [size]="18" [style.fill]="isBookmarked() ? 'currentColor' : 'none'"></lucide-icon>
+            </button>
+            <button
+              class="cd-mobile-icon-btn"
+              (click)="showShareModal.set(true)">
+              <lucide-icon [img]="Share2Icon" [size]="18"></lucide-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ═══════════════════════════ MODALS ═══════════════════════════ -->
+
+  <!-- Share Modal -->
+  @if (showShareModal()) {
+    <div class="cd-modal-overlay" (click)="closeShareModal()">
+      <div class="cd-modal-content cd-share-modal" (click)="$event.stopPropagation()">
+        <div class="cd-modal-header">
+          <div class="cd-modal-title">
+            <lucide-icon [img]="Share2Icon" [size]="20"></lucide-icon>
+            <span>{{ t('shareThisCourse') }}</span>
+          </div>
+          <button class="cd-modal-close" (click)="closeShareModal()">
+            <lucide-icon [img]="XIcon" [size]="20"></lucide-icon>
+          </button>
+        </div>
+        <div class="cd-modal-body">
+          <div class="cd-share-options">
+            @for (option of shareOptions; track option.key) {
+              <button
+                class="cd-share-option"
+                [class.copied]="option.key === 'copy_link' && shareLinkCopied()"
+                (click)="shareCourse(option.key)"
+                [style.--share-color]="option.color">
+                <div class="cd-share-icon">
+                  <lucide-icon [img]="option.icon" [size]="20"></lucide-icon>
+                </div>
+                <span class="cd-share-label">
+                  @if (option.key === 'copy_link' && shareLinkCopied()) {
+                    {{ t('copied') }}
+                  } @else {
+                    {{ isRTL ? option.arLabel : option.label }}
+                  }
+                </span>
+                @if (option.key === 'copy_link' && shareLinkCopied()) {
+                  <lucide-icon [img]="CheckIcon" [size]="16" class="cd-share-check"></lucide-icon>
+                }
+              </button>
+            }
+          </div>
+          <div class="cd-share-url">
+            <div class="cd-share-url-input">
+              <input
+                type="text"
+                class="cd-share-input"
+                [value]="getCourseUrl()"
+                readonly>
+              <button class="cd-copy-btn" (click)="shareCourse('copy_link')">
+                <lucide-icon [img]="CopyIcon" [size]="14"></lucide-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Bookmark Modal -->
+  @if (showBookmarkModal()) {
+    <div class="cd-modal-overlay" (click)="closeBookmarkModal()">
+      <div class="cd-modal-content cd-bookmark-modal" (click)="$event.stopPropagation()">
+        <div class="cd-modal-header">
+          <div class="cd-modal-title">
+            <lucide-icon [img]="BookmarkIcon" [size]="20"></lucide-icon>
+            <span>{{ t('saveToCollection') }}</span>
+          </div>
+          <button class="cd-modal-close" (click)="closeBookmarkModal()">
+            <lucide-icon [img]="XIcon" [size]="20"></lucide-icon>
+          </button>
+        </div>
+        <div class="cd-modal-body">
+          <div class="cd-bookmark-content">
+            <div class="cd-bookmark-course-info">
+              <img [src]="imageUrl()" [alt]="course()?.title || ''" class="cd-bookmark-thumb">
+              <div class="cd-bookmark-details">
+                <h4>{{ course()?.title }}</h4>
+                <p>{{ course()?.subtitle }}</p>
+              </div>
+            </div>
+            <div class="cd-bookmark-input">
+              <label class="cd-input-label">
+                <lucide-icon [img]="FolderOpenIcon" [size]="16"></lucide-icon>
+                {{ t('collectionName') }}
+              </label>
+              <input
+                type="text"
+                class="cd-input-field"
+                [placeholder]="t('collectionPlaceholder')"
+                [value]="bookmarkCollectionName()"
+                (input)="bookmarkCollectionName.set($event.target.value)"
+                maxlength="100">
+              <p class="cd-input-hint">
+                {{ t('collectionHint') }}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="cd-modal-footer">
+          <button class="cd-btn-cancel" (click)="closeBookmarkModal()">
+            {{ t('cancel') }}
+          </button>
+          <button class="cd-btn-save" (click)="addBookmark()" [disabled]="actionLoading().bookmark">
+            <lucide-icon [img]="BookmarkIcon" [size]="16"></lucide-icon>
+            {{ actionLoading().bookmark ? t('saving') : t('save') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+</ng-container>

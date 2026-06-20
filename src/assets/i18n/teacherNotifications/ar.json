@@ -1,0 +1,46 @@
+{
+    "notifications": "الإشعارات",
+    "manage_notifications": "إدارة الإشعارات والبقاء على اطلاع",
+    "back_to_dashboard": "لوحة التحكم",
+    
+    "total_notifications": "الإجمالي",
+    "unread": "غير مقروء",
+    "read": "مقروء",
+    "all": "الكل",
+    
+    "mark_all_read": "تعيين الكل كمقروء",
+    "mark_as_read": "تعيين كمقروء",
+    "delete": "حذف",
+    "delete_all_read": "حذف كل المقروء",
+    "close": "إغلاق",
+    "cancel": "إلغاء",
+    "refresh": "تحديث",
+    "navigate": "انتقال",
+    
+    "view_details": "عرض التفاصيل",
+    "view_all_notifications": "عرض جميع الإشعارات",
+    
+    "loading_notifications": "جاري تحميل الإشعارات...",
+    "no_notifications": "لا توجد إشعارات بعد",
+    "no_unread_notifications": "لا توجد إشعارات غير مقروءة",
+    "no_read_notifications": "لا توجد إشعارات مقروءة",
+    
+    "marked_as_read": "تم التعيين كمقروء",
+    "all_marked_read": "تم تعيين جميع الإشعارات كمقروءة",
+    "notification_deleted": "تم حذف الإشعار",
+    "read_notifications_deleted": "تم حذف جميع الإشعارات المقروءة",
+    
+    "failed_to_load_notifications": "فشل تحميل الإشعارات",
+    "failed_to_mark_read": "فشل التعيين كمقروء",
+    "failed_to_mark_all_read": "فشل تعيين الكل كمقروء",
+    "failed_to_delete": "فشل حذف الإشعار",
+    "failed_to_delete_read": "فشل حذف الإشعارات المقروءة",
+    
+    "delete_notification_title": "حذف الإشعار",
+    "delete_notification_confirm": "هل أنت متأكد من حذف هذا الإشعار؟ لا يمكن التراجع عن هذا الإجراء.",
+    
+    "just_now": "الآن",
+    "minutes_ago": "دقيقة",
+    "hours_ago": "ساعة",
+    "days_ago": "يوم"
+}

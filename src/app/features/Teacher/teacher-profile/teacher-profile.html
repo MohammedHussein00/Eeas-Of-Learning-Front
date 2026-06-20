@@ -1,0 +1,941 @@
+<ng-container *transloco="let t; scope: 'teacherProfile'">
+
+  <!-- ── Hidden file input — images only ── -->
+  <input
+    #photoInput
+    type="file"
+    accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+    style="display:none"
+    (change)="onPhotoFileChange($event)">
+
+  <!-- ── Loading ── -->
+  @if (loading()) {
+    <div class="tpe-loading-screen">
+      <nz-spin nzSize="large"></nz-spin>
+      <p class="tpe-loading-text">{{ t('teacherProfile.loadingProfile') }}</p>
+    </div>
+  }
+
+  <!-- ── Page Error ── -->
+  @else if (pageError()) {
+    <div class="tpe-error-screen">
+      <div class="tpe-error-inner">
+        <div class="tpe-error-icon-wrap">
+          <lucide-icon [img]="AlertCircleIcon" [size]="38" class="tpe-error-icon"></lucide-icon>
+        </div>
+        <h2 class="tpe-error-title">{{ pageError()!.message }}</h2>
+        @if (pageError()!.detail) {
+          <p class="tpe-error-detail">{{ pageError()!.detail }}</p>
+        }
+        <div class="tpe-error-actions">
+          <button class="tpe-btn-primary" (click)="retryLoad()">
+            <lucide-icon [img]="RefreshCwIcon" [size]="14"></lucide-icon>
+            {{ t('teacherProfile.retry') }}
+          </button>
+          <button class="tpe-btn-ghost" (click)="goBack()">{{ t('teacherProfile.back') }}</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Main ── -->
+  @else {
+    <div class="tpe-root">
+
+      <!-- ══ Verification Modal ══ -->
+      <nz-modal
+        [nzVisible]="showVerifModal()"
+        (nzOnCancel)="closeVerifModal()"
+        [nzFooter]="null"
+        [nzWidth]="480"
+        nzCentered>
+        <ng-container *nzModalContent>
+          <div class="tpe-modal-body">
+            <div class="tpe-modal-icon-wrap">
+              <lucide-icon [img]="ClipboardCheckIcon" [size]="28" class="tpe-modal-icon"></lucide-icon>
+            </div>
+            <h3 class="tpe-modal-title">{{ t('teacherProfile.modalTitle') }}</h3>
+            <p class="tpe-modal-desc">{{ t('teacherProfile.modalDesc') }}</p>
+            <div class="tpe-modal-terms">
+              @for (i of [1,2,3,4,5]; track i) {
+                <div class="tpe-modal-term">
+                  <lucide-icon [img]="CheckCircleIcon" [size]="14" class="tpe-term-check"></lucide-icon>
+                  <span>{{ t('teacherProfile.term' + i) }}</span>
+                </div>
+              }
+            </div>
+            <div class="tpe-modal-warning">
+              <p class="tpe-modal-warning-title">⚠ {{ t('teacherProfile.importantNotice') }}</p>
+              <p class="tpe-modal-warning-desc">{{ t('teacherProfile.importantNoticeDesc') }}</p>
+            </div>
+            <div class="tpe-modal-footer">
+              <button class="tpe-btn-ghost tpe-btn-flex" (click)="closeVerifModal()">
+                {{ t('teacherProfile.cancel') }}
+              </button>
+              <button class="tpe-btn-primary tpe-btn-flex" [disabled]="submittingVerif()" (click)="submitVerification()">
+                <lucide-icon [img]="ClipboardCheckIcon" [size]="14"></lucide-icon>
+                {{ submittingVerif() ? '…' : t('teacherProfile.submitForReview') }}
+              </button>
+            </div>
+          </div>
+        </ng-container>
+      </nz-modal>
+
+      <!-- ══ Photo Zoom Modal ══ -->
+      <nz-modal
+        [nzVisible]="photoZoom()"
+        (nzOnCancel)="closePhotoZoom()"
+        [nzFooter]="null"
+        [nzWidth]="520"
+        [nzTitle]="t('teacherProfile.photoPreview')"
+        nzCentered>
+        <ng-container *nzModalContent>
+          @if (displayImage()) {
+            <img [src]="displayImage()!" alt="Profile" class="tpe-zoom-img">
+          }
+        </ng-container>
+      </nz-modal>
+
+      <!-- ══ Doc Zoom Modal ══ -->
+      <nz-modal
+        [nzVisible]="!!docZoomUrl()"
+        (nzOnCancel)="closeDocZoom()"
+        [nzFooter]="null"
+        [nzWidth]="600"
+        [nzTitle]="t('teacherProfile.docPreview')"
+        nzCentered>
+        <ng-container *nzModalContent>
+          @if (docZoomUrl()) {
+            <img [src]="docZoomUrl()!" alt="Document" class="tpe-zoom-img">
+          }
+        </ng-container>
+      </nz-modal>
+
+      <div class="tpe-page">
+        <div class="tpe-wrap">
+
+          <!-- ── Page Header ── -->
+          <div class="tpe-header">
+            <div class="tpe-header-left">
+              <button class="tpe-back-btn" (click)="goBack()">
+                <lucide-icon [img]="backArrowIcon" [size]="14"></lucide-icon>
+                <span>{{ t('teacherProfile.back') }}</span>
+              </button>
+              <div>
+                <h1 class="tpe-header-title">
+                  {{ hasProfile() ? t('teacherProfile.editTitle') : t('teacherProfile.createTitle') }}
+                </h1>
+                <p class="tpe-header-sub">
+                  {{ hasProfile() ? t('teacherProfile.editSubtitle') : t('teacherProfile.createSubtitle') }}
+                </p>
+              </div>
+            </div>
+            @if (hasProfile() && profileData()) {
+              <div class="tpe-header-badges">
+                @if (profileData()!.isVerified) {
+                  <span class="tpe-pill tpe-pill-success">
+                    <lucide-icon [img]="StarIcon" [size]="11"></lucide-icon>
+                    {{ t('teacherProfile.verified') }}
+                  </span>
+                }
+                @if (profileData()!.verificationStatus === 0 || profileData()!.verificationStatus === 1) {
+                  <span class="tpe-pill tpe-pill-info">
+                    <lucide-icon [img]="ClockIcon" [size]="11"></lucide-icon>
+                    {{ t('teacherProfile.pendingReview') }}
+                  </span>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- ── Create Profile Banner ── -->
+          @if (!hasProfile()) {
+            <div class="tpe-create-card">
+              <div class="tpe-create-card-inner">
+                <div class="tpe-create-card-left">
+                  <div class="tpe-create-card-emoji-wrap">🎓</div>
+                  <div class="tpe-create-card-text">
+                    <h3 class="tpe-create-card-title">{{ t('teacherProfile.createProfileTitle') }}</h3>
+                    <p class="tpe-create-card-desc">{{ t('teacherProfile.createProfileDesc') }}</p>
+                  </div>
+                </div>
+                <button class="tpe-btn-primary tpe-create-btn" [disabled]="creatingProfile()" (click)="handleCreateProfile()">
+                  @if (creatingProfile()) { <nz-spin nzSize="small"></nz-spin> }
+                  @else { <lucide-icon [img]="RocketIcon" [size]="15"></lucide-icon> }
+                  {{ creatingProfile() ? t('teacherProfile.creating') : t('teacherProfile.createProfileBtn') }}
+                </button>
+              </div>
+            </div>
+          }
+
+          <!-- ── Status Banners ── -->
+          @if (hasProfile()) {
+            @if (profileData()?.isVerified) {
+              <div class="tpe-banner tpe-banner-success">
+                <span class="tpe-banner-icon"><lucide-icon [img]="CheckCircleIcon" [size]="20"></lucide-icon></span>
+                <div class="tpe-banner-body">
+                  <p class="tpe-banner-title">{{ t('teacherProfile.verifiedTitle') }}</p>
+                  <p class="tpe-banner-desc">{{ t('teacherProfile.verifiedDesc') }}</p>
+                </div>
+              </div>
+            } @else if (profileData()?.verificationStatus === 0 || profileData()?.verificationStatus === 1) {
+              <div class="tpe-banner tpe-banner-info">
+                <span class="tpe-banner-icon"><lucide-icon [img]="InfoIcon" [size]="20"></lucide-icon></span>
+                <div class="tpe-banner-body">
+                  <p class="tpe-banner-title">{{ t('teacherProfile.pendingTitle') }}</p>
+                  <p class="tpe-banner-desc">{{ t('teacherProfile.pendingDesc') }}</p>
+                </div>
+              </div>
+            } @else if (profileData()?.verificationStatus === 3) {
+              <div class="tpe-banner tpe-banner-error">
+                <span class="tpe-banner-icon"><lucide-icon [img]="AlertCircleIcon" [size]="20"></lucide-icon></span>
+                <div class="tpe-banner-body">
+                  <p class="tpe-banner-title">{{ t('teacherProfile.rejectedTitle') }}</p>
+                  <p class="tpe-banner-desc">{{ profileData()?.rejectionReason || t('teacherProfile.rejectedDesc') }}</p>
+                </div>
+              </div>
+            } @else if (verifStatus().isEligible) {
+              <div class="tpe-banner tpe-banner-warning">
+                <span class="tpe-banner-icon"><lucide-icon [img]="AlertTriangleIcon" [size]="20"></lucide-icon></span>
+                <div class="tpe-banner-body">
+                  <p class="tpe-banner-title">{{ t('teacherProfile.readyTitle') }}</p>
+                  <p class="tpe-banner-desc">{{ t('teacherProfile.readyDesc') }}</p>
+                </div>
+                <div class="tpe-banner-action">
+                  <button class="tpe-btn-primary" (click)="openVerifModal()">
+                    <lucide-icon [img]="ClipboardCheckIcon" [size]="14"></lucide-icon>
+                    {{ t('teacherProfile.submitForReview') }}
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <div class="tpe-banner tpe-banner-info">
+                <span class="tpe-banner-icon"><lucide-icon [img]="InfoIcon" [size]="20"></lucide-icon></span>
+                <div class="tpe-banner-body">
+                  <p class="tpe-banner-title">{{ t('teacherProfile.incompleteTitle') }}</p>
+                  <p class="tpe-banner-desc">{{ t('teacherProfile.incompleteDesc') }}</p>
+                </div>
+              </div>
+            }
+          }
+
+          <!-- ── Step Indicator ── -->
+          @if (hasProfile()) {
+            <div class="tpe-step-indicator">
+              <div class="tpe-steps-scroll">
+                <div class="tpe-steps-row">
+                  @for (step of steps; track step.key; let i = $index) {
+                    <div class="tpe-step-item" (click)="setStep(i)">
+                      <div class="tpe-step-icon"
+                        [class.tpe-step-icon-active]="currentStep() === i"
+                        [class.tpe-step-icon-done]="isStepCompleted(i)">
+                        @if (isStepCompleted(i)) {
+                          <lucide-icon [img]="CheckCircleIcon" [size]="20"></lucide-icon>
+                        } @else {
+                          <lucide-icon [img]="step.icon" [size]="20"></lucide-icon>
+                        }
+                      </div>
+                      <div class="tpe-step-title"
+                        [class.tpe-step-title-active]="currentStep() === i"
+                        [class.tpe-step-title-done]="isStepCompleted(i)">
+                        {{ t('teacherProfile.' + step.titleKey) }}
+                      </div>
+                      <div class="tpe-step-desc" [class.tpe-step-desc-active]="currentStep() === i">
+                        {{ t('teacherProfile.' + step.descKey) }}
+                      </div>
+                      @if (i < steps.length - 1) {
+                        <div class="tpe-step-connector"
+                          [class.tpe-step-connector-done]="isStepCompleted(i)"
+                          [class.tpe-step-connector-rtl]="isRtl"></div>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- ── Submit feedback ── -->
+          @if (submitSuccess()) {
+            <div class="tpe-banner tpe-banner-success">
+              <span class="tpe-banner-icon"><lucide-icon [img]="CheckCircleIcon" [size]="20"></lucide-icon></span>
+              <div class="tpe-banner-body"><p class="tpe-banner-title">{{ t('teacherProfile.saveSuccess') }}</p></div>
+            </div>
+          }
+          @if (submitError()) {
+            <div class="tpe-banner tpe-banner-error">
+              <span class="tpe-banner-icon"><lucide-icon [img]="AlertCircleIcon" [size]="20"></lucide-icon></span>
+              <div class="tpe-banner-body"><p class="tpe-banner-title">{{ submitError() }}</p></div>
+            </div>
+          }
+
+          <!-- ════════════ STEP 0: PROFILE ════════════ -->
+          @if (currentStep() === 0) {
+            <div class="tpe-card tpe-step-content">
+              <div class="tpe-card-header">
+                <div class="tpe-card-title">
+                  <div class="tpe-card-icon"><lucide-icon [img]="UserIcon" [size]="16" style="color:#fff"></lucide-icon></div>
+                  {{ t('teacherProfile.profileTitle') }}
+                </div>
+                <p class="tpe-card-sub">{{ t('teacherProfile.profileSubtitle') }}</p>
+              </div>
+              <div class="tpe-card-body">
+                <form nz-form [formGroup]="profileForm" (ngSubmit)="onSubmitProfile()" nzLayout="vertical">
+                  <div class="tpe-form-grid">
+                    <div class="tpe-form-col">
+                      <div class="tpe-field">
+                        <label class="tpe-label">{{ t('teacherProfile.fullNameLabel') }} <span class="tpe-required">*</span></label>
+                        <input class="tpe-input" [class.tpe-input-error]="profileForm.get('fullName')?.invalid && profileForm.get('fullName')?.touched"
+                          formControlName="fullName" [placeholder]="t('teacherProfile.fullNamePlaceholder')" maxlength="100" />
+                        @if (profileForm.get('fullName')?.invalid && profileForm.get('fullName')?.touched) {
+                          <span class="tpe-field-error">{{ t('teacherProfile.fullNameRequired') }}</span>
+                        }
+                      </div>
+                    </div>
+                    <div class="tpe-form-col">
+                      <div class="tpe-field">
+                        <label class="tpe-label">{{ t('teacherProfile.genderLabel') }}</label>
+                        <nz-select formControlName="gender" [nzPlaceHolder]="t('teacherProfile.selectGender')" nzAllowClear nzSize="large" style="width:100%">
+                          <nz-option nzValue="Male"   [nzLabel]="t('teacherProfile.gender_male')"></nz-option>
+                          <nz-option nzValue="Female" [nzLabel]="t('teacherProfile.gender_female')"></nz-option>
+                          <nz-option nzValue="Other"  [nzLabel]="t('teacherProfile.gender_other')"></nz-option>
+                        </nz-select>
+                      </div>
+                    </div>
+                    <div class="tpe-form-col">
+                      <div class="tpe-field">
+                        <label class="tpe-label">{{ t('teacherProfile.dateOfBirthLabel') }}</label>
+                        <nz-date-picker formControlName="dateOfBirth" nzFormat="yyyy-MM-dd" nzSize="large" style="width:100%"></nz-date-picker>
+                      </div>
+                    </div>
+                    <div class="tpe-form-col">
+                      <div class="tpe-field">
+                        <label class="tpe-label">{{ t('teacherProfile.yearsLabel') }}</label>
+                        <nz-input-number formControlName="yearsOfExperience" [nzMin]="0" [nzMax]="60" nzSize="large" style="width:100%"></nz-input-number>
+                      </div>
+                    </div>
+                    <div class="tpe-form-col tpe-form-col-full">
+                      <div class="tpe-field">
+                        <label class="tpe-label">{{ t('teacherProfile.bioLabel') }} <span class="tpe-required">*</span></label>
+                        <textarea class="tpe-input tpe-textarea" [class.tpe-input-error]="profileForm.get('bio')?.invalid && profileForm.get('bio')?.touched"
+                          formControlName="bio" rows="4" [placeholder]="t('teacherProfile.bioPlaceholder')" maxlength="200"></textarea>
+                        <div class="tpe-bio-footer">
+                          @if (profileForm.get('bio')?.invalid && profileForm.get('bio')?.touched) {
+                            <span class="tpe-field-error">{{ t('teacherProfile.bioRequired') }}</span>
+                          } @else { <span></span> }
+                          <span class="tpe-char-count">{{ profileForm.get('bio')?.value?.length || 0 }}/200</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="tpe-form-col">
+                      <div class="tpe-field">
+                        <label class="tpe-label">{{ t('teacherProfile.subjectLabel') }}</label>
+                        <nz-select formControlName="teachingSubjectId" [nzPlaceHolder]="t('teacherProfile.selectSubject')" nzAllowClear nzSize="large" nzShowSearch style="width:100%">
+                          @for (sub of subjects(); track sub.id) {
+                            <nz-option [nzValue]="sub.id" [nzLabel]="sub.name"></nz-option>
+                          }
+                        </nz-select>
+                      </div>
+                    </div>
+                    <div class="tpe-form-col">
+                      <div class="tpe-field">
+                        <label class="tpe-label">{{ t('teacherProfile.levelLabel') }}</label>
+                        <nz-select formControlName="teachingLevel" [nzPlaceHolder]="t('teacherProfile.selectLevel')" nzAllowClear nzSize="large" style="width:100%">
+                          <nz-option nzValue="Beginner"     [nzLabel]="t('teacherProfile.level_beginner')"></nz-option>
+                          <nz-option nzValue="Intermediate" [nzLabel]="t('teacherProfile.level_intermediate')"></nz-option>
+                          <nz-option nzValue="Advanced"     [nzLabel]="t('teacherProfile.level_advanced')"></nz-option>
+                          <nz-option nzValue="All Levels"   [nzLabel]="t('teacherProfile.level_all_levels')"></nz-option>
+                        </nz-select>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="tpe-nav-bar">
+                    @if (hasProfile()) {
+                      <button type="button" class="tpe-btn-ghost" (click)="setStep(1)">
+                        {{ t('teacherProfile.nextStep') }}
+                        <lucide-icon [img]="nextChevronIcon" [size]="14"></lucide-icon>
+                      </button>
+                    }
+                    <button type="submit" class="tpe-btn-primary" [disabled]="profileForm.invalid || savingProfile()" [class.tpe-btn-auto-right]="!hasProfile()">
+                      <lucide-icon [img]="SaveIcon" [size]="15"></lucide-icon>
+                      {{ savingProfile() ? t('teacherProfile.saving') : t('teacherProfile.saveChanges') }}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          }
+
+          <!-- ════════════ STEP 1: PHOTO ════════════ -->
+          @if (currentStep() === 1) {
+            <div class="tpe-card tpe-step-content">
+              <div class="tpe-card-header">
+                <div class="tpe-card-title">
+                  <div class="tpe-card-icon"><lucide-icon [img]="CameraIcon" [size]="16" style="color:#fff"></lucide-icon></div>
+                  {{ t('teacherProfile.photoTitle') }}
+                </div>
+                <p class="tpe-card-sub">{{ t('teacherProfile.photoSubtitle') }}</p>
+              </div>
+              <div class="tpe-card-body">
+                <div class="tpe-photo-layout">
+                  <div class="tpe-avatar-col">
+                    <div class="tpe-avatar-wrap" (click)="triggerPhotoInput()" title="Click to change photo">
+                      <div class="tpe-avatar-ring" [class.has-changes]="hasImageChanges()">
+                        @if (displayImage()) {
+                          <img [src]="displayImage()!" class="tpe-avatar-img" alt="Profile">
+                        } @else {
+                          <div class="tpe-avatar-placeholder">
+                            <lucide-icon [img]="UserIcon" [size]="48" class="tpe-avatar-placeholder-icon"></lucide-icon>
+                          </div>
+                        }
+                      </div>
+                      <div class="tpe-avatar-badge">
+                        <lucide-icon [img]="CameraIcon" [size]="14" style="color:#fff"></lucide-icon>
+                      </div>
+                    </div>
+                    @if (displayImage() && !hasImageChanges()) {
+                      <button class="tpe-zoom-btn" (click)="$event.stopPropagation(); openPhotoZoom()">
+                        <lucide-icon [img]="EyeIcon" [size]="12"></lucide-icon>
+                        {{ t('teacherProfile.viewFull') }}
+                      </button>
+                    }
+                  </div>
+                  <div class="tpe-photo-controls">
+                    @if (uploadError()) {
+                      <div class="tpe-banner tpe-banner-error tpe-banner-sm">
+                        <span class="tpe-banner-icon"><lucide-icon [img]="AlertCircleIcon" [size]="14"></lucide-icon></span>
+                        <div class="tpe-banner-body"><p class="tpe-banner-title">{{ uploadError() }}</p></div>
+                      </div>
+                    }
+                    @if (uploading() && uploadProgress() > 0) {
+                      <nz-progress [nzPercent]="uploadProgress()" nzSize="small"></nz-progress>
+                    }
+                    <button class="tpe-btn-ghost tpe-btn-block" type="button" (click)="triggerPhotoInput()">
+                      <lucide-icon [img]="CameraIcon" [size]="14"></lucide-icon>
+                      {{ t('teacherProfile.selectPhoto') }}
+                    </button>
+                    @if (selectedFile()) {
+                      <div class="tpe-selected-file">
+                        <lucide-icon [img]="CheckCircleIcon" [size]="14" class="tpe-selected-file-icon"></lucide-icon>
+                        <span>{{ selectedFile()!.name }}</span>
+                      </div>
+                    }
+                    @if (hasImageChanges()) {
+                      <div class="tpe-photo-upload-row">
+                        <button class="tpe-btn-primary tpe-btn-flex" type="button" [disabled]="uploading()" (click)="handleImageUpload()">
+                          <lucide-icon [img]="UploadIcon" [size]="14"></lucide-icon>
+                          <span>{{ uploading() ? (uploadProgress() + '%') : t('teacherProfile.uploadPhoto') }}</span>
+                        </button>
+                        <button class="tpe-btn-ghost tpe-btn-cancel" type="button" (click)="cancelImageSelect()">✕</button>
+                      </div>
+                    }
+                    <div class="tpe-photo-requirements">
+                      <p class="tpe-section-label">
+                        <lucide-icon [img]="InfoIcon" [size]="12"></lucide-icon>
+                        {{ t('teacherProfile.photoRequirements') }}
+                      </p>
+                      @for (i of [1,2,3]; track i) {
+                        <p class="tpe-req-item"><span class="tpe-req-dot"></span>{{ t('teacherProfile.req' + i) }}</p>
+                      }
+                    </div>
+                  </div>
+                </div>
+                <div class="tpe-nav-bar">
+                  <button class="tpe-btn-ghost" type="button" (click)="setStep(0)">
+                    <lucide-icon [img]="prevChevronIcon" [size]="14"></lucide-icon>
+                    {{ t('teacherProfile.previousStep') }}
+                  </button>
+                  <button class="tpe-btn-primary" type="button" (click)="setStep(2)">
+                    {{ t('teacherProfile.nextStep') }}
+                    <lucide-icon [img]="nextChevronIcon" [size]="14"></lucide-icon>
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- ════════════ STEP 2: DOCUMENTS ════════════ -->
+          @if (currentStep() === 2) {
+            <div class="tpe-card tpe-step-content">
+              <div class="tpe-card-header">
+                <div class="tpe-card-title">
+                  <div class="tpe-card-icon"><lucide-icon [img]="CreditCardIcon" [size]="16" style="color:#fff"></lucide-icon></div>
+                  {{ t('teacherProfile.documentsTitle') }}
+                </div>
+                <p class="tpe-card-sub">{{ t('teacherProfile.documentsSubtitle') }}</p>
+              </div>
+              <div class="tpe-card-body">
+
+                <!-- ── Identity Section ── -->
+                <div class="tpe-doc-section">
+                  <div class="tpe-doc-section-head">
+                    <p class="tpe-section-label">
+                      <lucide-icon [img]="CreditCardIcon" [size]="12" style="color:#3d5af1"></lucide-icon>
+                      {{ t('teacherProfile.identityTitle') }}
+                    </p>
+                    <span class="tpe-pill tpe-pill-primary">
+                      <lucide-icon [img]="InfoIcon" [size]="11"></lucide-icon>
+                      {{ t('teacherProfile.bothSidesRequired') }}
+                    </span>
+                  </div>
+                  <p class="tpe-doc-section-sub">{{ t('teacherProfile.identitySubtitle') }}</p>
+
+                  <div class="tpe-doc-grid">
+
+                    <!-- ── ID FRONT ── -->
+                    <div class="tpe-doc-card" [class.tpe-doc-card-has]="docUrls().idDocument || selectedDocFiles().identityFront">
+                      <div class="tpe-doc-card-head">
+                        <span class="tpe-doc-card-label">
+                          <span class="tpe-doc-card-icon" style="background:rgba(61,90,241,0.1)">
+                            <lucide-icon [img]="CreditCardIcon" [size]="14" style="color:#3d5af1"></lucide-icon>
+                          </span>
+                          {{ t('teacherProfile.identityTitle') }}
+                          <span class="tpe-pill tpe-pill-primary" style="font-size:10px">{{ t('teacherProfile.frontLabel') }}</span>
+                        </span>
+                        <!-- Show delete only when a saved file exists and no replacement is pending -->
+                        @if (docUrls().idDocument && !selectedDocFiles().identityFront) {
+                          <button class="tpe-btn-delete" type="button" (click)="handleDocDelete('idDocument')">
+                            <lucide-icon [img]="Trash2Icon" [size]="12"></lucide-icon>
+                            {{ t('teacherProfile.common_delete') }}
+                          </button>
+                        }
+                      </div>
+                      @if (docErrors().identityFront) {
+                        <div class="tpe-doc-error">
+                          <lucide-icon [img]="AlertCircleIcon" [size]="13"></lucide-icon>
+                          {{ docErrors().identityFront }}
+                        </div>
+                      }
+                      <p class="tpe-doc-hint">{{ t('teacherProfile.frontHint') }}</p>
+
+                      <!-- Existing saved file — hidden when a replacement is pending -->
+                      @if (docUrls().idDocument && !selectedDocFiles().identityFront) {
+                        <div class="tpe-doc-preview">
+                          @if (isDocImage('idDocument')) {
+                            <div style="cursor:pointer" (click)="openDocZoom('idDocument')">
+                              <img [src]="getFullDocUrl('idDocument')!" class="tpe-doc-preview-img" alt="ID Front">
+                            </div>
+                          } @else {
+                            <div class="tpe-doc-pdf-placeholder">
+                              <lucide-icon [img]="FileTextIcon" [size]="44" style="color:#f43f5e"></lucide-icon>
+                              <a [href]="getFullDocUrl('idDocument')!" target="_blank" class="tpe-doc-view-link">
+                                <lucide-icon [img]="EyeIcon" [size]="13"></lucide-icon>{{ t('teacherProfile.viewPdf') }}
+                              </a>
+                            </div>
+                          }
+                          <div style="margin-top:10px;text-align:center">
+                            <!--
+                              FIX: Replaced nzAction="" with [nzCustomRequest]="noopCustomRequest".
+                              nzAction="" was unreliable and could prevent beforeUpload from firing
+                              or cause ng-zorro to silently reject file selections.
+                              nzCustomRequest gives us full control — nz-upload acts purely as a
+                              file picker without attempting any HTTP calls.
+                            -->
+                            <nz-upload
+                              [nzBeforeUpload]="docUpload_identityFront"
+                              [nzCustomRequest]="noopCustomRequest"
+                              [nzShowUploadList]="false"
+                              nzAccept="image/jpeg,image/jpg,image/png,image/webp,application/pdf">
+                              <button class="tpe-btn-replace" type="button">
+                                <lucide-icon [img]="ArrowLeftRightIcon" [size]="12"></lucide-icon>
+                                {{ t('teacherProfile.replace') }}
+                              </button>
+                            </nz-upload>
+                          </div>
+                        </div>
+                      }
+
+                      <!-- Empty slot — no saved file, no pending file -->
+                      @if (!docUrls().idDocument && !selectedDocFiles().identityFront) {
+                        <div class="tpe-doc-empty">
+                          <div class="tpe-doc-empty-icon"><lucide-icon [img]="UploadIcon" [size]="22" class="tpe-doc-empty-icon-svg"></lucide-icon></div>
+                          <p class="tpe-doc-empty-text">{{ t('teacherProfile.selectFile') }}</p>
+                          <nz-upload
+                            [nzBeforeUpload]="docUpload_identityFront"
+                            [nzCustomRequest]="noopCustomRequest"
+                            [nzShowUploadList]="false"
+                            nzAccept="image/jpeg,image/jpg,image/png,image/webp,application/pdf">
+                            <button class="tpe-btn-primary" type="button" style="font-size:13px;height:38px;padding:0 20px">
+                              <lucide-icon [img]="UploadIcon" [size]="14"></lucide-icon>
+                              {{ t('teacherProfile.selectFile') }}
+                            </button>
+                          </nz-upload>
+                        </div>
+                      }
+
+                      <!-- Pending upload — file selected, not yet uploaded -->
+                      @if (selectedDocFiles().identityFront) {
+                        <div class="tpe-doc-selected">
+                          @if (docPreviews().identityFront) {
+                            <div style="text-align:center;margin-bottom:10px">
+                              <img [src]="docPreviews().identityFront" class="tpe-doc-preview-img" alt="Preview">
+                            </div>
+                          } @else {
+                            <div class="tpe-doc-file-info">
+                              <lucide-icon [img]="FileTextIcon" [size]="14" style="color:#f43f5e"></lucide-icon>
+                              <span>{{ selectedDocFiles().identityFront!.name }}</span>
+                            </div>
+                          }
+                          @if (docUploading().identityFront && docProgress().identityFront > 0) {
+                            <nz-progress [nzPercent]="docProgress().identityFront" nzSize="small" style="margin-bottom:8px"></nz-progress>
+                          }
+                          <div class="tpe-doc-actions">
+                            <button class="tpe-btn-primary tpe-btn-flex" type="button"
+                              [disabled]="docUploading().identityFront" (click)="handleDocUpload('identityFront')">
+                              <lucide-icon [img]="UploadIcon" [size]="14"></lucide-icon>
+                              <span>{{ docUploading().identityFront ? (docProgress().identityFront + '%') : t('teacherProfile.upload') }}</span>
+                            </button>
+                            <button class="tpe-btn-ghost tpe-btn-cancel" type="button"
+                              [disabled]="docUploading().identityFront" (click)="cancelDocSelect('identityFront')">✕</button>
+                          </div>
+                        </div>
+                      }
+                    </div>
+
+                    <!-- ── ID BACK ── -->
+                    <div class="tpe-doc-card" [class.tpe-doc-card-has]="docUrls().idDocumentBack || selectedDocFiles().identityBack">
+                      <div class="tpe-doc-card-head">
+                        <span class="tpe-doc-card-label">
+                          <span class="tpe-doc-card-icon" style="background:rgba(91,120,255,0.1)">
+                            <lucide-icon [img]="CreditCardIcon" [size]="14" style="color:#5b78ff"></lucide-icon>
+                          </span>
+                          {{ t('teacherProfile.identityTitle') }}
+                          <span class="tpe-pill tpe-pill-secondary" style="font-size:10px">{{ t('teacherProfile.backLabel') }}</span>
+                        </span>
+                        @if (docUrls().idDocumentBack && !selectedDocFiles().identityBack) {
+                          <button class="tpe-btn-delete" type="button" (click)="handleDocDelete('idDocumentBack')">
+                            <lucide-icon [img]="Trash2Icon" [size]="12"></lucide-icon>
+                            {{ t('teacherProfile.common_delete') }}
+                          </button>
+                        }
+                      </div>
+                      @if (docErrors().identityBack) {
+                        <div class="tpe-doc-error">
+                          <lucide-icon [img]="AlertCircleIcon" [size]="13"></lucide-icon>
+                          {{ docErrors().identityBack }}
+                        </div>
+                      }
+                      <p class="tpe-doc-hint">{{ t('teacherProfile.backHint') }}</p>
+
+                      @if (docUrls().idDocumentBack && !selectedDocFiles().identityBack) {
+                        <div class="tpe-doc-preview">
+                          @if (isDocImage('idDocumentBack')) {
+                            <div style="cursor:pointer" (click)="openDocZoom('idDocumentBack')">
+                              <img [src]="getFullDocUrl('idDocumentBack')!" class="tpe-doc-preview-img" alt="ID Back">
+                            </div>
+                          } @else {
+                            <div class="tpe-doc-pdf-placeholder">
+                              <lucide-icon [img]="FileTextIcon" [size]="44" style="color:#f43f5e"></lucide-icon>
+                              <a [href]="getFullDocUrl('idDocumentBack')!" target="_blank" class="tpe-doc-view-link">
+                                <lucide-icon [img]="EyeIcon" [size]="13"></lucide-icon>{{ t('teacherProfile.viewPdf') }}
+                              </a>
+                            </div>
+                          }
+                          <div style="margin-top:10px;text-align:center">
+                            <nz-upload
+                              [nzBeforeUpload]="docUpload_identityBack"
+                              [nzCustomRequest]="noopCustomRequest"
+                              [nzShowUploadList]="false"
+                              nzAccept="image/jpeg,image/jpg,image/png,image/webp,application/pdf">
+                              <button class="tpe-btn-replace" type="button">
+                                <lucide-icon [img]="ArrowLeftRightIcon" [size]="12"></lucide-icon>
+                                {{ t('teacherProfile.replace') }}
+                              </button>
+                            </nz-upload>
+                          </div>
+                        </div>
+                      }
+
+                      @if (!docUrls().idDocumentBack && !selectedDocFiles().identityBack) {
+                        <div class="tpe-doc-empty">
+                          <div class="tpe-doc-empty-icon"><lucide-icon [img]="UploadIcon" [size]="22" class="tpe-doc-empty-icon-svg"></lucide-icon></div>
+                          <p class="tpe-doc-empty-text">{{ t('teacherProfile.selectFile') }}</p>
+                          <nz-upload
+                            [nzBeforeUpload]="docUpload_identityBack"
+                            [nzCustomRequest]="noopCustomRequest"
+                            [nzShowUploadList]="false"
+                            nzAccept="image/jpeg,image/jpg,image/png,image/webp,application/pdf">
+                            <button class="tpe-btn-primary" type="button" style="font-size:13px;height:38px;padding:0 20px">
+                              <lucide-icon [img]="UploadIcon" [size]="14"></lucide-icon>
+                              {{ t('teacherProfile.selectFile') }}
+                            </button>
+                          </nz-upload>
+                        </div>
+                      }
+
+                      @if (selectedDocFiles().identityBack) {
+                        <div class="tpe-doc-selected">
+                          @if (docPreviews().identityBack) {
+                            <div style="text-align:center;margin-bottom:10px">
+                              <img [src]="docPreviews().identityBack" class="tpe-doc-preview-img" alt="Preview">
+                            </div>
+                          } @else {
+                            <div class="tpe-doc-file-info">
+                              <lucide-icon [img]="FileTextIcon" [size]="14" style="color:#f43f5e"></lucide-icon>
+                              <span>{{ selectedDocFiles().identityBack!.name }}</span>
+                            </div>
+                          }
+                          @if (docUploading().identityBack && docProgress().identityBack > 0) {
+                            <nz-progress [nzPercent]="docProgress().identityBack" nzSize="small" style="margin-bottom:8px"></nz-progress>
+                          }
+                          <div class="tpe-doc-actions">
+                            <button class="tpe-btn-primary tpe-btn-flex" type="button"
+                              [disabled]="docUploading().identityBack" (click)="handleDocUpload('identityBack')">
+                              <lucide-icon [img]="UploadIcon" [size]="14"></lucide-icon>
+                              <span>{{ docUploading().identityBack ? (docProgress().identityBack + '%') : t('teacherProfile.upload') }}</span>
+                            </button>
+                            <button class="tpe-btn-ghost tpe-btn-cancel" type="button"
+                              [disabled]="docUploading().identityBack" (click)="cancelDocSelect('identityBack')">✕</button>
+                          </div>
+                        </div>
+                      }
+                    </div>
+
+                  </div><!-- /doc-grid identity -->
+                </div><!-- /identity section -->
+
+                <div class="tpe-gradient-divider"></div>
+
+                <!-- ── Academic Section ── -->
+                <div class="tpe-doc-section">
+                  <p class="tpe-section-label">
+                    <lucide-icon [img]="BookOpenIcon" [size]="12" style="color:#10b981"></lucide-icon>
+                    {{ t('teacherProfile.academicTitle') }}
+                  </p>
+                  <p class="tpe-doc-section-sub">{{ t('teacherProfile.academicSubtitle') }}</p>
+
+                  <div class="tpe-doc-grid">
+
+                    <!-- ── DEGREE ── -->
+                    <div class="tpe-doc-card" [class.tpe-doc-card-has]="docUrls().degreeDocument || selectedDocFiles().degreeDocument">
+                      <div class="tpe-doc-card-head">
+                        <span class="tpe-doc-card-label">
+                          <span class="tpe-doc-card-icon" style="background:rgba(16,185,129,0.1)">
+                            <lucide-icon [img]="BookOpenIcon" [size]="14" style="color:#10b981"></lucide-icon>
+                          </span>
+                          {{ t('teacherProfile.degreeLabel') }}
+                        </span>
+                        @if (docUrls().degreeDocument && !selectedDocFiles().degreeDocument) {
+                          <button class="tpe-btn-delete" type="button" (click)="handleDocDelete('degreeDocument')">
+                            <lucide-icon [img]="Trash2Icon" [size]="12"></lucide-icon>
+                            {{ t('teacherProfile.common_delete') }}
+                          </button>
+                        }
+                      </div>
+                      @if (docErrors().degreeDocument) {
+                        <div class="tpe-doc-error">
+                          <lucide-icon [img]="AlertCircleIcon" [size]="13"></lucide-icon>
+                          {{ docErrors().degreeDocument }}
+                        </div>
+                      }
+                      <p class="tpe-doc-hint">{{ t('teacherProfile.degreeHint') }}</p>
+
+                      @if (docUrls().degreeDocument && !selectedDocFiles().degreeDocument) {
+                        <div class="tpe-doc-preview">
+                          @if (isDocImage('degreeDocument')) {
+                            <div style="cursor:pointer" (click)="openDocZoom('degreeDocument')">
+                              <img [src]="getFullDocUrl('degreeDocument')!" class="tpe-doc-preview-img" alt="Degree">
+                            </div>
+                          } @else {
+                            <div class="tpe-doc-pdf-placeholder">
+                              <lucide-icon [img]="FileTextIcon" [size]="44" style="color:#f43f5e"></lucide-icon>
+                              <a [href]="getFullDocUrl('degreeDocument')!" target="_blank" class="tpe-doc-view-link">
+                                <lucide-icon [img]="EyeIcon" [size]="13"></lucide-icon>{{ t('teacherProfile.viewPdf') }}
+                              </a>
+                            </div>
+                          }
+                          <div style="margin-top:10px;text-align:center">
+                            <nz-upload
+                              [nzBeforeUpload]="docUpload_degreeDocument"
+                              [nzCustomRequest]="noopCustomRequest"
+                              [nzShowUploadList]="false"
+                              nzAccept="image/jpeg,image/jpg,image/png,image/webp,application/pdf">
+                              <button class="tpe-btn-replace" type="button">
+                                <lucide-icon [img]="ArrowLeftRightIcon" [size]="12"></lucide-icon>
+                                {{ t('teacherProfile.replace') }}
+                              </button>
+                            </nz-upload>
+                          </div>
+                        </div>
+                      }
+
+                      @if (!docUrls().degreeDocument && !selectedDocFiles().degreeDocument) {
+                        <div class="tpe-doc-empty">
+                          <div class="tpe-doc-empty-icon"><lucide-icon [img]="UploadIcon" [size]="22" class="tpe-doc-empty-icon-svg"></lucide-icon></div>
+                          <p class="tpe-doc-empty-text">{{ t('teacherProfile.selectFile') }}</p>
+                          <nz-upload
+                            [nzBeforeUpload]="docUpload_degreeDocument"
+                            [nzCustomRequest]="noopCustomRequest"
+                            [nzShowUploadList]="false"
+                            nzAccept="image/jpeg,image/jpg,image/png,image/webp,application/pdf">
+                            <button class="tpe-btn-primary" type="button" style="font-size:13px;height:38px;padding:0 20px">
+                              <lucide-icon [img]="UploadIcon" [size]="14"></lucide-icon>
+                              {{ t('teacherProfile.selectFile') }}
+                            </button>
+                          </nz-upload>
+                        </div>
+                      }
+
+                      @if (selectedDocFiles().degreeDocument) {
+                        <div class="tpe-doc-selected">
+                          @if (docPreviews().degreeDocument) {
+                            <div style="text-align:center;margin-bottom:10px">
+                              <img [src]="docPreviews().degreeDocument" class="tpe-doc-preview-img" alt="Preview">
+                            </div>
+                          } @else {
+                            <div class="tpe-doc-file-info">
+                              <lucide-icon [img]="FileTextIcon" [size]="14" style="color:#f43f5e"></lucide-icon>
+                              <span>{{ selectedDocFiles().degreeDocument!.name }}</span>
+                            </div>
+                          }
+                          @if (docUploading().degreeDocument && docProgress().degreeDocument > 0) {
+                            <nz-progress [nzPercent]="docProgress().degreeDocument" nzSize="small" style="margin-bottom:8px"></nz-progress>
+                          }
+                          <div class="tpe-doc-actions">
+                            <button class="tpe-btn-primary tpe-btn-flex" type="button"
+                              [disabled]="docUploading().degreeDocument" (click)="handleDocUpload('degreeDocument')">
+                              <lucide-icon [img]="UploadIcon" [size]="14"></lucide-icon>
+                              <span>{{ docUploading().degreeDocument ? (docProgress().degreeDocument + '%') : t('teacherProfile.upload') }}</span>
+                            </button>
+                            <button class="tpe-btn-ghost tpe-btn-cancel" type="button"
+                              [disabled]="docUploading().degreeDocument" (click)="cancelDocSelect('degreeDocument')">✕</button>
+                          </div>
+                        </div>
+                      }
+                    </div>
+
+                    <!-- ── CERTIFICATE ── -->
+                    <div class="tpe-doc-card" [class.tpe-doc-card-has]="docUrls().certificate || selectedDocFiles().certificate">
+                      <div class="tpe-doc-card-head">
+                        <span class="tpe-doc-card-label">
+                          <span class="tpe-doc-card-icon" style="background:rgba(245,158,11,0.1)">
+                            <lucide-icon [img]="ShieldIcon" [size]="14" style="color:#f59e0b"></lucide-icon>
+                          </span>
+                          {{ t('teacherProfile.certLabel') }}
+                        </span>
+                        @if (docUrls().certificate && !selectedDocFiles().certificate) {
+                          <button class="tpe-btn-delete" type="button" (click)="handleDocDelete('certificate')">
+                            <lucide-icon [img]="Trash2Icon" [size]="12"></lucide-icon>
+                            {{ t('teacherProfile.common_delete') }}
+                          </button>
+                        }
+                      </div>
+                      @if (docErrors().certificate) {
+                        <div class="tpe-doc-error">
+                          <lucide-icon [img]="AlertCircleIcon" [size]="13"></lucide-icon>
+                          {{ docErrors().certificate }}
+                        </div>
+                      }
+                      <p class="tpe-doc-hint">{{ t('teacherProfile.certHint') }}</p>
+
+                      @if (docUrls().certificate && !selectedDocFiles().certificate) {
+                        <div class="tpe-doc-preview">
+                          @if (isDocImage('certificate')) {
+                            <div style="cursor:pointer" (click)="openDocZoom('certificate')">
+                              <img [src]="getFullDocUrl('certificate')!" class="tpe-doc-preview-img" alt="Certificate">
+                            </div>
+                          } @else {
+                            <div class="tpe-doc-pdf-placeholder">
+                              <lucide-icon [img]="FileTextIcon" [size]="44" style="color:#f43f5e"></lucide-icon>
+                              <a [href]="getFullDocUrl('certificate')!" target="_blank" class="tpe-doc-view-link">
+                                <lucide-icon [img]="EyeIcon" [size]="13"></lucide-icon>{{ t('teacherProfile.viewPdf') }}
+                              </a>
+                            </div>
+                          }
+                          <div style="margin-top:10px;text-align:center">
+                            <nz-upload
+                              [nzBeforeUpload]="docUpload_certificate"
+                              [nzCustomRequest]="noopCustomRequest"
+                              [nzShowUploadList]="false"
+                              nzAccept="image/jpeg,image/jpg,image/png,image/webp,application/pdf">
+                              <button class="tpe-btn-replace" type="button">
+                                <lucide-icon [img]="ArrowLeftRightIcon" [size]="12"></lucide-icon>
+                                {{ t('teacherProfile.replace') }}
+                              </button>
+                            </nz-upload>
+                          </div>
+                        </div>
+                      }
+
+                      @if (!docUrls().certificate && !selectedDocFiles().certificate) {
+                        <div class="tpe-doc-empty">
+                          <div class="tpe-doc-empty-icon"><lucide-icon [img]="UploadIcon" [size]="22" class="tpe-doc-empty-icon-svg"></lucide-icon></div>
+                          <p class="tpe-doc-empty-text">{{ t('teacherProfile.selectFile') }}</p>
+                          <nz-upload
+                            [nzBeforeUpload]="docUpload_certificate"
+                            [nzCustomRequest]="noopCustomRequest"
+                            [nzShowUploadList]="false"
+                            nzAccept="image/jpeg,image/jpg,image/png,image/webp,application/pdf">
+                            <button class="tpe-btn-primary" type="button" style="font-size:13px;height:38px;padding:0 20px">
+                              <lucide-icon [img]="UploadIcon" [size]="14"></lucide-icon>
+                              {{ t('teacherProfile.selectFile') }}
+                            </button>
+                          </nz-upload>
+                        </div>
+                      }
+
+                      @if (selectedDocFiles().certificate) {
+                        <div class="tpe-doc-selected">
+                          @if (docPreviews().certificate) {
+                            <div style="text-align:center;margin-bottom:10px">
+                              <img [src]="docPreviews().certificate" class="tpe-doc-preview-img" alt="Preview">
+                            </div>
+                          } @else {
+                            <div class="tpe-doc-file-info">
+                              <lucide-icon [img]="FileTextIcon" [size]="14" style="color:#f43f5e"></lucide-icon>
+                              <span>{{ selectedDocFiles().certificate!.name }}</span>
+                            </div>
+                          }
+                          @if (docUploading().certificate && docProgress().certificate > 0) {
+                            <nz-progress [nzPercent]="docProgress().certificate" nzSize="small" style="margin-bottom:8px"></nz-progress>
+                          }
+                          <div class="tpe-doc-actions">
+                            <button class="tpe-btn-primary tpe-btn-flex" type="button"
+                              [disabled]="docUploading().certificate" (click)="handleDocUpload('certificate')">
+                              <lucide-icon [img]="UploadIcon" [size]="14"></lucide-icon>
+                              <span>{{ docUploading().certificate ? (docProgress().certificate + '%') : t('teacherProfile.upload') }}</span>
+                            </button>
+                            <button class="tpe-btn-ghost tpe-btn-cancel" type="button"
+                              [disabled]="docUploading().certificate" (click)="cancelDocSelect('certificate')">✕</button>
+                          </div>
+                        </div>
+                      }
+                    </div>
+
+                  </div><!-- /doc-grid academic -->
+                </div><!-- /academic section -->
+
+                <!-- Requirements -->
+                <div class="tpe-doc-info">
+                  <p class="tpe-section-label">
+                    <lucide-icon [img]="InfoIcon" [size]="12"></lucide-icon>
+                    {{ t('teacherProfile.docRequirements') }}
+                  </p>
+                  <div class="tpe-doc-info-pills">
+                    <span class="tpe-pill tpe-pill-neutral">📄 {{ t('teacherProfile.docFormats') }}</span>
+                    <span class="tpe-pill tpe-pill-neutral">⚖ {{ t('teacherProfile.docMaxSize') }}</span>
+                  </div>
+                  <p class="tpe-doc-info-note">✓ {{ t('teacherProfile.docMustBeClear') }}</p>
+                </div>
+
+                <div class="tpe-nav-bar">
+                  <button class="tpe-btn-ghost" type="button" (click)="setStep(1)">
+                    <lucide-icon [img]="prevChevronIcon" [size]="14"></lucide-icon>
+                    {{ t('teacherProfile.previousStep') }}
+                  </button>
+                  <button class="tpe-btn-primary" type="button" (click)="completeProfile()">
+                    <lucide-icon [img]="CheckCircleIcon" [size]="15"></lucide-icon>
+                    {{ t('teacherProfile.completeProfile') }}
+                  </button>
+                </div>
+
+              </div><!-- /card-body -->
+            </div><!-- /card -->
+          }
+
+        </div><!-- /tpe-wrap -->
+      </div><!-- /tpe-page -->
+    </div><!-- /tpe-root -->
+  }
+
+</ng-container>

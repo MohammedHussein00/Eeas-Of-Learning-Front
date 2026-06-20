@@ -1,0 +1,356 @@
+<ng-container *transloco="let t; scope: 'teacherPlan'">
+
+  <!-- ════════════════════════════════════════════════════════
+       LOADING STATE
+  ════════════════════════════════════════════════════════ -->
+  @if (loading()) {
+    <div class="mp-center-screen" [attr.dir]="dir()">
+      <nz-spin nzSize="large"></nz-spin>
+    </div>
+  }
+
+  @else {
+  <div class="mp-root" [attr.dir]="dir()">
+
+    <!-- ══ Header ══ -->
+    <div class="mp-header">
+      <div class="mp-header-accent"></div>
+      <div class="mp-header-content">
+        <div>
+          <h1 class="mp-title">{{ t('teacherPlan.pageTitle') }}</h1>
+          <p class="mp-subtitle">{{ t('teacherPlan.pageSubtitle') }}</p>
+        </div>
+        <button class="mp-upgrade-btn"
+          (click)="router.navigate(['../teacher/choose-plan'], { relativeTo: null })">
+          🚀 {{ subscription() ? t('teacherPlan.upgradeNow') : t('teacherPlan.choosePlan') }}
+        </button>
+      </div>
+    </div>
+
+    <!-- ══ Body ══ -->
+    <div class="mp-body">
+
+      <!-- ── Payment success banner ── -->
+      @if (paymentOk) {
+        <nz-alert
+          nzType="success"
+          [nzMessage]="t('teacherPlan.paymentSuccess')"
+          nzShowIcon
+          nzCloseable
+          class="mp-payment-banner">
+        </nz-alert>
+      }
+
+      <!-- ── Expiring soon warning ── -->
+      @if (isExpiring()) {
+        <nz-alert
+          nzType="warning"
+          [nzMessage]="lang() === 'ar'
+            ? 'ينتهي اشتراكك خلال ' + daysLeft() + ' يوم'
+            : 'Your subscription expires in ' + daysLeft() + (daysLeft() !== 1 ? ' days' : ' day')"
+          nzShowIcon
+          class="mp-expire-banner">
+          <ng-template #nzAction>
+            <button class="mp-alert-action-btn"
+              (click)="router.navigate(['../choose-plan'], { relativeTo: null })">
+              {{ t('teacherPlan.renewSubscription') }}
+            </button>
+          </ng-template>
+        </nz-alert>
+      }
+
+      <!-- ── No subscription state ── -->
+      @if (!subscription()) {
+        <div class="mp-empty">
+          <div class="mp-empty-icon">👑</div>
+          <h2 class="mp-empty-title">{{ t('teacherPlan.noPlan') }}</h2>
+          <p class="mp-empty-desc">{{ t('teacherPlan.noPlanDesc') }}</p>
+          <button class="mp-empty-btn"
+            (click)="router.navigate(['../choose-plan'], { relativeTo: null })">
+            🚀 {{ t('teacherPlan.choosePlan') }}
+          </button>
+        </div>
+      }
+
+      @if (subscription(); as sub) {
+        <!-- ── Plan card ── -->
+        <div class="mp-plan-card">
+          <div class="mp-plan-card-header">
+            <div class="mp-plan-badge">
+              <span class="mp-badge-crown">👑</span>
+              <span>{{ sub.subscriptionPlanName }}</span>
+            </div>
+            <div class="mp-status-tag" [ngClass]="getStatusCls(sub.status)">
+              <span class="mp-status-icon">{{ getStatusIcon(sub.status) }}</span>
+              {{ getStatusLabel(sub.status) }}
+            </div>
+          </div>
+
+          <!-- Stats grid -->
+          <div class="mp-stats-grid">
+            <div class="mp-stat-item">
+              <span class="mp-stat-icon blue">📅</span>
+              <div>
+                <div class="mp-stat-label">{{ t('teacherPlan.billingPeriod') }}</div>
+                <div class="mp-stat-val">{{ billingLabel() }}</div>
+              </div>
+            </div>
+            <div class="mp-stat-item">
+              <span class="mp-stat-icon green">💰</span>
+              <div>
+                <div class="mp-stat-label">{{ lang() === 'ar' ? 'السعر الشهري' : 'Monthly Price' }}</div>
+                <div class="mp-stat-val">
+                  {{ sub.monthlyPrice > 0 ? sub.monthlyPrice + ' EGP' : (lang() === 'ar' ? 'مجاني' : 'Free') }}
+                </div>
+              </div>
+            </div>
+            <div class="mp-stat-item">
+              <!-- Use isExpired() — derived from endDate — not the raw daysRemaining field -->
+              <span class="mp-stat-icon" [ngClass]="isExpiring() ? 'amber' : 'purple'">⏱️</span>
+              <div>
+                <div class="mp-stat-label">{{ t('teacherPlan.daysRemaining') }}</div>
+                <div class="mp-stat-val" [ngClass]="isExpiring() ? 'amber' : ''">
+                  {{ isExpired()
+                      ? (lang() === 'ar' ? 'منتهي' : 'Expired')
+                      : daysLeft() + ' ' + (lang() === 'ar' ? 'يوم' : 'days') }}
+                </div>
+              </div>
+            </div>
+            <div class="mp-stat-item">
+              <span class="mp-stat-icon cyan">📆</span>
+              <div>
+                <div class="mp-stat-label">{{ t('teacherPlan.endDate') }}</div>
+                <div class="mp-stat-val">{{ formatEndDate(sub.endDate) }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Auto-renew & actions -->
+          <div class="mp-plan-footer">
+            <div class="mp-autorenew-row">
+              <div>
+                <div class="mp-ar-label">
+                  🔄 {{ t('teacherPlan.autoRenew') }}
+                </div>
+                <div class="mp-ar-sub">
+                  {{ sub.autoRenew ? t('teacherPlan.autoRenewOn') : t('teacherPlan.autoRenewOff') }}
+                </div>
+              </div>
+              <nz-switch
+                [ngModel]="sub.autoRenew"
+                [nzLoading]="togglingAR()"
+                (ngModelChange)="handleToggleAutoRenew()">
+              </nz-switch>
+            </div>
+
+            <div class="mp-actions-row">
+              <button class="mp-btn-primary"
+                (click)="router.navigate(['../choose-plan'], { relativeTo: null })">
+                ↑ {{ t('teacherPlan.upgradeNow') }}
+              </button>
+              <button class="mp-btn-ghost"
+                (click)="router.navigate(['../choose-plan'], { relativeTo: null, queryParams: { renew: true } })">
+                🔄 {{ t('teacherPlan.renewSubscription') }}
+              </button>
+              @if (sub.status === 'Active') {
+                <button class="mp-btn-ghost mp-btn-danger"
+                  (click)="openCancelModal()">
+                  ⊘ {{ t('teacherPlan.cancelSubscription') }}
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Resources ── -->
+        <div class="mp-section">
+          <div class="mp-section-title">
+            <span>🗄️</span>
+            <span>{{ t('teacherPlan.resourcesTitle') }}</span>
+            <span class="mp-section-count">({{ resources().length }})</span>
+          </div>
+
+          @if (resources().length === 0) {
+            <div class="mp-no-resources">
+              <span>ℹ️</span>
+              <span>{{ t('teacherPlan.noResources') }}</span>
+            </div>
+          } @else {
+            <div class="mp-resources-grid">
+              @for (resource of resources(); track resource.id) {
+                <div class="mp-resource-card"
+                  [ngClass]="{
+                    'near-limit': isResourceNearLimit(resource),
+                    'warning':    isResourceWarning(resource) && !isResourceNearLimit(resource)
+                  }">
+
+                  <div class="mp-resource-header">
+                    <div class="mp-resource-icon-wrap">
+                      {{ getResourceIcon(resource.resourceKey) }}
+                    </div>
+                    <div class="mp-resource-info">
+                      <div class="mp-resource-name">{{ resource.name }}</div>
+                      <div class="mp-resource-type">
+                        {{ getLimitTypeLabel(resource.limitType) }}{{ getUnitLabel(resource.unit) ? ' · ' + getUnitLabel(resource.unit) : '' }}
+                      </div>
+                    </div>
+
+                    <!-- Boolean feature flag -->
+                    @if (isBoolean(resource)) {
+                      <div class="mp-boolean-tag" [ngClass]="resource.isAllowed ? 'yes' : 'no'">
+                        {{ resource.isAllowed
+                          ? (lang() === 'ar' ? 'مفعّل' : 'Enabled')
+                          : (lang() === 'ar' ? 'معطّل' : 'Disabled') }}
+                      </div>
+
+                    <!-- Cap / ceiling resource (e.g. max duration, active slots) -->
+                    } @else if (isCap(resource)) {
+                      <div class="mp-cap-badge">
+                        <span class="mp-cap-value">{{ resource.isUnlimited ? '∞' : resource.total }}</span>
+                        <span class="mp-cap-label">{{ lang() === 'ar' ? 'الحد الأقصى' : 'max' }}</span>
+                      </div>
+
+                    <!-- Consumable quota with usage progress -->
+                    } @else {
+                      <div class="mp-resource-pct"
+                        [style.color]="getProgressColor(getProgressPercent(resource))">
+                        {{ resource.isUnlimited ? '∞' : getProgressPercent(resource) + '%' }}
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Progress bar only for consumable quotas -->
+                  @if (!isBoolean(resource) && !isCap(resource)) {
+                    <nz-progress
+                      [nzPercent]="resource.isUnlimited ? 100 : getProgressPercent(resource)"
+                      [nzStrokeColor]="resource.isUnlimited ? '#22c55e' : getProgressColor(getProgressPercent(resource))"
+                      nzTrailColor="#e2e8f0"
+                      [nzShowInfo]="false"
+                      nzStrokeWidth="7"
+                      class="mp-resource-progress">
+                    </nz-progress>
+
+                    <div class="mp-resource-footer">
+                      <span class="mp-res-used">
+                        {{ resource.isUnlimited
+                          ? (lang() === 'ar' ? 'غير محدود' : 'Unlimited')
+                          : resource.used + (getUnitLabel(resource.unit) ? ' ' + getUnitLabel(resource.unit) : '') + ' ' + (lang() === 'ar' ? 'مستخدم' : 'used') }}
+                      </span>
+                      @if (!resource.isUnlimited) {
+                        <span class="mp-res-total">
+                          {{ lang() === 'ar' ? 'من' : 'of' }}
+                          {{ resource.total }}{{ getUnitLabel(resource.unit) ? ' ' + getUnitLabel(resource.unit) : '' }}
+                        </span>
+                      }
+                    </div>
+
+                    @if (getCountdown(resource)) {
+                      <div class="mp-res-reset">
+                        🔄
+                        {{ lang() === 'ar' ? 'يُعاد تعيينه ' + getCountdown(resource) : 'Resets ' + getCountdown(resource) }}
+                      </div>
+                    }
+
+                    @if (isResourceNearLimit(resource)) {
+                      <div class="mp-res-alert error">
+                        ⚠️ {{ lang() === 'ar' ? 'على وشك الوصول للحد الأقصى' : 'Almost at limit' }}
+                      </div>
+                    } @else if (isResourceWarning(resource)) {
+                      <div class="mp-res-alert warn">
+                        ℹ️ {{ lang() === 'ar' ? 'استخدام مرتفع' : 'High usage' }}
+                      </div>
+                    }
+                  }
+
+                  <!-- Cap resource: show the ceiling value descriptively -->
+                  @if (isCap(resource)) {
+                    <div class="mp-cap-desc">
+                      {{ resource.description || (lang() === 'ar' ? 'الحد المسموح به لهذا البند' : 'Allowed limit for this item') }}
+                    </div>
+                  }
+
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- ── Features ── -->
+        @if (planDetail()?.features && planDetail()!.features.length > 0) {
+          <div class="mp-section">
+            <div class="mp-section-title">
+              <span>⭐</span>
+              <span>{{ t('teacherPlan.features') }}</span>
+            </div>
+            <div class="mp-features-grid">
+              @for (feature of sortedFeatures(); track feature.id) {
+                <div class="mp-feature-row" [ngClass]="feature.isAvailable ? 'yes' : 'no'">
+                  <span class="mp-feature-icon">
+                    {{ feature.isAvailable ? '✓' : '✗' }}
+                  </span>
+                  <span class="mp-feature-text">{{ feature.description }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      }
+
+    </div><!-- /mp-body -->
+  </div><!-- /mp-root -->
+  }
+
+  <!-- ════════════════════════════════════════════════════════
+       CANCEL MODAL
+  ════════════════════════════════════════════════════════ -->
+  <nz-modal
+    class="mp-modal"
+    [nzVisible]="cancelModal().visible"
+    [nzTitle]="cancelModalTitle"
+    [nzFooter]="cancelModalFooter"
+    nzWidth="480"
+    (nzOnCancel)="closeCancelModal()">
+
+    <ng-template #cancelModalTitle>
+      <div class="mp-modal-title">
+        <span style="color:#ef4444; font-size:18px">⊘</span>
+        <div>
+          <div class="mp-modal-name">{{ t('teacherPlan.cancelSubscription') }}</div>
+          <div class="mp-modal-sub">{{ t('teacherPlan.cancelConfirm') }}</div>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-container *nzModalContent>
+      <nz-alert
+        nzType="warning"
+        nzShowIcon
+        [nzMessage]="t('teacherPlan.cancelConfirmDesc')"
+        class="mp-modal-alert">
+      </nz-alert>
+      <div class="mp-modal-field-label">{{ t('teacherPlan.cancelReason') }}</div>
+      <textarea nz-input
+        rows="3"
+        [placeholder]="t('teacherPlan.cancelReasonPlaceholder')"
+        [ngModel]="cancelModal().reason"
+        (ngModelChange)="updateCancelReason($event)"
+        maxlength="500"
+        class="mp-modal-textarea">
+      </textarea>
+      <div class="mp-modal-char-count">{{ cancelModal().reason.length }}/500</div>
+    </ng-container>
+
+    <ng-template #cancelModalFooter>
+      <button class="mp-btn-ghost" (click)="closeCancelModal()">
+        {{ t('teacherPlan.keepPlan') }}
+      </button>
+      <button class="mp-btn-danger-solid"
+        [disabled]="cancelModal().loading"
+        (click)="handleCancel()">
+        @if (cancelModal().loading) {
+          <nz-spin nzSize="small"></nz-spin>
+        }
+        ⊘ {{ t('teacherPlan.confirmCancel') }}
+      </button>
+    </ng-template>
+  </nz-modal>
