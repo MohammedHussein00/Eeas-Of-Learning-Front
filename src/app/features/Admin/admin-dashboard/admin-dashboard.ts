@@ -46,7 +46,7 @@ export interface PlatformStats {
 export interface MonthlyRow    { month: string; revenue: number; enrollments: number; }
 export interface CourseItem    { id: string; title: string; studentCount: number; rating: number; ratingCount: number; totalRevenue: number; isPublished: boolean; instructorName?: string; categoryName?: string; currentPrice?: string; }
 export interface TeacherItem   { userId: string; fullName: string; profilePictureUrl?: string; isVerified: boolean; createdAt: string; }
-export interface PayoutItem    { id: string; teacherName: string; teacherEmail?: string; totalAmount?: number; netAmount?: number; platformFee?: number; status: string | number; createdAt: string; paidAt?: string; payoutMethod?: string; recipientNumber?: string; }
+export interface PayoutItem    { id: string; teacherName: string; teacherEmail?: string; totalAmount: number; netAmount: number; platformFee: number; status: string | number; createdAt: string; paidAt?: string; payoutMethod?: string; recipientNumber?: string; }
 export interface SubjectItem   { id: string; name: string; questionCount: number; isActive: boolean; color?: string; }
 export interface UserDist      { role: string; count: number; color: string; }
 export interface RadialRow     { name: string; value: number; fill: string; }

@@ -73,9 +73,9 @@ export class Login {
       if (res.message) { this.errorMsg.set(res.message); return; }
       this.auth.saveSession(res);
       const role = this.auth.getRole();
-      if      (role === 'Admin')   this.router.navigateByUrl('/dash/dashboard');
-      else if (role === 'Teacher') this.router.navigateByUrl('/teacher/dashboard');
-      else                         this.router.navigateByUrl('/student/dashboard');
+      console.log(res)
+      if (role === 'Admin') this.router.navigateByUrl('/dash/dashboard');
+      else                  this.router.navigateByUrl('/teacher/dashboard');
     } catch (err: unknown) {
       if (err instanceof HttpErrorResponse) {
         if      (err.status === 401) this.errorMsg.set(this.transloco.translate('login.invalidCredentials'));

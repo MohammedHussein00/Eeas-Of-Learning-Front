@@ -35,13 +35,6 @@ export const routes: Routes = [
     loadComponent: () => import('./features/Admin/admin-layout/admin-layout').then(m => m.AdminLayout),
     loadChildren: () => import('./core/Routes/admin.routes').then(m => m.TEACHER_ROUTES),
   },
-  {
-    path: 'student',
-    canActivate: [authGuardFn],
-    data: { roles: ['Student'] },
-    loadComponent: () => import('./features/Student/student-layout/student-layout').then(m => m.StudentLayout),
-    loadChildren: () => import('./core/Routes/student.routes').then(m => m.STUDENT_ROUTES),
-  },
   { path: '', redirectTo: '/login', pathMatch: 'full' },
   { path: '**', redirectTo: '/login' }
 ];
