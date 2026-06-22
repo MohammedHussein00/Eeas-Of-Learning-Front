@@ -1,0 +1,141 @@
+// features/Student/student-my-courses/student-my-courses.scss
+$brand: #3d5af1;
+$text: #1a2342;
+$muted: #6b7280;
+$border: #eaecf5;
+
+:host { display: block; font-family: 'DM Sans', sans-serif; }
+
+.mc-head {
+  margin-bottom: 1.2rem;
+  h1 { font-size: 1.4rem; font-weight: 800; color: $text; margin: 0 0 0.2rem; }
+  p { margin: 0; color: $muted; font-size: 0.9rem; }
+}
+
+.mc-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.mc-tab {
+  padding: 0.5rem 1.1rem;
+  border: 1px solid $border;
+  background: #fff;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: $muted;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover { border-color: $brand; color: $brand; }
+  &.active {
+    background: $brand;
+    color: #fff;
+    border-color: $brand;
+  }
+}
+
+.mc-loading { display: flex; justify-content: center; padding: 4rem 0; }
+
+.mc-empty {
+  text-align: center;
+  padding: 3.5rem 1rem;
+  background: #fff;
+  border: 1px dashed #d1d5db;
+  border-radius: 14px;
+  color: $muted;
+  lucide-icon { color: #c4cad6; }
+  h3 { color: $text; margin: 0.8rem 0 0.3rem; font-size: 1.05rem; }
+  p { margin: 0 0 1.2rem; font-size: 0.88rem; }
+}
+
+.mc-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: $brand;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 0.7rem 1.4rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  &:hover { background: #324bd4; }
+}
+
+.mc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 1.2rem;
+}
+
+.mc-card {
+  background: #fff;
+  border: 1px solid $border;
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 28px rgba(0,0,0,0.1);
+    .mc-play { opacity: 1; }
+  }
+}
+
+.mc-thumb {
+  position: relative;
+  height: 150px;
+  background: linear-gradient(135deg, #eef0ff, #e4e8ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #b9c2e8;
+  img { width: 100%; height: 100%; object-fit: cover; }
+}
+
+.mc-badge-done {
+  position: absolute;
+  top: 10px;
+  inset-inline-start: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: #16a34a;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+}
+
+.mc-play {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(26, 35, 66, 0.35);
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.mc-body { padding: 1rem 1.1rem 1.2rem; }
+
+.mc-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: $text;
+  margin: 0 0 0.2rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.mc-instructor { font-size: 0.8rem; color: $muted; margin-bottom: 0.6rem; }
+.mc-meta { font-size: 0.78rem; color: $muted; margin-top: 0.2rem; }

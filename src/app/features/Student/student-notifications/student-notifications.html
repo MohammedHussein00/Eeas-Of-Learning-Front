@@ -1,0 +1,40 @@
+<!-- features/Student/student-notifications/student-notifications.html -->
+<div class="nt-root">
+  <div class="nt-head">
+    <h1><lucide-icon [img]="BellIcon" [size]="22"></lucide-icon> {{ 'title' | transloco }}</h1>
+    <button class="nt-mark-all" (click)="markAllRead()">
+      <lucide-icon [img]="CheckIcon" [size]="15"></lucide-icon>
+      {{ 'markAllRead' | transloco }}
+    </button>
+  </div>
+
+  @if (loading()) {
+    <div class="nt-loading"><nz-spin nzSimple nzSize="large"></nz-spin></div>
+  } @else if (items().length === 0) {
+    <div class="nt-empty">
+      <lucide-icon [img]="BellIcon" [size]="44"></lucide-icon>
+      <p>{{ 'empty' | transloco }}</p>
+    </div>
+  } @else {
+    <div class="nt-list">
+      @for (item of items(); track item.id) {
+        <div class="nt-item" [class.unread]="!item.isRead" (click)="markRead(item)">
+          <div class="nt-icon" [class.unread]="!item.isRead">
+            <lucide-icon [img]="BellIcon" [size]="16"></lucide-icon>
+          </div>
+          <div class="nt-body">
+            <div class="nt-title">{{ item.title }}</div>
+            <div class="nt-msg">{{ item.body }}</div>
+            <div class="nt-meta">
+              <lucide-icon [img]="ClockIcon" [size]="12"></lucide-icon>
+              {{ getTimeAgo(item.createdAt) }}
+            </div>
+          </div>
+          <button class="nt-del" (click)="remove(item); $event.stopPropagation()">
+            <lucide-icon [img]="TrashIcon" [size]="15"></lucide-icon>
+          </button>
+        </div>
+      }
+    </div>
+  }
+</div>

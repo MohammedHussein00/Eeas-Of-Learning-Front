@@ -1,0 +1,44 @@
+<!-- features/Student/student-referral/student-referral.html -->
+<div class="rf-root">
+  <div class="rf-head">
+    <h1><lucide-icon [img]="GiftIcon" [size]="22"></lucide-icon> {{ 'title' | transloco }}</h1>
+    <p>{{ 'subtitle' | transloco }}</p>
+  </div>
+
+  @if (loading()) {
+    <div class="rf-loading"><nz-spin nzSimple nzSize="large"></nz-spin></div>
+  } @else if (!stats()) {
+    <div class="rf-empty">{{ 'unavailable' | transloco }}</div>
+  } @else {
+    <!-- Stats -->
+    <div class="rf-stats">
+      <div class="rf-stat">
+        <div class="rf-stat-icon blue"><lucide-icon [img]="UsersIcon" [size]="20"></lucide-icon></div>
+        <div>
+          <div class="rf-stat-value">{{ stats()!.friendsInvited }}</div>
+          <div class="rf-stat-label">{{ 'friendsInvited' | transloco }}</div>
+        </div>
+      </div>
+      <div class="rf-stat">
+        <div class="rf-stat-icon green"><lucide-icon [img]="WalletIcon" [size]="20"></lucide-icon></div>
+        <div>
+          <div class="rf-stat-value">{{ stats()!.totalEarned }}</div>
+          <div class="rf-stat-label">{{ 'totalEarned' | transloco }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Code card -->
+    <div class="rf-code-card">
+      <div class="rf-code-label">{{ 'yourCode' | transloco }}</div>
+      <div class="rf-code-row">
+        <div class="rf-code">{{ stats()!.code }}</div>
+        <button class="rf-copy" (click)="copyCode()">
+          <lucide-icon [img]="copied() ? CheckIcon : CopyIcon" [size]="16"></lucide-icon>
+          {{ (copied() ? 'copied' : 'copyLink') | transloco }}
+        </button>
+      </div>
+      <p class="rf-hint">{{ 'hint' | transloco }}</p>
+    </div>
+  }
+</div>

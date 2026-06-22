@@ -1,0 +1,11 @@
+{
+  "title": "My Courses",
+  "subtitle": "All the courses you're enrolled in.",
+  "all": "All",
+  "inProgress": "In Progress",
+  "completed": "Completed",
+  "lectures": "lectures",
+  "browseCourses": "Browse Courses",
+  "emptyTitle": "Nothing here yet",
+  "emptySub": "You have no courses in this category."
+}

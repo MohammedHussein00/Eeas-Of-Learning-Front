@@ -1,0 +1,22 @@
+{
+  "sectionLearn": "التعلّم",
+  "sectionProgress": "التقدّم",
+  "sectionMessages": "الرسائل",
+  "sectionAccount": "الحساب",
+
+  "dashboard": "الرئيسية",
+  "myCourses": "كورساتي",
+  "leaderboard": "المتصدّرون",
+  "myReviews": "تقييماتي",
+  "notifications": "الإشعارات",
+  "messages": "الرسائل",
+  "subscription": "الاشتراك",
+  "referral": "ادعُ صديقًا",
+  "myProfile": "ملفي الشخصي",
+  "logout": "تسجيل الخروج",
+
+  "student": "طالب",
+  "markAllRead": "تعليم الكل كمقروء",
+  "noNotifications": "لا توجد إشعارات",
+  "viewAllNotifications": "عرض كل الإشعارات"
+}

@@ -1,0 +1,101 @@
+<!-- features/Student/student-dashboard/student-dashboard.html -->
+<div class="sd-root">
+  @if (loading()) {
+    <div class="sd-loading"><nz-spin nzSimple nzSize="large"></nz-spin></div>
+  } @else {
+    <!-- Greeting -->
+    <div class="sd-hero">
+      <div class="sd-hero-text">
+        <h1>{{ 'welcome' | transloco }}, {{ studentName() }} 👋</h1>
+        <p>{{ 'welcomeSub' | transloco }}</p>
+      </div>
+      <button class="sd-btn-primary" (click)="browseCourses()">
+        <lucide-icon [img]="BookOpenIcon" [size]="16"></lucide-icon>
+        {{ 'browseCourses' | transloco }}
+      </button>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="sd-stats">
+      <div class="sd-stat-card">
+        <div class="sd-stat-icon blue"><lucide-icon [img]="BookOpenIcon" [size]="22"></lucide-icon></div>
+        <div>
+          <div class="sd-stat-value">{{ stats().enrolled }}</div>
+          <div class="sd-stat-label">{{ 'enrolledCourses' | transloco }}</div>
+        </div>
+      </div>
+      <div class="sd-stat-card">
+        <div class="sd-stat-icon green"><lucide-icon [img]="CheckIcon" [size]="22"></lucide-icon></div>
+        <div>
+          <div class="sd-stat-value">{{ stats().completed }}</div>
+          <div class="sd-stat-label">{{ 'completedCourses' | transloco }}</div>
+        </div>
+      </div>
+      <div class="sd-stat-card">
+        <div class="sd-stat-icon orange"><lucide-icon [img]="PlayIcon" [size]="22"></lucide-icon></div>
+        <div>
+          <div class="sd-stat-value">{{ stats().inProgress }}</div>
+          <div class="sd-stat-label">{{ 'inProgress' | transloco }}</div>
+        </div>
+      </div>
+      <div class="sd-stat-card sd-xp-card" (click)="goToLeaderboard()">
+        <div class="sd-stat-icon purple"><lucide-icon [img]="TrophyIcon" [size]="22"></lucide-icon></div>
+        <div>
+          <div class="sd-stat-value">{{ xp()?.totalXp ?? 0 }} <span class="sd-xp-unit">XP</span></div>
+          <div class="sd-stat-label">
+            {{ 'rank' | transloco }} #{{ xp()?.allTimeRank ?? '—' }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Continue learning -->
+    <div class="sd-section">
+      <div class="sd-section-head">
+        <h2>{{ 'continueLearning' | transloco }}</h2>
+        <button class="sd-link" (click)="goToCourses()">
+          {{ 'viewAll' | transloco }}
+          <lucide-icon [img]="ArrowRightIcon" [size]="14"></lucide-icon>
+        </button>
+      </div>
+
+      @if (continueLearning().length === 0) {
+        <div class="sd-empty">
+          <lucide-icon [img]="GraduationIcon" [size]="46"></lucide-icon>
+          <h3>{{ 'noCoursesTitle' | transloco }}</h3>
+          <p>{{ 'noCoursesSub' | transloco }}</p>
+          <button class="sd-btn-primary" (click)="browseCourses()">{{ 'browseCourses' | transloco }}</button>
+        </div>
+      } @else {
+        <div class="sd-course-grid">
+          @for (course of continueLearning(); track course.id) {
+            <div class="sd-course-card" (click)="continueCourse(course)">
+              <div class="sd-course-thumb">
+                @if (course.thumbnailUrl) {
+                  <img [src]="course.thumbnailUrl" [alt]="course.title">
+                } @else {
+                  <lucide-icon [img]="BookOpenIcon" [size]="32"></lucide-icon>
+                }
+                <div class="sd-course-play"><lucide-icon [img]="PlayIcon" [size]="20"></lucide-icon></div>
+              </div>
+              <div class="sd-course-body">
+                <h3 class="sd-course-title">{{ course.title }}</h3>
+                @if (course.instructorName) {
+                  <div class="sd-course-instructor">{{ course.instructorName }}</div>
+                }
+                <nz-progress
+                  [nzPercent]="course.completionPercentage"
+                  nzStrokeColor="#3d5af1"
+                  [nzStrokeWidth]="6">
+                </nz-progress>
+                <div class="sd-course-meta">
+                  {{ course.completedLectures }}/{{ course.totalLectures }} {{ 'lectures' | transloco }}
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

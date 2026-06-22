@@ -1,0 +1,79 @@
+<!-- features/Student/student-quiz/student-quiz.html -->
+<div class="qz-root">
+  <button class="qz-back" (click)="back()">
+    <lucide-icon [img]="BackIcon" [size]="16"></lucide-icon>
+    {{ 'back' | transloco }}
+  </button>
+
+  @if (loading()) {
+    <div class="qz-loading"><nz-spin nzSimple nzSize="large"></nz-spin></div>
+  } @else if (!quiz()) {
+    <div class="qz-empty">{{ 'notFound' | transloco }}</div>
+  } @else {
+    <!-- Intro -->
+    @if (phase() === 'intro') {
+      <div class="qz-card qz-intro">
+        <div class="qz-intro-icon"><lucide-icon [img]="AwardIcon" [size]="40"></lucide-icon></div>
+        <h1>{{ quiz()!.title }}</h1>
+        @if (quiz()!.description) { <p>{{ quiz()!.description }}</p> }
+        <div class="qz-intro-meta">
+          <span>{{ quiz()!.questions.length }} {{ 'questions' | transloco }}</span>
+          @if (quiz()!.passingScore) {
+            <span>{{ 'passingScore' | transloco }}: {{ quiz()!.passingScore }}%</span>
+          }
+        </div>
+        <button class="qz-btn-primary" (click)="start()">{{ 'startQuiz' | transloco }}</button>
+      </div>
+    }
+
+    <!-- Taking -->
+    @if (phase() === 'taking') {
+      <div class="qz-progress-bar">
+        <span>{{ answeredCount() }}/{{ totalQuestions() }} {{ 'answered' | transloco }}</span>
+        <div class="qz-bar"><div class="qz-bar-fill" [style.width.%]="(answeredCount() / totalQuestions()) * 100"></div></div>
+      </div>
+
+      @for (question of quiz()!.questions; track question.id; let i = $index) {
+        <div class="qz-card qz-question">
+          <div class="qz-q-text"><span class="qz-q-num">{{ i + 1 }}</span> {{ question.text }}</div>
+          <div class="qz-options">
+            @for (option of question.options; track option.id) {
+              <button
+                class="qz-option"
+                [class.selected]="isSelected(question.id, option.id)"
+                (click)="selectAnswer(question.id, option.id)">
+                <span class="qz-radio"></span>
+                {{ option.text }}
+              </button>
+            }
+          </div>
+        </div>
+      }
+
+      <button class="qz-btn-primary qz-submit" (click)="submit()" [disabled]="!allAnswered() || submitting()">
+        {{ 'submit' | transloco }}
+      </button>
+    }
+
+    <!-- Result -->
+    @if (phase() === 'result' && result()) {
+      <div class="qz-card qz-result">
+        <div class="qz-result-icon" [class.passed]="result()!.passed" [class.failed]="!result()!.passed">
+          <lucide-icon [img]="result()!.passed ? CheckIcon : XIcon" [size]="48"></lucide-icon>
+        </div>
+        <h1>{{ (result()!.passed ? 'passedTitle' : 'failedTitle') | transloco }}</h1>
+        <div class="qz-score">{{ result()!.score }}%</div>
+        <div class="qz-result-meta">
+          {{ result()!.correctAnswers }}/{{ result()!.totalQuestions }} {{ 'correct' | transloco }}
+        </div>
+        <div class="qz-result-actions">
+          <button class="qz-btn-ghost" (click)="retake()">
+            <lucide-icon [img]="RetryIcon" [size]="15"></lucide-icon>
+            {{ 'retake' | transloco }}
+          </button>
+          <button class="qz-btn-primary" (click)="back()">{{ 'backToCourse' | transloco }}</button>
+        </div>
+      </div>
+    }
+  }
+</div>

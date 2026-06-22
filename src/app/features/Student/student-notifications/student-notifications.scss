@@ -1,0 +1,103 @@
+// features/Student/student-notifications/student-notifications.scss
+$brand: #3d5af1;
+$text: #1a2342;
+$muted: #6b7280;
+$border: #eaecf5;
+
+:host { display: block; font-family: 'DM Sans', sans-serif; }
+
+.nt-root { max-width: 760px; margin: 0 auto; }
+
+.nt-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.2rem;
+  flex-wrap: wrap;
+  h1 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: $text;
+    margin: 0;
+    lucide-icon { color: $brand; }
+  }
+}
+
+.nt-mark-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #fff;
+  border: 1px solid $border;
+  border-radius: 10px;
+  padding: 0.55rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: $brand;
+  cursor: pointer;
+  &:hover { background: #eef0ff; }
+}
+
+.nt-loading { display: flex; justify-content: center; padding: 4rem 0; }
+
+.nt-empty {
+  text-align: center;
+  padding: 3.5rem 1rem;
+  color: $muted;
+  lucide-icon { color: #c4cad6; }
+  p { margin: 0.8rem 0 0; }
+}
+
+.nt-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.nt-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  background: #fff;
+  border: 1px solid $border;
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease;
+  &:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.06); }
+  &.unread { background: rgba(61, 90, 241, 0.04); border-color: #d3dbfb; }
+}
+
+.nt-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f4f6fb;
+  color: $muted;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  &.unread { background: #eef0ff; color: $brand; }
+}
+
+.nt-body { flex: 1; min-width: 0; }
+.nt-title { font-weight: 700; color: $text; font-size: 0.9rem; margin-bottom: 0.15rem; }
+.nt-msg { font-size: 0.84rem; color: $muted; }
+.nt-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
+  font-size: 0.74rem;
+  color: #9ca3af;
+}
+
+.nt-del {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: #c4cad6;
+  cursor: pointer;
+  &:hover { color: #dc2626; }
+}

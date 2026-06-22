@@ -1,0 +1,61 @@
+<!-- features/Student/student-my-courses/student-my-courses.html -->
+<div class="mc-root">
+  <div class="mc-head">
+    <h1>{{ 'title' | transloco }}</h1>
+    <p>{{ 'subtitle' | transloco }}</p>
+  </div>
+
+  <div class="mc-tabs">
+    @for (f of filters; track f.key) {
+      <button class="mc-tab" [class.active]="filter() === f.key" (click)="setFilter(f.key)">
+        {{ f.label | transloco }}
+      </button>
+    }
+  </div>
+
+  @if (loading()) {
+    <div class="mc-loading"><nz-spin nzSimple nzSize="large"></nz-spin></div>
+  } @else if (visible().length === 0) {
+    <div class="mc-empty">
+      <lucide-icon [img]="GraduationIcon" [size]="46"></lucide-icon>
+      <h3>{{ 'emptyTitle' | transloco }}</h3>
+      <p>{{ 'emptySub' | transloco }}</p>
+      <button class="mc-btn-primary" (click)="browseCourses()">{{ 'browseCourses' | transloco }}</button>
+    </div>
+  } @else {
+    <div class="mc-grid">
+      @for (course of visible(); track course.id) {
+        <div class="mc-card" (click)="open(course)">
+          <div class="mc-thumb">
+            @if (course.thumbnailUrl) {
+              <img [src]="course.thumbnailUrl" [alt]="course.title">
+            } @else {
+              <lucide-icon [img]="BookOpenIcon" [size]="32"></lucide-icon>
+            }
+            @if (course.isCompleted) {
+              <div class="mc-badge-done">
+                <lucide-icon [img]="CheckIcon" [size]="13"></lucide-icon>
+                {{ 'completed' | transloco }}
+              </div>
+            }
+            <div class="mc-play"><lucide-icon [img]="PlayIcon" [size]="22"></lucide-icon></div>
+          </div>
+          <div class="mc-body">
+            <h3 class="mc-title">{{ course.title }}</h3>
+            @if (course.instructorName) {
+              <div class="mc-instructor">{{ course.instructorName }}</div>
+            }
+            <nz-progress
+              [nzPercent]="course.completionPercentage"
+              [nzStrokeColor]="course.isCompleted ? '#16a34a' : '#3d5af1'"
+              [nzStrokeWidth]="6">
+            </nz-progress>
+            <div class="mc-meta">
+              {{ course.completedLectures }}/{{ course.totalLectures }} {{ 'lectures' | transloco }}
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

@@ -1,0 +1,14 @@
+{
+  "welcome": "Welcome",
+  "welcomeSub": "Pick up where you left off and keep learning.",
+  "browseCourses": "Browse Courses",
+  "enrolledCourses": "Enrolled Courses",
+  "completedCourses": "Completed",
+  "inProgress": "In Progress",
+  "rank": "Rank",
+  "continueLearning": "Continue Learning",
+  "viewAll": "View all",
+  "lectures": "lectures",
+  "noCoursesTitle": "You haven't enrolled in any course yet",
+  "noCoursesSub": "Browse the catalog and start your learning journey."
+}

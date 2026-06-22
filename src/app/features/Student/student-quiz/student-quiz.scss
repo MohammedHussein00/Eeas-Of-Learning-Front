@@ -1,0 +1,189 @@
+// features/Student/student-quiz/student-quiz.scss
+$brand: #3d5af1;
+$text: #1a2342;
+$muted: #6b7280;
+$border: #eaecf5;
+
+:host { display: block; font-family: 'DM Sans', sans-serif; }
+
+.qz-root { max-width: 760px; margin: 0 auto; }
+.qz-loading { display: flex; justify-content: center; padding: 4rem 0; }
+.qz-empty { text-align: center; color: $muted; padding: 3rem; }
+
+.qz-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  color: $muted;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  margin-bottom: 1rem;
+  &:hover { color: $brand; }
+}
+
+.qz-card {
+  background: #fff;
+  border: 1px solid $border;
+  border-radius: 16px;
+  padding: 1.6rem;
+  margin-bottom: 1rem;
+}
+
+/* Intro */
+.qz-intro {
+  text-align: center;
+  padding: 2.5rem 2rem;
+
+  h1 { font-size: 1.4rem; font-weight: 800; color: $text; margin: 0 0 0.5rem; }
+  p { color: $muted; margin: 0 0 1rem; font-size: 0.9rem; }
+}
+
+.qz-intro-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1rem;
+  border-radius: 20px;
+  background: #eef0ff;
+  color: $brand;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qz-intro-meta {
+  display: flex;
+  justify-content: center;
+  gap: 1.2rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
+  color: $muted;
+  font-weight: 600;
+}
+
+/* Progress */
+.qz-progress-bar {
+  margin-bottom: 1rem;
+  span { font-size: 0.82rem; font-weight: 600; color: $muted; }
+}
+.qz-bar {
+  height: 8px;
+  background: #eef0ff;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 0.4rem;
+}
+.qz-bar-fill { height: 100%; background: $brand; transition: width 0.3s ease; }
+
+/* Question */
+.qz-q-text {
+  font-size: 1rem;
+  font-weight: 700;
+  color: $text;
+  margin-bottom: 1rem;
+  display: flex;
+  gap: 0.6rem;
+}
+.qz-q-num {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: $brand;
+  color: #fff;
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qz-options { display: flex; flex-direction: column; gap: 0.6rem; }
+
+.qz-option {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: 100%;
+  text-align: start;
+  background: #f9fafb;
+  border: 1.5px solid $border;
+  border-radius: 10px;
+  padding: 0.8rem 1rem;
+  font-size: 0.9rem;
+  color: $text;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover { border-color: #c7d0f7; background: #f4f6fb; }
+  &.selected { border-color: $brand; background: #eef0ff;
+    .qz-radio { border-color: $brand; &::after { transform: scale(1); } }
+  }
+}
+
+.qz-radio {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  position: relative;
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border-radius: 50%;
+    background: $brand;
+    transform: scale(0);
+    transition: transform 0.15s ease;
+  }
+}
+
+.qz-btn-primary {
+  background: $brand;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 0.75rem 1.6rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  &:hover { background: #324bd4; }
+  &:disabled { opacity: 0.5; cursor: default; }
+}
+.qz-submit { width: 100%; margin-top: 0.5rem; }
+
+.qz-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #f4f6fb;
+  color: $text;
+  border: 1px solid $border;
+  border-radius: 10px;
+  padding: 0.75rem 1.4rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  &:hover { background: #eef0ff; color: $brand; }
+}
+
+/* Result */
+.qz-result { text-align: center; padding: 2.5rem 2rem;
+  h1 { font-size: 1.4rem; font-weight: 800; color: $text; margin: 0 0 0.4rem; }
+}
+.qz-result-icon {
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  &.passed { background: #e8f8ef; color: #16a34a; }
+  &.failed { background: #fef2f2; color: #dc2626; }
+}
+.qz-score { font-size: 2.5rem; font-weight: 800; color: $brand; }
+.qz-result-meta { color: $muted; font-size: 0.9rem; margin-bottom: 1.5rem; }
+.qz-result-actions { display: flex; justify-content: center; gap: 0.8rem; flex-wrap: wrap; }

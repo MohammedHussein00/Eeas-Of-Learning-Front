@@ -1,0 +1,14 @@
+{
+  "welcome": "أهلاً",
+  "welcomeSub": "أكمل من حيث توقفت واستمر في التعلّم.",
+  "browseCourses": "تصفّح الكورسات",
+  "enrolledCourses": "الكورسات المسجّلة",
+  "completedCourses": "المكتملة",
+  "inProgress": "قيد التقدّم",
+  "rank": "الترتيب",
+  "continueLearning": "أكمل التعلّم",
+  "viewAll": "عرض الكل",
+  "lectures": "محاضرة",
+  "noCoursesTitle": "لم تسجّل في أي كورس بعد",
+  "noCoursesSub": "تصفّح الكتالوج وابدأ رحلة تعلّمك."
+}
