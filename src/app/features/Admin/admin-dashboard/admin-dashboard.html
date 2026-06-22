@@ -1,1 +1,305 @@
-<p>admin-dashboard works!</p>
+<!-- features/admin/dashboard/admin-dashboard.html -->
+<div class="ad-root">
+  <!-- Header -->
+  <div class="ad-topbar">
+    <div>
+      <h1>{{ 'title' | transloco }}</h1>
+      <p class="ad-today">{{ today }}</p>
+    </div>
+    <button class="ad-refresh" (click)="fetchAll(true)" [disabled]="refreshing()">
+      <lucide-icon [img]="RefreshCwIcon" [size]="16" [class.spinning]="refreshing()"></lucide-icon>
+      {{ 'refresh' | transloco }}
+    </button>
+  </div>
+
+  @if (loading()) {
+    <div class="ad-loading">
+      <lucide-icon [img]="ActivityIcon" [size]="34" class="spinning"></lucide-icon>
+      <span>{{ 'loading' | transloco }}</span>
+    </div>
+  } @else if (error() && !stats()) {
+    <div class="ad-error">
+      <lucide-icon [img]="AlertTriangleIcon" [size]="34"></lucide-icon>
+      <p>{{ 'loadError' | transloco }}</p>
+      <button class="ad-refresh" (click)="fetchAll()">{{ 'retry' | transloco }}</button>
+    </div>
+  } @else if (stats(); as s) {
+    <!-- KPI cards -->
+    <div class="ad-kpis">
+      <div class="ad-kpi">
+        <div class="ad-kpi-icon indigo"><lucide-icon [img]="UsersIcon" [size]="20"></lucide-icon></div>
+        <div class="ad-kpi-body">
+          <div class="ad-kpi-value">{{ fmtNum(s.totalUsers) }}</div>
+          <div class="ad-kpi-label">{{ 'totalUsers' | transloco }}</div>
+          <div class="ad-kpi-badge up">
+            <lucide-icon [img]="ChevronUpIcon" [size]="12"></lucide-icon>
+            +{{ fmtNum(s.newUsersThisMonth) }} {{ 'thisMonth' | transloco }}
+          </div>
+        </div>
+      </div>
+
+      <div class="ad-kpi">
+        <div class="ad-kpi-icon emerald"><lucide-icon [img]="DollarSignIcon" [size]="20"></lucide-icon></div>
+        <div class="ad-kpi-body">
+          <div class="ad-kpi-value">{{ fmtMoney(s.totalRevenue) }}</div>
+          <div class="ad-kpi-label">{{ 'totalRevenue' | transloco }}</div>
+          <div class="ad-kpi-badge up">
+            <lucide-icon [img]="TrendingUpIcon" [size]="12"></lucide-icon>
+            {{ fmtMoney(s.revenueThisMonth) }} {{ 'thisMonth' | transloco }}
+          </div>
+        </div>
+      </div>
+
+      <div class="ad-kpi">
+        <div class="ad-kpi-icon amber"><lucide-icon [img]="BookOpenIcon" [size]="20"></lucide-icon></div>
+        <div class="ad-kpi-body">
+          <div class="ad-kpi-value">{{ fmtNum(s.totalCourses) }}</div>
+          <div class="ad-kpi-label">{{ 'totalCourses' | transloco }}</div>
+          <div class="ad-kpi-badge neu">
+            <lucide-icon [img]="CheckCircleIcon" [size]="12"></lucide-icon>
+            {{ fmtNum(s.publishedCourses) }} {{ 'published' | transloco }}
+          </div>
+        </div>
+      </div>
+
+      <div class="ad-kpi">
+        <div class="ad-kpi-icon rose"><lucide-icon [img]="LayersIcon" [size]="20"></lucide-icon></div>
+        <div class="ad-kpi-body">
+          <div class="ad-kpi-value">{{ fmtNum(s.totalEnrollments) }}</div>
+          <div class="ad-kpi-label">{{ 'enrollments' | transloco }}</div>
+          <div class="ad-kpi-badge up">
+            <lucide-icon [img]="ChevronUpIcon" [size]="12"></lucide-icon>
+            +{{ fmtNum(s.enrollmentsThisMonth) }} {{ 'thisMonth' | transloco }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Secondary stat strip -->
+    <div class="ad-substats">
+      <div class="ad-substat" (click)="goTo('/dash/academics')">
+        <lucide-icon [img]="ShieldIcon" [size]="18"></lucide-icon>
+        <div>
+          <span class="ad-substat-value">{{ fmtNum(s.verifiedTeachers) }}/{{ fmtNum(s.totalTeachers) }}</span>
+          <span class="ad-substat-label">{{ 'verifiedTeachers' | transloco }}</span>
+        </div>
+      </div>
+      <div class="ad-substat">
+        <lucide-icon [img]="ClockIcon" [size]="18"></lucide-icon>
+        <div>
+          <span class="ad-substat-value">{{ fmtNum(s.pendingVerifications) }}</span>
+          <span class="ad-substat-label">{{ 'pendingVerifications' | transloco }}</span>
+        </div>
+      </div>
+      <div class="ad-substat">
+        <lucide-icon [img]="StarIcon" [size]="18"></lucide-icon>
+        <div>
+          <span class="ad-substat-value">{{ s.averageCourseRating | number:'1.1-1' }}</span>
+          <span class="ad-substat-label">{{ 'avgRating' | transloco }}</span>
+        </div>
+      </div>
+      <div class="ad-substat">
+        <lucide-icon [img]="CreditCardIcon" [size]="18"></lucide-icon>
+        <div>
+          <span class="ad-substat-value">{{ fmtNum(s.activeSubscriptions) }}</span>
+          <span class="ad-substat-label">{{ 'activeSubscriptions' | transloco }}</span>
+        </div>
+      </div>
+      <div class="ad-substat" (click)="goTo('/dash/plans')">
+        <lucide-icon [img]="ActivityIcon" [size]="18"></lucide-icon>
+        <div>
+          <span class="ad-substat-value">{{ fmtNum(s.pendingPayouts) }}</span>
+          <span class="ad-substat-label">{{ 'pendingPayouts' | transloco }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts row -->
+    <div class="ad-grid">
+      <!-- Monthly revenue / enrollments bars -->
+      <div class="ad-card ad-col-2">
+        <div class="ad-card-head">
+          <h2><lucide-icon [img]="BarChart3Icon" [size]="18"></lucide-icon> {{ 'monthlyOverview' | transloco }}</h2>
+          <div class="ad-legend">
+            <span class="ad-legend-item"><i class="dot rev"></i>{{ 'revenue' | transloco }}</span>
+            <span class="ad-legend-item"><i class="dot enr"></i>{{ 'enrollments' | transloco }}</span>
+          </div>
+        </div>
+        @if (allZero(chartData(), 'revenue') && allZero(chartData(), 'enrollments')) {
+          <div class="ad-empty-chart">{{ 'noChartData' | transloco }}</div>
+        } @else {
+          <div class="ad-bars">
+            @for (row of chartData(); track row.month) {
+              <div class="ad-bar-col">
+                <div class="ad-bar-stack">
+                  <div class="ad-bar rev" [style.height.%]="pct(row.revenue, maxChartRevenue())"
+                       [title]="row.revenue"></div>
+                  <div class="ad-bar enr" [style.height.%]="pct(row.enrollments, maxChartEnrolls())"
+                       [title]="row.enrollments"></div>
+                </div>
+                <span class="ad-bar-label">{{ row.month }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- User distribution + radial -->
+      <div class="ad-card">
+        <div class="ad-card-head">
+          <h2><lucide-icon [img]="GlobeIcon" [size]="18"></lucide-icon> {{ 'userDistribution' | transloco }}</h2>
+        </div>
+        <div class="ad-dist">
+          @for (d of userDist(); track d.role) {
+            <div class="ad-dist-row">
+              <div class="ad-dist-head">
+                <span><i class="dot" [style.background]="d.color"></i>{{ d.role }}</span>
+                <span class="ad-dist-count">{{ fmtNum(d.count) }}</span>
+              </div>
+              <div class="ad-progress"><div class="ad-progress-fill"
+                [style.width.%]="pct(d.count, stats()!.totalUsers)" [style.background]="d.color"></div></div>
+            </div>
+          }
+        </div>
+
+        <div class="ad-radials">
+          @for (r of radialData(); track r.name) {
+            <div class="ad-radial">
+              <div class="ad-radial-ring" [style.--val.%]="r.value" [style.--clr]="r.fill">
+                <span>{{ r.value }}%</span>
+              </div>
+              <span class="ad-radial-label">{{ r.name }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Top courses (horizontal bars) + Progress overview -->
+    <div class="ad-grid">
+      <div class="ad-card ad-col-2">
+        <div class="ad-card-head">
+          <h2><lucide-icon [img]="AwardIcon" [size]="18"></lucide-icon> {{ 'topCourses' | transloco }}</h2>
+        </div>
+        @if (courses().length === 0) {
+          <div class="ad-empty-chart">{{ 'noData' | transloco }}</div>
+        } @else {
+          <div class="ad-hbars">
+            @for (c of barData(); track c.name; let i = $index) {
+              <div class="ad-hbar-row">
+                <span class="ad-hbar-name">{{ c.name }}</span>
+                <div class="ad-hbar-track">
+                  <div class="ad-hbar-fill" [style.width.%]="barPct(c.students)" [style.background]="c.fill"></div>
+                </div>
+                <span class="ad-hbar-val">{{ fmtNum(c.students) }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="ad-card">
+        <div class="ad-card-head">
+          <h2><lucide-icon [img]="ActivityIcon" [size]="18"></lucide-icon> {{ 'platformHealth' | transloco }}</h2>
+        </div>
+        <div class="ad-prows">
+          @for (row of progressRows(); track row.label) {
+            <div class="ad-prow">
+              <div class="ad-prow-head">
+                <span>{{ row.label | transloco }}</span>
+                <span class="ad-prow-val">{{ row.value }}</span>
+              </div>
+              <div class="ad-progress"><div class="ad-progress-fill"
+                [style.width.%]="row.pct" [style.background]="row.color"></div></div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Tables row: recent teachers + payouts -->
+    <div class="ad-grid">
+      <!-- Recent teachers -->
+      <div class="ad-card">
+        <div class="ad-card-head">
+          <h2><lucide-icon [img]="UserCheckIcon" [size]="18"></lucide-icon> {{ 'recentTeachers' | transloco }}</h2>
+        </div>
+        @if (teachers().length === 0) {
+          <div class="ad-empty-chart">{{ 'noData' | transloco }}</div>
+        } @else {
+          <div class="ad-people">
+            @for (t of teachers(); track t.userId) {
+              <div class="ad-person">
+                <img [src]="avatarUrl(t.profilePictureUrl, t.fullName)" [alt]="t.fullName">
+                <div class="ad-person-body">
+                  <span class="ad-person-name">{{ t.fullName }}</span>
+                  <span class="ad-person-meta">{{ fmtDate(t.createdAt) }}</span>
+                </div>
+                @if (t.isVerified) {
+                  <span class="ad-verified"><lucide-icon [img]="CheckCircleIcon" [size]="13"></lucide-icon></span>
+                } @else {
+                  <span class="ad-unverified"><lucide-icon [img]="ClockIcon" [size]="13"></lucide-icon></span>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Recent payouts -->
+      <div class="ad-card ad-col-2">
+        <div class="ad-card-head">
+          <h2><lucide-icon [img]="CreditCardIcon" [size]="18"></lucide-icon> {{ 'recentPayouts' | transloco }}</h2>
+        </div>
+        @if (payouts().length === 0) {
+          <div class="ad-empty-chart">{{ 'noPayouts' | transloco }}</div>
+        } @else {
+          <div class="ad-table-wrap">
+            <table class="ad-table">
+              <thead>
+                <tr>
+                  <th>{{ 'teacher' | transloco }}</th>
+                  <th>{{ 'amount' | transloco }}</th>
+                  <th>{{ 'status' | transloco }}</th>
+                  <th>{{ 'date' | transloco }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of payouts(); track p.id) {
+                  <tr>
+                    <td>{{ p.teacherName }}</td>
+                    <td class="ad-amount">{{ fmtMoney(p.netAmount ?? p.totalAmount) }}</td>
+                    <td>
+                      <span class="ad-status" [class]="statusConfig(p.status).cls">
+                        {{ statusConfig(p.status).label }}
+                      </span>
+                    </td>
+                    <td class="ad-muted">{{ fmtDate(p.paidAt ?? p.createdAt) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Subjects -->
+    @if (subjects().length > 0) {
+      <div class="ad-card">
+        <div class="ad-card-head">
+          <h2><lucide-icon [img]="DatabaseIcon" [size]="18"></lucide-icon> {{ 'subjects' | transloco }}</h2>
+        </div>
+        <div class="ad-chips">
+          @for (sub of subjects(); track sub.id; let i = $index) {
+            <div class="ad-chip" [style.border-color]="chartColor(i)">
+              <span class="ad-chip-dot" [style.background]="chartColor(i)"></span>
+              {{ sub.name }}
+              <span class="ad-chip-count">{{ fmtNum(sub.questionCount) }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  }
+</div>

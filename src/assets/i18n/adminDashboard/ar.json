@@ -1,0 +1,38 @@
+{
+  "title": "لوحة تحكم الأدمن",
+  "refresh": "تحديث",
+  "loading": "جارٍ تحميل اللوحة...",
+  "loadError": "فشل تحميل بيانات اللوحة.",
+  "retry": "إعادة المحاولة",
+
+  "totalUsers": "إجمالي المستخدمين",
+  "totalRevenue": "إجمالي الإيرادات",
+  "totalCourses": "إجمالي الكورسات",
+  "enrollments": "التسجيلات",
+  "thisMonth": "هذا الشهر",
+  "published": "منشور",
+
+  "verifiedTeachers": "المدرّسون الموثّقون",
+  "pendingVerifications": "بانتظار التوثيق",
+  "avgRating": "متوسط التقييم",
+  "activeSubscriptions": "الاشتراكات النشطة",
+  "pendingPayouts": "مدفوعات معلّقة",
+
+  "monthlyOverview": "نظرة شهرية",
+  "revenue": "الإيرادات",
+  "noChartData": "لا توجد بيانات لهذه الفترة بعد.",
+  "userDistribution": "توزيع المستخدمين",
+  "topCourses": "أعلى الكورسات حسب الطلاب",
+  "platformHealth": "صحة المنصّة",
+  "totalTeachers": "إجمالي المدرّسين",
+
+  "recentTeachers": "أحدث المدرّسين",
+  "recentPayouts": "أحدث المدفوعات",
+  "teacher": "المدرّس",
+  "amount": "المبلغ",
+  "status": "الحالة",
+  "date": "التاريخ",
+  "subjects": "المواد",
+  "noData": "لا توجد بيانات.",
+  "noPayouts": "لا توجد مدفوعات بعد."
+}
