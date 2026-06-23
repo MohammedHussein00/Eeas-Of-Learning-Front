@@ -12,7 +12,7 @@ import {
   LucideAngularModule,
   ArrowLeft, Rocket, CheckCircle, Star, Flame,
   Info, Send, LayoutGrid, Image, Video,
-  Crown, FileText, Check,
+  Crown, FileText, Check, AlertTriangle, X,
 } from 'lucide-angular';
 import { APP_CONFIG } from '../../../core/config/app.config';
 import { Toast }      from '../../../core/services/toast';
@@ -23,6 +23,7 @@ import { NzSwitchModule }   from 'ng-zorro-antd/switch';
 import { NzModalModule }    from 'ng-zorro-antd/modal';
 import { NzProgressModule } from 'ng-zorro-antd/progress';
 import { NzTooltipModule }  from 'ng-zorro-antd/tooltip';
+import { NzAlertModule }    from 'ng-zorro-antd/alert';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -76,6 +77,21 @@ interface Discount {
   validTo: string;
 }
 
+/** Pending upgrade request returned by GET /api/subscription/upgrade-requests */
+interface PendingUpgrade {
+  id: string;
+  newPlanId: number;
+  newPlanName: string;
+  currentPlanName: string;
+  billingPeriod: string;
+  amount: number;
+  currency: string;
+  status: string;
+  createdAt: string;
+  canCancel: boolean;
+  paymentUrl?: string;
+}
+
 export type BillingKey = 'monthly' | 'quarterly' | 'semiAnnual' | 'annual';
 
 export interface BillingOption {
@@ -91,6 +107,15 @@ interface SubscribeModal {
   loading: boolean;
   immediate: boolean;
   proRata: boolean;
+}
+
+/** State for the "you already have an active request" conflict modal */
+interface ConflictModal {
+  visible: boolean;
+  pendingUpgrade: PendingUpgrade | null;
+  cancelLoading: boolean;
+  /** The plan the user originally wanted to subscribe to, held for retry */
+  pendingPlan: Plan | null;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -199,6 +224,7 @@ export function getResourceIcon(key: string): string {
     NzModalModule,
     NzProgressModule,
     NzTooltipModule,
+    NzAlertModule,
   ],
   templateUrl: './teacher-choose-plan.html',
   styleUrls:   ['./teacher-choose-plan.scss'],
@@ -216,19 +242,21 @@ export class TeacherChoosePlan implements OnInit, OnDestroy {
   private destroy$ = new RXJSubject<void>();
 
   // ── Icons ──────────────────────────────────────────────────────────────────
-  readonly ArrowLeftIcon   = ArrowLeft;
-  readonly RocketIcon      = Rocket;
-  readonly CheckCircleIcon = CheckCircle;
-  readonly StarIcon        = Star;
-  readonly FlameIcon       = Flame;
-  readonly InfoIcon        = Info;
-  readonly SendIcon        = Send;
-  readonly GridIcon        = LayoutGrid;
-  readonly ImageIcon       = Image;
-  readonly VideoIcon       = Video;
-  readonly CrownIcon       = Crown;
-  readonly FileTextIcon    = FileText;
-  readonly CheckIcon       = Check;
+  readonly ArrowLeftIcon      = ArrowLeft;
+  readonly RocketIcon         = Rocket;
+  readonly CheckCircleIcon    = CheckCircle;
+  readonly StarIcon           = Star;
+  readonly FlameIcon          = Flame;
+  readonly InfoIcon           = Info;
+  readonly SendIcon           = Send;
+  readonly GridIcon           = LayoutGrid;
+  readonly ImageIcon          = Image;
+  readonly VideoIcon          = Video;
+  readonly CrownIcon          = Crown;
+  readonly FileTextIcon       = FileText;
+  readonly CheckIcon          = Check;
+  readonly AlertTriangleIcon  = AlertTriangle;
+  readonly XIcon              = X;
 
   // ── State signals ──────────────────────────────────────────────────────────
   loading    = signal(true);
@@ -238,6 +266,14 @@ export class TeacherChoosePlan implements OnInit, OnDestroy {
 
   modal = signal<SubscribeModal>({
     visible: false, plan: null, loading: false, immediate: true, proRata: true,
+  });
+
+  /**
+   * Conflict modal — shown when the backend returns
+   * "You already have an active upgrade request".
+   */
+  conflictModal = signal<ConflictModal>({
+    visible: false, pendingUpgrade: null, cancelLoading: false, pendingPlan: null,
   });
 
   // ── Derived ────────────────────────────────────────────────────────────────
@@ -289,7 +325,7 @@ export class TeacherChoosePlan implements OnInit, OnDestroy {
   }
 
   getPlanRibbonClass(plan: Plan, isCurrent: boolean): string {
-    if (isCurrent)      return 'cp-ribbon current';
+    if (isCurrent)       return 'cp-ribbon current';
     if (isFreePlan(plan)) return 'cp-ribbon free';
     if (plan.isDefault)  return 'cp-ribbon';
     return '';
@@ -297,9 +333,9 @@ export class TeacherChoosePlan implements OnInit, OnDestroy {
 
   getPlanRibbonLabel(plan: Plan, isCurrent: boolean): string {
     const l = this.lang();
-    if (isCurrent)       return l === 'ar' ? '✓ خطتك الحالية'    : '✓ Current Plan';
+    if (isCurrent)        return l === 'ar' ? '✓ خطتك الحالية'    : '✓ Current Plan';
     if (isFreePlan(plan)) return l === 'ar' ? '⭐ خطة مجانية'     : '⭐ Free Plan';
-    if (plan.isDefault)  return l === 'ar' ? '⭐ الأكثر شيوعاً'   : '⭐ Most Popular';
+    if (plan.isDefault)   return l === 'ar' ? '⭐ الأكثر شيوعاً'  : '⭐ Most Popular';
     return '';
   }
 
@@ -348,7 +384,6 @@ export class TeacherChoosePlan implements OnInit, OnDestroy {
       const base = this.config.baseUrl;
       const l    = this.lang();
 
-      // Determine role → choose endpoint
       const meRes = await firstValueFrom(
         this.http.get<any>(`${base}/api/auth/me`)
       ).catch(() => null);
@@ -377,7 +412,6 @@ export class TeacherChoosePlan implements OnInit, OnDestroy {
         plansList = plansRes.data;
       }
 
-      // Mirror React: include default plans regardless of role
       const filtered = plansList.filter(
         p => (isTeacher ? !p.forStudent : p.forStudent) || p.isDefault
       );
@@ -386,7 +420,7 @@ export class TeacherChoosePlan implements OnInit, OnDestroy {
       if (subRes?.success && subRes.data) {
         this.currentSub.set({ planId: subRes.data.subscriptionPlanId });
       }
-    } catch (err: any) {
+    } catch {
       this.toast.error(
         this.lang() === 'ar' ? 'خطأ في تحميل الخطط' : 'Error loading plans'
       );
@@ -424,12 +458,134 @@ export class TeacherChoosePlan implements OnInit, OnDestroy {
           this.router.navigate(['/teacher/plans/my-plan']);
         }
       } else {
-        this.toast.error(res.message || this.t('errorUpdating'));
-        this.modal.update(p => ({ ...p, loading: false }));
+        // ── Detect "active upgrade request" conflict ────────────────
+        if (this.isActiveUpgradeConflict(res.message)) {
+          this.modal.update(p => ({ ...p, loading: false }));
+          await this.openConflictModal(plan);
+        } else {
+          this.toast.error(res.message || this.t('errorUpdating'));
+          this.modal.update(p => ({ ...p, loading: false }));
+        }
       }
     } catch (err: any) {
-      this.toast.error(err?.error?.message || this.t('errorUpdating'));
-      this.modal.update(p => ({ ...p, loading: false }));
+      const serverMessage: string = err?.error?.message || '';
+      if (this.isActiveUpgradeConflict(serverMessage)) {
+        this.modal.update(p => ({ ...p, loading: false }));
+        await this.openConflictModal(plan);
+      } else {
+        this.toast.error(serverMessage || this.t('errorUpdating'));
+        this.modal.update(p => ({ ...p, loading: false }));
+      }
+    }
+  }
+
+  /** True when the backend message indicates a pending upgrade conflict */
+  private isActiveUpgradeConflict(message: string): boolean {
+    if (!message) return false;
+    const lower = message.toLowerCase();
+    return (
+      lower.includes('active upgrade request') ||
+      lower.includes('complete or cancel') ||
+      lower.includes('pending upgrade')
+    );
+  }
+
+  /**
+   * Fetch the active upgrade request and open the conflict resolution modal.
+   */
+  private async openConflictModal(planToRetry: Plan): Promise<void> {
+    try {
+      const res = await firstValueFrom(
+        this.http.get<any>(`${this.config.baseUrl}/api/subscription/upgrade-requests`)
+      ).catch(() => null);
+
+      const requests: PendingUpgrade[] = res?.data?.requests || res?.data || [];
+      // Find the first non-completed, non-cancelled request
+      const active = requests.find(r =>
+        !['Completed', 'Cancelled', 'Expired', 'Refunded'].includes(r.status)
+      ) ?? requests[0] ?? null;
+
+      this.conflictModal.set({
+        visible: true,
+        pendingUpgrade: active,
+        cancelLoading: false,
+        pendingPlan: planToRetry,
+      });
+    } catch {
+      // Fallback: show conflict modal without specific pending-request details
+      this.conflictModal.set({
+        visible: true,
+        pendingUpgrade: null,
+        cancelLoading: false,
+        pendingPlan: planToRetry,
+      });
+    }
+  }
+
+  closeConflictModal(): void {
+    this.conflictModal.set({
+      visible: false, pendingUpgrade: null, cancelLoading: false, pendingPlan: null,
+    });
+  }
+
+  /**
+   * Cancel the pending upgrade then retry subscribing to the originally
+   * selected plan.
+   */
+  async handleCancelConflictAndRetry(): Promise<void> {
+    const conflict = this.conflictModal();
+    if (!conflict.pendingUpgrade?.id) {
+      // No specific request ID — just close and let the user retry manually
+      this.closeConflictModal();
+      return;
+    }
+
+    this.conflictModal.update(s => ({ ...s, cancelLoading: true }));
+    try {
+      const res = await firstValueFrom(
+        this.http.post<any>(`${this.config.baseUrl}/api/subscription/cancel-upgrade`, {
+          upgradeRequestId: conflict.pendingUpgrade!.id,
+        })
+      );
+
+      if (res.success) {
+        this.toast.success(
+          this.lang() === 'ar'
+            ? 'تم إلغاء الطلب السابق. جارٍ إعادة المحاولة…'
+            : 'Previous request cancelled. Retrying…'
+        );
+        this.closeConflictModal();
+
+        // Re-open the subscribe modal for the originally requested plan
+        const plan = conflict.pendingPlan;
+        if (plan) {
+          this.openModal(plan);
+        }
+      } else {
+        this.toast.error(
+          res.message ||
+          (this.lang() === 'ar' ? 'فشل إلغاء الطلب' : 'Failed to cancel request')
+        );
+        this.conflictModal.update(s => ({ ...s, cancelLoading: false }));
+      }
+    } catch {
+      this.toast.error(
+        this.lang() === 'ar' ? 'حدث خطأ أثناء الإلغاء' : 'Error cancelling request'
+      );
+      this.conflictModal.update(s => ({ ...s, cancelLoading: false }));
+    }
+  }
+
+  /**
+   * User chose to resume the pending payment instead of cancelling it.
+   */
+  resumePendingPayment(): void {
+    const url = this.conflictModal().pendingUpgrade?.paymentUrl;
+    if (url) {
+      window.location.href = url;
+    } else {
+      this.closeConflictModal();
+      this.router.navigate(['/teacher/plans/my-plan']);
     }
   }
 
@@ -445,6 +601,24 @@ export class TeacherChoosePlan implements OnInit, OnDestroy {
   setImmediate(v: boolean): void { this.modal.update(p => ({ ...p, immediate: v })); }
   setProRata(v: boolean):   void { this.modal.update(p => ({ ...p, proRata:   v })); }
   setBilling(key: BillingKey): void { this.billing.set(key); }
+
+  // ── Conflict modal helpers ─────────────────────────────────────────────────
+  conflictStatusLabel(status: string): string {
+    const map: Record<string, { en: string; ar: string }> = {
+      PendingPayment:   { en: 'Pending Payment',    ar: 'في انتظار الدفع' },
+      PaymentPending:   { en: 'Payment Pending',    ar: 'الدفع معلّق' },
+      PaymentCompleted: { en: 'Payment Completed',  ar: 'تم الدفع' },
+      Processing:       { en: 'Processing',         ar: 'قيد المعالجة' },
+      Scheduled:        { en: 'Scheduled',          ar: 'مجدول' },
+    };
+    const entry = map[status];
+    return entry ? (this.lang() === 'ar' ? entry.ar : entry.en) : status;
+  }
+
+  hasPendingPaymentUrl(): boolean {
+    const u = this.conflictModal().pendingUpgrade;
+    return !!(u?.paymentUrl);
+  }
 
   // ── i18n helper ────────────────────────────────────────────────────────────
   t(key: string): string {

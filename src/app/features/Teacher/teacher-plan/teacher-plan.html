@@ -59,6 +59,108 @@
         </nz-alert>
       }
 
+      <!-- ══════════════════════════════════════════════════
+           PENDING UPGRADE REQUESTS SECTION
+           Shown whenever there are non-terminal requests
+      ══════════════════════════════════════════════════ -->
+      @if (activeUpgradeRequests().length > 0) {
+        <div class="mp-section mp-upgrade-requests-section">
+          <div class="mp-section-title">
+            <span>⚡</span>
+            <span>
+              {{ lang() === 'ar' ? 'طلبات الترقية النشطة' : 'Active Upgrade Requests' }}
+            </span>
+            <span class="mp-section-count">({{ activeUpgradeRequests().length }})</span>
+          </div>
+
+          <div class="mp-upgrade-requests-list">
+            @for (req of activeUpgradeRequests(); track req.id) {
+              <div class="mp-upgrade-request-card"
+                [ngClass]="'status-' + getUpgradeStatusCls(req.status)">
+
+                <!-- Card top row -->
+                <div class="mp-ur-header">
+                  <div class="mp-ur-header-left">
+                    <span class="mp-ur-type-badge">
+                      {{ getUpgradeTypeLabel(req.upgradeType) }}
+                    </span>
+                    <span class="mp-ur-arrow">→</span>
+                    <span class="mp-ur-plan-name">{{ req.newPlanName }}</span>
+                  </div>
+                  <div class="mp-ur-status-tag" [ngClass]="getUpgradeStatusCls(req.status)">
+                    <span>{{ getUpgradeStatusIcon(req.status) }}</span>
+                    {{ getUpgradeStatusLabel(req.status) }}
+                  </div>
+                </div>
+
+                <!-- Card details row -->
+                <div class="mp-ur-details">
+                  @if (req.currentPlanName) {
+                    <div class="mp-ur-detail-item">
+                      <span class="mp-ur-detail-label">
+                        {{ lang() === 'ar' ? 'من' : 'From' }}
+                      </span>
+                      <span class="mp-ur-detail-val">{{ req.currentPlanName }}</span>
+                    </div>
+                  }
+                  <div class="mp-ur-detail-item">
+                    <span class="mp-ur-detail-label">
+                      {{ lang() === 'ar' ? 'فترة الفوترة' : 'Billing' }}
+                    </span>
+                    <span class="mp-ur-detail-val">{{ req.billingPeriod }}</span>
+                  </div>
+                  @if (req.amount > 0) {
+                    <div class="mp-ur-detail-item">
+                      <span class="mp-ur-detail-label">
+                        {{ lang() === 'ar' ? 'المبلغ' : 'Amount' }}
+                      </span>
+                      <span class="mp-ur-detail-val mp-ur-amount">
+                        {{ req.amount }} {{ req.currency || 'EGP' }}
+                      </span>
+                    </div>
+                  }
+                  <div class="mp-ur-detail-item">
+                    <span class="mp-ur-detail-label">
+                      {{ lang() === 'ar' ? 'بتاريخ' : 'Created' }}
+                    </span>
+                    <span class="mp-ur-detail-val">{{ formatUpgradeDate(req.createdAt) }}</span>
+                  </div>
+                </div>
+
+                <!-- Pending-payment notice + actions -->
+                @if (isPendingPayment(req)) {
+                  <div class="mp-ur-payment-notice">
+                    <span>💳</span>
+                    <span>
+                      {{ lang() === 'ar'
+                          ? 'في انتظار اكتمال الدفع لتفعيل الترقية'
+                          : 'Waiting for payment to activate the upgrade' }}
+                    </span>
+                  </div>
+                }
+
+                <!-- Action buttons -->
+                <div class="mp-ur-actions">
+                  @if (isPendingPayment(req) && req.invoiceKey) {
+                    <button class="mp-btn-primary mp-ur-pay-btn"
+                      (click)="resumePayment(req)">
+                      💳 {{ lang() === 'ar' ? 'استكمال الدفع' : 'Complete Payment' }}
+                    </button>
+                  }
+                  @if (req.canCancel) {
+                    <button class="mp-btn-ghost mp-btn-danger"
+                      (click)="openCancelUpgradeModal(req.id)">
+                      ✗ {{ lang() === 'ar' ? 'إلغاء الطلب' : 'Cancel Request' }}
+                    </button>
+                  }
+                </div>
+
+              </div><!-- /mp-upgrade-request-card -->
+            }
+          </div>
+        </div>
+      }
+
       <!-- ── No subscription state ── -->
       @if (!subscription()) {
         <div class="mp-empty">
@@ -105,7 +207,6 @@
               </div>
             </div>
             <div class="mp-stat-item">
-              <!-- Use isExpired() — derived from endDate — not the raw daysRemaining field -->
               <span class="mp-stat-icon" [ngClass]="isExpiring() ? 'amber' : 'purple'">⏱️</span>
               <div>
                 <div class="mp-stat-label">{{ t('teacherPlan.daysRemaining') }}</div>
@@ -195,7 +296,6 @@
                       </div>
                     </div>
 
-                    <!-- Boolean feature flag -->
                     @if (isBoolean(resource)) {
                       <div class="mp-boolean-tag" [ngClass]="resource.isAllowed ? 'yes' : 'no'">
                         {{ resource.isAllowed
@@ -203,14 +303,12 @@
                           : (lang() === 'ar' ? 'معطّل' : 'Disabled') }}
                       </div>
 
-                    <!-- Cap / ceiling resource (e.g. max duration, active slots) -->
                     } @else if (isCap(resource)) {
                       <div class="mp-cap-badge">
                         <span class="mp-cap-value">{{ resource.isUnlimited ? '∞' : resource.total }}</span>
                         <span class="mp-cap-label">{{ lang() === 'ar' ? 'الحد الأقصى' : 'max' }}</span>
                       </div>
 
-                    <!-- Consumable quota with usage progress -->
                     } @else {
                       <div class="mp-resource-pct"
                         [style.color]="getProgressColor(getProgressPercent(resource))">
@@ -219,7 +317,6 @@
                     }
                   </div>
 
-                  <!-- Progress bar only for consumable quotas -->
                   @if (!isBoolean(resource) && !isCap(resource)) {
                     <nz-progress
                       [nzPercent]="resource.isUnlimited ? 100 : getProgressPercent(resource)"
@@ -262,7 +359,6 @@
                     }
                   }
 
-                  <!-- Cap resource: show the ceiling value descriptively -->
                   @if (isCap(resource)) {
                     <div class="mp-cap-desc">
                       {{ resource.description || (lang() === 'ar' ? 'الحد المسموح به لهذا البند' : 'Allowed limit for this item') }}
@@ -301,7 +397,7 @@
   }
 
   <!-- ════════════════════════════════════════════════════════
-       CANCEL MODAL
+       CANCEL SUBSCRIPTION MODAL
   ════════════════════════════════════════════════════════ -->
   <nz-modal
     class="mp-modal"
@@ -309,10 +405,11 @@
     [nzTitle]="cancelModalTitle"
     [nzFooter]="cancelModalFooter"
     nzWidth="480"
+    [nzWrapClassName]="dir() === 'rtl' ? 'mp-modal-rtl' : ''"
     (nzOnCancel)="closeCancelModal()">
 
     <ng-template #cancelModalTitle>
-      <div class="mp-modal-title">
+      <div class="mp-modal-title" [attr.dir]="dir()">
         <span style="color:#ef4444; font-size:18px">⊘</span>
         <div>
           <div class="mp-modal-name">{{ t('teacherPlan.cancelSubscription') }}</div>
@@ -322,6 +419,7 @@
     </ng-template>
 
     <ng-container *nzModalContent>
+      <div [attr.dir]="dir()">
       <nz-alert
         nzType="warning"
         nzShowIcon
@@ -338,19 +436,80 @@
         class="mp-modal-textarea">
       </textarea>
       <div class="mp-modal-char-count">{{ cancelModal().reason.length }}/500</div>
+      </div>
     </ng-container>
 
     <ng-template #cancelModalFooter>
-      <button class="mp-btn-ghost" (click)="closeCancelModal()">
-        {{ t('teacherPlan.keepPlan') }}
-      </button>
-      <button class="mp-btn-danger-solid"
-        [disabled]="cancelModal().loading"
-        (click)="handleCancel()">
-        @if (cancelModal().loading) {
-          <nz-spin nzSize="small"></nz-spin>
-        }
-        ⊘ {{ t('teacherPlan.confirmCancel') }}
-      </button>
+      <div [attr.dir]="dir()" class="mp-modal-footer-wrap">
+        <button class="mp-btn-ghost" (click)="closeCancelModal()">
+          {{ t('teacherPlan.keepPlan') }}
+        </button>
+        <button class="mp-btn-danger-solid"
+          [disabled]="cancelModal().loading"
+          (click)="handleCancel()">
+          @if (cancelModal().loading) {
+            <nz-spin nzSize="small"></nz-spin>
+          }
+          ⊘ {{ t('teacherPlan.confirmCancel') }}
+        </button>
+      </div>
     </ng-template>
   </nz-modal>
+
+  <!-- ════════════════════════════════════════════════════════
+       CANCEL UPGRADE REQUEST MODAL
+  ════════════════════════════════════════════════════════ -->
+  <nz-modal
+    class="mp-modal"
+    [nzVisible]="cancelUpgradeModal().visible"
+    [nzTitle]="cancelUpgradeTitleTpl"
+    [nzFooter]="cancelUpgradeFooterTpl"
+    nzWidth="440"
+    [nzWrapClassName]="dir() === 'rtl' ? 'mp-modal-rtl' : ''"
+    (nzOnCancel)="closeCancelUpgradeModal()">
+
+    <ng-template #cancelUpgradeTitleTpl>
+      <div class="mp-modal-title" [attr.dir]="dir()">
+        <span style="color:#d97706; font-size:18px">⚡</span>
+        <div>
+          <div class="mp-modal-name">
+            {{ lang() === 'ar' ? 'إلغاء طلب الترقية' : 'Cancel Upgrade Request' }}
+          </div>
+          <div class="mp-modal-sub">
+            {{ lang() === 'ar' ? 'هذا الإجراء لا يمكن التراجع عنه' : 'This action cannot be undone' }}
+          </div>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-container *nzModalContent>
+      <div [attr.dir]="dir()">
+      <nz-alert
+        nzType="warning"
+        nzShowIcon
+        [nzMessage]="lang() === 'ar'
+          ? 'سيتم إلغاء طلب الترقية. إذا كنت قد دفعت بالفعل، سيتم مراجعة استرداد المبلغ وفق السياسة المعتمدة.'
+          : 'The upgrade request will be cancelled. If you have already paid, a refund will be reviewed according to our policy.'"
+        class="mp-modal-alert">
+      </nz-alert>
+      </div>
+    </ng-container>
+
+    <ng-template #cancelUpgradeFooterTpl>
+      <div [attr.dir]="dir()" class="mp-modal-footer-wrap">
+        <button class="mp-btn-ghost" (click)="closeCancelUpgradeModal()">
+          {{ lang() === 'ar' ? 'تراجع' : 'Go Back' }}
+        </button>
+        <button class="mp-btn-danger-solid"
+          [disabled]="cancelUpgradeModal().loading"
+          (click)="handleCancelUpgradeRequest()">
+          @if (cancelUpgradeModal().loading) {
+            <nz-spin nzSize="small"></nz-spin>
+          }
+          {{ lang() === 'ar' ? 'تأكيد الإلغاء' : 'Confirm Cancel' }}
+        </button>
+      </div>
+    </ng-template>
+  </nz-modal>
+
+</ng-container>

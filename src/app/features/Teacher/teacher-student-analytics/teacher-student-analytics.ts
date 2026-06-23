@@ -377,7 +377,7 @@ export class TeacherStudentAnalytics implements OnInit, OnDestroy {
 
   // ── Navigation ─────────────────────────────────────────────────────
   navigateToStudents(): void {
-    this.router.navigate([`/teacher/courses/${this.courseId()}/students`]);
+    this.router.navigate([`/teacher/students`]);
   }
 
   navigateToChat(): void {
@@ -385,7 +385,7 @@ export class TeacherStudentAnalytics implements OnInit, OnDestroy {
   }
 
   navigateToCourse(courseId: string | number): void {
-    this.router.navigate([`/teacher/courses/${courseId}`]);
+    this.router.navigate([`/teacher/courses/${courseId}/builder`]);
   }
 
   // ── Helpers ────────────────────────────────────────────────────────

@@ -46,7 +46,8 @@ export const appConfig: ApplicationConfig = {
     {
       provide: APP_CONFIG,
       useValue: {
-        baseUrl: 'https://localhost:7091',
+        baseUrl: 'https://eol-eg1.runasp.net',
+        // baseUrl: 'https://localhost:7091',
       },
     },
   ],

@@ -41,7 +41,6 @@ interface Subscription {
   isCancelled?: boolean;
 }
 
-// API resource from plan detail endpoint
 interface PlanResource {
   id: number;
   name: string;
@@ -59,7 +58,6 @@ interface PlanResource {
   limits: any[];
 }
 
-// API usage from usage endpoint
 interface UsageData {
   resourceId: number;
   used: number;
@@ -70,7 +68,6 @@ interface UsageData {
   lastUsed?: string;
 }
 
-// Combined resource for display
 interface DisplayResource extends PlanResource {
   used: number;
   total: number;
@@ -103,6 +100,26 @@ interface PlanDetail {
   createdAt: string;
 }
 
+/** Upgrade request from GET /api/subscription/upgrade-requests */
+interface UpgradeRequest {
+  id: string;
+  currentPlanId: number | null;
+  currentPlanName: string;
+  newPlanId: number;
+  newPlanName: string;
+  billingPeriod: string;
+  amount: number;
+  currency: string;
+  status: string;
+  upgradeType: string;
+  startImmediately: boolean;
+  paymentDate: string | null;
+  createdAt: string;
+  canCancel: boolean;
+  canRetry: boolean;
+  invoiceKey: string | null;
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const BILLING_LABELS: Record<string | number, { en: string; ar: string }> = {
@@ -117,20 +134,10 @@ const BILLING_LABELS: Record<string | number, { en: string; ar: string }> = {
 };
 
 const LIMIT_TYPE_LABELS: Record<string | number, string> = {
-  0: 'Daily',
-  1: 'Weekly',
-  2: 'Monthly',
-  3: 'Total',
-  4: 'Storage',
-  5: 'Duration',
-  6: 'Feature',
-  DAILY_COUNT:   'Daily',
-  WEEKLY_COUNT:  'Weekly',
-  MONTHLY_COUNT: 'Monthly',
-  TOTAL_COUNT:   'Total',
-  SIZE:          'Storage',
-  DURATION:      'Duration',
-  BOOLEAN:       'Feature',
+  0: 'Daily',  1: 'Weekly',  2: 'Monthly', 3: 'Total',
+  4: 'Storage', 5: 'Duration', 6: 'Feature',
+  DAILY_COUNT: 'Daily', WEEKLY_COUNT: 'Weekly', MONTHLY_COUNT: 'Monthly',
+  TOTAL_COUNT: 'Total', SIZE: 'Storage', DURATION: 'Duration', BOOLEAN: 'Feature',
 };
 
 const UNIT_LABELS: Record<string | number, { en: string; ar: string }> = {
@@ -140,23 +147,21 @@ const UNIT_LABELS: Record<string | number, { en: string; ar: string }> = {
   5: { en: 'MB',       ar: 'م.ب' },
   6: { en: 'GB',       ar: 'ج.ب' },
   8: { en: 'Mins',     ar: 'دقيقة' },
-  MB:       { en: 'MB',       ar: 'م.ب' },
-  GB:       { en: 'GB',       ar: 'ج.ب' },
-  CALLS:    { en: 'Calls',    ar: 'مكالمات' },
-  MESSAGES: { en: 'Messages', ar: 'رسائل' },
-  MINUTES:  { en: 'Mins',     ar: 'دقيقة' },
+  MB: { en: 'MB', ar: 'م.ب' }, GB: { en: 'GB', ar: 'ج.ب' },
+  CALLS: { en: 'Calls', ar: 'مكالمات' }, MESSAGES: { en: 'Messages', ar: 'رسائل' },
+  MINUTES: { en: 'Mins', ar: 'دقيقة' },
 };
 
 const RESOURCE_KEY_ICONS: Record<string, string> = {
-  'course.create':                      '📚',
-  'advertisement.submit':               '📢',
-  'advertisement.max_duration_days':    '⏳',
-  'advertisement.active_slots':         '📋',
-  'CHAT_ACCESS':                        '💬',
-  STORAGE:                              '☁️',
-  AI_CALLS:                             '🤖',
-  CHAT_MESSAGES:                        '💬',
-  API_CALLS:                            '⚙️',
+  'course.create':                   '📚',
+  'advertisement.submit':            '📢',
+  'advertisement.max_duration_days': '⏳',
+  'advertisement.active_slots':      '📋',
+  CHAT_ACCESS:                       '💬',
+  STORAGE:                           '☁️',
+  AI_CALLS:                          '🤖',
+  CHAT_MESSAGES:                     '💬',
+  API_CALLS:                         '⚙️',
 };
 
 function getProgressColor(pct: number): string {
@@ -180,32 +185,51 @@ function getLimitTypeDisplay(limitType: number | string): string {
   return LIMIT_TYPE_LABELS[type] ?? String(limitType);
 }
 
-/**
- * Calculate days remaining from endDate string.
- * The backend may return daysRemaining: 0 even for active subscriptions
- * so we always derive it from endDate when it is available.
- */
 function calcDaysRemaining(endDateStr: string): number {
-  const end  = new Date(endDateStr);
-  const now  = new Date();
-  // Zero out time components to compare whole days
+  const end = new Date(endDateStr);
+  const now = new Date();
   end.setHours(0, 0, 0, 0);
   now.setHours(0, 0, 0, 0);
-  const diff = Math.ceil((end.getTime() - now.getTime()) / 86400000);
-  return Math.max(0, diff);
+  return Math.max(0, Math.ceil((end.getTime() - now.getTime()) / 86400000));
 }
 
-/**
- * Returns true when a resource acts as a hard cap / allowance value
- * rather than a consumable quota. limitType === 3 (Total/capacity)
- * resources like max_duration_days and active_slots display their
- * maxCount as a ceiling, not a usage bar.
- */
 function isCapResource(resource: PlanResource): boolean {
-  return resource.limitType === 3
-    || String(resource.limitType).toUpperCase() === 'TOTAL_COUNT'
-    || String(resource.limitType).toUpperCase() === 'TOTAL';
+  return (
+    resource.limitType === 3 ||
+    String(resource.limitType).toUpperCase() === 'TOTAL_COUNT' ||
+    String(resource.limitType).toUpperCase() === 'TOTAL'
+  );
 }
+
+// ── Upgrade-request status helpers ────────────────────────────────────────────
+
+const UPGRADE_STATUS_CONFIG: Record<string, {
+  cls: string; icon: string;
+  en: string; ar: string;
+}> = {
+  PendingPayment:   { cls: 'amber',  icon: '💳', en: 'Pending Payment',   ar: 'في انتظار الدفع' },
+  PaymentPending:   { cls: 'amber',  icon: '⏳', en: 'Payment Pending',   ar: 'الدفع معلّق' },
+  PaymentCompleted: { cls: 'blue',   icon: '✓',  en: 'Payment Completed', ar: 'تم الدفع' },
+  Processing:       { cls: 'blue',   icon: '⚙️', en: 'Processing',        ar: 'قيد المعالجة' },
+  Scheduled:        { cls: 'purple', icon: '📅', en: 'Scheduled',         ar: 'مجدول' },
+  Completed:        { cls: 'green',  icon: '✓',  en: 'Completed',         ar: 'مكتمل' },
+  Cancelled:        { cls: 'grey',   icon: '⊘',  en: 'Cancelled',         ar: 'ملغى' },
+  PaymentFailed:    { cls: 'red',    icon: '✗',  en: 'Payment Failed',    ar: 'فشل الدفع' },
+  Refunded:         { cls: 'grey',   icon: '↩',  en: 'Refunded',          ar: 'مسترجع' },
+};
+
+const UPGRADE_TYPE_CONFIG: Record<string, { en: string; ar: string }> = {
+  New:           { en: 'New Subscription', ar: 'اشتراك جديد' },
+  Upgrade:       { en: 'Upgrade',          ar: 'ترقية' },
+  Downgrade:     { en: 'Downgrade',        ar: 'تخفيض' },
+  Switch:        { en: 'Plan Switch',      ar: 'تغيير الخطة' },
+  BillingChange: { en: 'Billing Change',   ar: 'تغيير فترة الفوترة' },
+};
+
+/** Statuses that represent an in-progress / actionable request */
+const ACTIVE_STATUSES = new Set([
+  'PendingPayment', 'PaymentPending', 'PaymentCompleted', 'Processing', 'Scheduled',
+]);
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -242,15 +266,20 @@ export class TeacherPlan implements OnInit, OnDestroy {
   private destroy$ = new RXJSubject<void>();
 
   // ── State signals ──────────────────────────────────────────────────────────
-  loading      = signal(true);
-  subscription = signal<Subscription | null>(null);
-  resources    = signal<DisplayResource[]>([]);
-  planDetail   = signal<PlanDetail | null>(null);
-  togglingAR   = signal(false);
+  loading         = signal(true);
+  subscription    = signal<Subscription | null>(null);
+  resources       = signal<DisplayResource[]>([]);
+  planDetail      = signal<PlanDetail | null>(null);
+  togglingAR      = signal(false);
+  upgradeRequests = signal<UpgradeRequest[]>([]);
 
   cancelModal = signal<{ visible: boolean; loading: boolean; reason: string }>({
     visible: false, loading: false, reason: '',
   });
+
+  cancelUpgradeModal = signal<{
+    visible: boolean; loading: boolean; requestId: string | null;
+  }>({ visible: false, loading: false, requestId: null });
 
   // ── Derived ────────────────────────────────────────────────────────────────
   lang = computed<'en' | 'ar'>(() =>
@@ -264,10 +293,6 @@ export class TeacherPlan implements OnInit, OnDestroy {
     return sub ? (BILLING_LABELS[sub.billingPeriod]?.[this.lang()] || '-') : '-';
   });
 
-  /**
-   * Always derive daysLeft from endDate so the UI stays accurate
-   * even when the backend returns daysRemaining: 0 for active subs.
-   */
   daysLeft = computed(() => {
     const sub = this.subscription();
     if (!sub) return 0;
@@ -277,7 +302,8 @@ export class TeacherPlan implements OnInit, OnDestroy {
 
   isExpiring = computed(() => {
     const d = this.daysLeft();
-    return d <= 7 && this.subscription()?.status === 'Active'
+    return d <= 7
+      && this.subscription()?.status === 'Active'
       && !(this.subscription()?.isExpired ?? false)
       && !(this.subscription()?.isCancelled ?? false);
   });
@@ -285,7 +311,6 @@ export class TeacherPlan implements OnInit, OnDestroy {
   isExpired = computed(() => {
     const sub = this.subscription();
     if (!sub) return false;
-    // Trust the server-side isExpired flag first; fall back to days calculation
     if (sub.isExpired === true) return true;
     if (sub.status === 'Expired') return true;
     return this.daysLeft() <= 0 && sub.status !== 'Active';
@@ -293,6 +318,11 @@ export class TeacherPlan implements OnInit, OnDestroy {
 
   sortedFeatures = computed(() =>
     [...(this.planDetail()?.features ?? [])].sort((a, b) => a.displayOrder - b.displayOrder)
+  );
+
+  /** Requests that are not yet terminal (completed / cancelled / expired) */
+  activeUpgradeRequests = computed(() =>
+    this.upgradeRequests().filter(r => ACTIVE_STATUSES.has(r.status))
   );
 
   // ── Payment-success from query-param ──────────────────────────────────────
@@ -316,15 +346,25 @@ export class TeacherPlan implements OnInit, OnDestroy {
     try {
       const base = this.config.baseUrl;
 
-      // 1. Get current subscription
-      const subRes = await firstValueFrom(
-        this.http.get<any>(`${base}/api/subscription/current`)
-      ).catch(() => null);
+      // 1. Current subscription + upgrade requests in parallel
+      const [subRes, upgradeRes] = await Promise.all([
+        firstValueFrom(
+          this.http.get<any>(`${base}/api/subscription/current`)
+        ).catch(() => null),
+        firstValueFrom(
+          this.http.get<any>(`${base}/api/subscription/upgrade-requests`)
+        ).catch(() => null),
+      ]);
 
       const sub: Subscription | null = subRes?.success ? subRes.data : null;
       this.subscription.set(sub);
 
-      // 2. If subscription exists, get plan details
+      // Store upgrade requests — all of them, filtering is done in the template
+      const requestsList: UpgradeRequest[] =
+        upgradeRes?.data?.requests ?? upgradeRes?.data ?? [];
+      this.upgradeRequests.set(requestsList);
+
+      // 2. Plan detail + usage (only when subscription exists)
       if (sub) {
         const planRes = await firstValueFrom(
           this.http.get<any>(`${base}/api/subscriptionplans/${sub.subscriptionPlanId}`)
@@ -334,51 +374,35 @@ export class TeacherPlan implements OnInit, OnDestroy {
           const planData: PlanDetail = planRes?.data ?? planRes;
           this.planDetail.set(planData);
 
-          // 3. Attempt to get usage data (non-fatal if endpoint is unavailable)
           const usageRes = await firstValueFrom(
             this.http.get<any>(`${base}/api/subscription/usage`)
           ).catch(() => null);
 
-          // Build usage map keyed by resourceId
           const usageMap = new Map<number, UsageData>();
           if (usageRes?.success && Array.isArray(usageRes.data)) {
             (usageRes.data as UsageData[]).forEach(u => usageMap.set(u.resourceId, u));
           }
 
-          // 4. Combine plan resources with usage data
           const planResources: PlanResource[] = planData.resources ?? [];
-          const combinedResources: DisplayResource[] = planResources.map((r: PlanResource) => {
+          const combinedResources: DisplayResource[] = planResources.map(r => {
             const usage = usageMap.get(r.id);
-
-            let used       = 0;
-            let total      = r.isUnlimited ? 0 : (r.maxCount ?? 0);
-            let percentage = 0;
+            let used = 0, total = r.isUnlimited ? 0 : (r.maxCount ?? 0), percentage = 0;
 
             if (!r.isUnlimited && !isCapResource(r)) {
-              // Consumable quota — track actual usage vs limit
               used       = usage?.used  ?? 0;
               total      = usage?.total ?? r.maxCount ?? 0;
               percentage = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
             } else if (isCapResource(r)) {
-              // Cap / allowance — show the ceiling value; usage isn't meaningful here
               used       = usage?.used ?? 0;
               total      = r.maxCount ?? 0;
-              // Show how many slots are occupied vs total cap
               percentage = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
             }
 
-            return {
-              ...r,
-              used,
-              total,
-              percentage,
-              nextResetTime: usage?.nextResetTime,
-            };
+            return { ...r, used, total, percentage, nextResetTime: usage?.nextResetTime };
           });
 
           combinedResources.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
           this.resources.set(combinedResources);
-
         } else {
           this.resources.set([]);
         }
@@ -395,7 +419,7 @@ export class TeacherPlan implements OnInit, OnDestroy {
     }
   }
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
+  // ── Auto-renew ─────────────────────────────────────────────────────────────
   async handleToggleAutoRenew(): Promise<void> {
     const sub = this.subscription();
     if (!sub) return;
@@ -417,6 +441,7 @@ export class TeacherPlan implements OnInit, OnDestroy {
     }
   }
 
+  // ── Cancel subscription modal ──────────────────────────────────────────────
   openCancelModal(): void {
     this.cancelModal.set({ visible: true, loading: false, reason: '' });
   }
@@ -459,13 +484,100 @@ export class TeacherPlan implements OnInit, OnDestroy {
     }
   }
 
-  // ── Status config ──────────────────────────────────────────────────────────
+  // ── Cancel upgrade-request modal ──────────────────────────────────────────
+  openCancelUpgradeModal(requestId: string): void {
+    this.cancelUpgradeModal.set({ visible: true, loading: false, requestId });
+  }
+
+  closeCancelUpgradeModal(): void {
+    this.cancelUpgradeModal.set({ visible: false, loading: false, requestId: null });
+  }
+
+  async handleCancelUpgradeRequest(): Promise<void> {
+    const requestId = this.cancelUpgradeModal().requestId;
+    if (!requestId) return;
+
+    this.cancelUpgradeModal.update(s => ({ ...s, loading: true }));
+    try {
+      const res = await firstValueFrom(
+        this.http.post<any>(`${this.config.baseUrl}/api/subscription/cancel-upgrade`, {
+          upgradeRequestId: requestId,
+        })
+      );
+      if (res.success) {
+        this.toast.success(
+          this.lang() === 'ar' ? 'تم إلغاء الطلب بنجاح' : 'Request cancelled successfully'
+        );
+        this.closeCancelUpgradeModal();
+        // Refresh to reflect the new status
+        await this.fetchData();
+      } else {
+        this.toast.error(
+          res.message ||
+          (this.lang() === 'ar' ? 'فشل إلغاء الطلب' : 'Failed to cancel request')
+        );
+        this.cancelUpgradeModal.update(s => ({ ...s, loading: false }));
+      }
+    } catch {
+      this.toast.error(
+        this.lang() === 'ar' ? 'حدث خطأ' : 'An error occurred'
+      );
+      this.cancelUpgradeModal.update(s => ({ ...s, loading: false }));
+    }
+  }
+
+  resumePayment(request: UpgradeRequest): void {
+    if (request.invoiceKey) {
+      // invoiceKey holds the payment URL in the current backend implementation
+      window.location.href = request.invoiceKey;
+    } else {
+      this.toast.warning(
+        this.lang() === 'ar' ? 'رابط الدفع غير متاح' : 'Payment link not available'
+      );
+    }
+  }
+
+  // ── Upgrade-request display helpers ───────────────────────────────────────
+  getUpgradeStatusCls(status: string): string {
+    return UPGRADE_STATUS_CONFIG[status]?.cls ?? 'grey';
+  }
+
+  getUpgradeStatusIcon(status: string): string {
+    return UPGRADE_STATUS_CONFIG[status]?.icon ?? '•';
+  }
+
+  getUpgradeStatusLabel(status: string): string {
+    const cfg = UPGRADE_STATUS_CONFIG[status];
+    if (!cfg) return status;
+    return this.lang() === 'ar' ? cfg.ar : cfg.en;
+  }
+
+  getUpgradeTypeLabel(type: string): string {
+    const cfg = UPGRADE_TYPE_CONFIG[type];
+    if (!cfg) return type;
+    return this.lang() === 'ar' ? cfg.ar : cfg.en;
+  }
+
+  isActiveRequest(request: UpgradeRequest): boolean {
+    return ACTIVE_STATUSES.has(request.status);
+  }
+
+  isPendingPayment(request: UpgradeRequest): boolean {
+    return request.status === 'PendingPayment' || request.status === 'PaymentPending';
+  }
+
+  formatUpgradeDate(dateStr: string): string {
+    return new Date(dateStr).toLocaleDateString(
+      this.lang() === 'ar' ? 'ar-EG' : 'en-GB',
+      { day: '2-digit', month: 'short', year: 'numeric' }
+    );
+  }
+
+  // ── Status config (subscription) ──────────────────────────────────────────
   getStatusCls(status: string): string {
     const map: Record<string, string> = {
-      Active: 'active',
-      Expired: 'expired',
-      Cancelled: 'cancelled',
-      PendingCancellation: 'pending',
+      Active: 'active', Expired: 'expired',
+      Cancelled: 'cancelled', PendingCancellation: 'pending',
     };
     return map[status] ?? 'active';
   }
@@ -473,10 +585,8 @@ export class TeacherPlan implements OnInit, OnDestroy {
   getStatusLabel(status: string): string {
     if (this.lang() === 'ar') {
       const map: Record<string, string> = {
-        Active: 'نشط',
-        Expired: 'منتهي',
-        Cancelled: 'ملغى',
-        PendingCancellation: 'قيد الإلغاء',
+        Active: 'نشط', Expired: 'منتهي',
+        Cancelled: 'ملغى', PendingCancellation: 'قيد الإلغاء',
       };
       return map[status] ?? status;
     }
@@ -485,10 +595,7 @@ export class TeacherPlan implements OnInit, OnDestroy {
 
   getStatusIcon(status: string): string {
     const map: Record<string, string> = {
-      Active: '✓',
-      Expired: '✗',
-      Cancelled: '⊘',
-      PendingCancellation: '⏱',
+      Active: '✓', Expired: '✗', Cancelled: '⊘', PendingCancellation: '⏱',
     };
     return map[status] ?? '✓';
   }
@@ -496,8 +603,7 @@ export class TeacherPlan implements OnInit, OnDestroy {
   // ── Resource helpers ──────────────────────────────────────────────────────
   getResourceIcon(key: string): string {
     const normalized = key?.toUpperCase?.() ?? '';
-    const icon = RESOURCE_KEY_ICONS[key] ?? RESOURCE_KEY_ICONS[normalized];
-    return icon ?? '🗄️';
+    return RESOURCE_KEY_ICONS[key] ?? RESOURCE_KEY_ICONS[normalized] ?? '🗄️';
   }
 
   getProgressColor(pct: number): string { return getProgressColor(pct); }
@@ -515,19 +621,14 @@ export class TeacherPlan implements OnInit, OnDestroy {
     return getLimitTypeDisplay(limitType);
   }
 
-  /** Boolean feature flag — limitType 6 / BOOLEAN */
   isBoolean(resource: DisplayResource): boolean {
-    return resource.limitType === 6
-      || resource.limitType === 'BOOLEAN'
-      || String(resource.limitType).toUpperCase() === 'BOOLEAN';
+    return (
+      resource.limitType === 6 ||
+      resource.limitType === 'BOOLEAN' ||
+      String(resource.limitType).toUpperCase() === 'BOOLEAN'
+    );
   }
 
-  /**
-   * Cap resource — shows a ceiling value, not a consumable quota.
-   * limitType 3 / Total resources like max_duration_days and active_slots.
-   * When the usage endpoint hasn't provided real used counts (used === 0),
-   * we display the cap as a plain value rather than a progress bar.
-   */
   isCap(resource: DisplayResource): boolean {
     return isCapResource(resource);
   }

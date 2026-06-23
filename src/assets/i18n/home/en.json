@@ -1,0 +1,115 @@
+{
+  "hero": {
+    "badge": "New Learning Experience",
+    "title1": "Master Your Future with",
+    "titleAccent": "Expert-Led",
+    "title2": "Online Courses",
+    "subtitle": "Join thousands of students learning from top instructors. Access interactive lessons, earn certificates, and advance your career at your own pace.",
+    "ctaStart": "Get Started Free",
+    "ctaBrowse": "Browse Courses",
+    "cardTitle": "Full-Stack Web Development",
+    "complete": "Complete"
+  },
+  "stats": {
+    "students": "Students",
+    "courses": "Courses",
+    "instructors": "Expert Instructors",
+    "success": "Success Rate"
+  },
+  "ads": {
+    "sponsored": "Sponsored",
+    "learnMore": "Learn More"
+  },
+  "subjects": {
+    "tag": "Subjects",
+    "title": "Explore Learning Paths",
+    "subtitle": "Browse subjects tailored to your academic stage and start mastering the topics that matter most to you.",
+    "questions": "Questions",
+    "viewAll": "View All Subjects"
+  },
+  "courses": {
+    "tag": "Featured",
+    "title": "Top-Rated Courses",
+    "subtitle": "Hand-picked courses from our best instructors, designed to help you achieve your learning goals faster.",
+    "new": "New",
+    "free": "Free",
+    "lectures": "Lectures",
+    "viewAll": "View All Courses"
+  },
+  "categories": {
+    "all": "All Categories"
+  },
+  "teachers": {
+    "tag": "Instructors",
+    "title": "Learn from the Best",
+    "subtitle": "Our verified instructors bring real-world expertise and passion to every lesson they create.",
+    "viewProfile": "View Profile",
+    "viewAll": "View All Instructors"
+  },
+  "pricing": {
+    "tag": "Pricing",
+    "title": "Choose Your Plan",
+    "subtitle": "Flexible subscription plans designed to fit your learning needs and budget. Start free, upgrade anytime.",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "saveUp": "Save up to 20%",
+    "free": "Free",
+    "forever": "Forever",
+    "perMonthBilled": "/mo billed annually",
+    "perMonth": "/mo",
+    "save": "Save",
+    "trialDays": "days free trial",
+    "unlimitedCourses": "Unlimited Courses",
+    "upTo": "Up to",
+    "courses": "courses",
+    "daysLeft": "days remaining",
+    "processing": "Processing...",
+    "currentPlan": "Current Plan",
+    "getStarted": "Get Started",
+    "subscribe": "Subscribe Now",
+    "noPlans": "No subscription plans available at the moment.",
+    "viewAll": "View All Plans"
+  },
+  "features": {
+    "tag": "Why Choose Us",
+    "title": "Everything You Need to Succeed",
+    "subtitle": "Our platform is built with features designed to make your learning journey effective, engaging, and enjoyable.",
+    "interactive": {
+      "title": "Interactive Lessons",
+      "desc": "Engage with hands-on exercises, quizzes, and real-time feedback to reinforce your understanding."
+    },
+    "experts": {
+      "title": "Expert Instructors",
+      "desc": "Learn from industry professionals and academics who bring years of real-world experience to every course."
+    },
+    "pace": {
+      "title": "Self-Paced Learning",
+      "desc": "Study on your own schedule with lifetime access to course materials and progress tracking."
+    },
+    "certs": {
+      "title": "Recognized Certificates",
+      "desc": "Earn certificates upon completion that you can share on LinkedIn and add to your professional portfolio."
+    },
+    "community": {
+      "title": "Community Support",
+      "desc": "Join a vibrant community of learners, ask questions, share insights, and collaborate on projects."
+    },
+    "multilang": {
+      "title": "Multilingual Platform",
+      "desc": "Access content in multiple languages with full RTL support for Arabic and other right-to-left languages."
+    }
+  },
+  "cta": {
+    "tag": "Start Today",
+    "title": "Ready to Transform Your Career?",
+    "subtitle": "Join over 50,000 students already learning on our platform. Get unlimited access to all courses with a single subscription.",
+    "start": "Start Learning Free",
+    "browse": "Browse Courses",
+    "noCc": "No credit card required",
+    "cancel": "Cancel anytime",
+    "trial": "7-day free trial"
+  },
+  "xp": {
+    "level": "Level"
+  }
+}

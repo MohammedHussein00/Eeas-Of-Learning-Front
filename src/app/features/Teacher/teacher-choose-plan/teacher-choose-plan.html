@@ -204,7 +204,7 @@
     [nzVisible]="modal().visible"
     [nzTitle]="modalTitle"
     [nzFooter]="modalFooter"
-    nzWidth="480"
+    nzWidth="200"
     nzDestroyOnClose
     (nzOnCancel)="closeModal()">
 
@@ -301,6 +301,137 @@
             ? (lang() === 'ar' ? 'تفعيل مجاناً' : 'Activate Free')
             : (lang() === 'ar' ? 'المتابعة للدفع' : 'Proceed to Payment') }}
       </button>
+    </ng-template>
+
+  </nz-modal>
+
+  <!-- ════════════════════════════════════════════════════════
+       CONFLICT RESOLUTION MODAL
+       Shown when backend returns "active upgrade request" error
+  ════════════════════════════════════════════════════════ -->
+  <nz-modal
+    class="cp-modal cp-conflict-modal"
+    [nzVisible]="conflictModal().visible"
+    [nzTitle]="conflictTitle"
+    [nzFooter]="conflictFooter"
+    nzWidth="200"
+    nzDestroyOnClose
+    (nzOnCancel)="closeConflictModal()">
+
+    <ng-template #conflictTitle>
+      <div class="cp-modal-title">
+        <span style="font-size:20px; flex-shrink:0">⚠️</span>
+        <div>
+          <div class="cp-modal-name" style="color:#d97706">
+            {{ lang() === 'ar' ? 'يوجد طلب ترقية نشط' : 'Active Upgrade Request Found' }}
+          </div>
+          <div class="cp-modal-sub">
+            {{ lang() === 'ar'
+                ? 'يجب إكمال أو إلغاء الطلب الحالي أولاً'
+                : 'You must complete or cancel your current request first' }}
+          </div>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-container *nzModalContent>
+
+      <!-- Info alert -->
+      <nz-alert
+        nzType="warning"
+        nzShowIcon
+        [nzMessage]="lang() === 'ar'
+          ? 'لديك طلب ترقية معلّق بالفعل. لا يمكنك إنشاء طلب جديد حتى تتعامل مع الطلب الحالي.'
+          : 'You already have a pending upgrade request. A new request cannot be created until you handle the current one.'"
+        style="margin-bottom:16px; border-radius:8px">
+      </nz-alert>
+
+      <!-- Pending request details card (if available) -->
+      @if (conflictModal().pendingUpgrade; as pending) {
+        <div class="cp-conflict-card">
+          <div class="cp-conflict-card-header">
+            <span>📋</span>
+            <span>{{ lang() === 'ar' ? 'الطلب الحالي' : 'Current Request' }}</span>
+            <span class="cp-conflict-status-badge">
+              {{ conflictStatusLabel(pending.status) }}
+            </span>
+          </div>
+
+          <div class="cp-conflict-detail-grid">
+            <div class="cp-conflict-detail-item">
+              <span class="cp-conflict-detail-label">
+                {{ lang() === 'ar' ? 'الخطة المطلوبة' : 'Requested Plan' }}
+              </span>
+              <span class="cp-conflict-detail-val">{{ pending.newPlanName }}</span>
+            </div>
+            <div class="cp-conflict-detail-item">
+              <span class="cp-conflict-detail-label">
+                {{ lang() === 'ar' ? 'فترة الفوترة' : 'Billing Period' }}
+              </span>
+              <span class="cp-conflict-detail-val">{{ pending.billingPeriod }}</span>
+            </div>
+            @if (pending.amount > 0) {
+              <div class="cp-conflict-detail-item">
+                <span class="cp-conflict-detail-label">
+                  {{ lang() === 'ar' ? 'المبلغ' : 'Amount' }}
+                </span>
+                <span class="cp-conflict-detail-val">
+                  {{ pending.amount }} {{ pending.currency || 'EGP' }}
+                </span>
+              </div>
+            }
+            <div class="cp-conflict-detail-item">
+              <span class="cp-conflict-detail-label">
+                {{ lang() === 'ar' ? 'تاريخ الإنشاء' : 'Created' }}
+              </span>
+              <span class="cp-conflict-detail-val">
+                {{ pending.createdAt | date:'dd MMM yyyy' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Instructional text -->
+      <p class="cp-conflict-instruction">
+        {{ lang() === 'ar'
+            ? 'يمكنك إما استكمال دفع الطلب الحالي، أو إلغاؤه والمتابعة للاشتراك في الخطة الجديدة.'
+            : 'You can either complete payment for the current request, or cancel it and proceed to subscribe to the new plan.' }}
+      </p>
+
+    </ng-container>
+
+    <ng-template #conflictFooter>
+      <div class="cp-conflict-footer">
+        <!-- Left: dismiss -->
+        <button class="cp-btn-ghost" (click)="closeConflictModal()">
+          {{ lang() === 'ar' ? 'لاحقاً' : 'Later' }}
+        </button>
+
+        <div class="cp-conflict-footer-actions">
+          <!-- Resume payment (if a paymentUrl exists) -->
+          @if (hasPendingPaymentUrl()) {
+            <button class="cp-btn-resume" (click)="resumePendingPayment()">
+              💳 {{ lang() === 'ar' ? 'استكمال الدفع' : 'Resume Payment' }}
+            </button>
+          }
+
+          <!-- Cancel existing & retry with new plan -->
+          <button
+            class="cp-btn-danger-solid"
+            [disabled]="conflictModal().cancelLoading"
+            (click)="handleCancelConflictAndRetry()">
+            @if (conflictModal().cancelLoading) {
+              <nz-spin nzSize="small"></nz-spin>
+            } @else {
+              <span>✗</span>
+            }
+            {{ lang() === 'ar'
+                ? 'إلغاء الطلب والمتابعة'
+                : 'Cancel & Subscribe to New Plan' }}
+          </button>
+        </div>
+      </div>
     </ng-template>
 
   </nz-modal>

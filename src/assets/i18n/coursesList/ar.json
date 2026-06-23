@@ -1,0 +1,84 @@
+{
+    "loading": "Loading courses…",
+
+    "pageTitle": "Course Management",
+    "pageSubtitle": "Manage all courses",
+
+    "refresh": "Refresh",
+    "newCourse": "New Course",
+
+    "totalCourses": "Total Courses",
+    "published": "Published",
+    "pendingReview": "Pending Review",
+    "platformEOL": "Platform (EOL)",
+    "teacherCourses": "Teacher Courses",
+
+    "pendingBannerTitle": "Pending Publish Requests",
+    "pendingBannerSub": "courses waiting for review",
+
+    "searchPlaceholder": "Search title, instructor…",
+    "allStatus": "All Status",
+    "pending": "Pending",
+    "draft": "Draft",
+    "rejected": "Rejected",
+    "allTypes": "All Types",
+    "platform": "Platform (EOL)",
+    "teacher": "Teacher Courses",
+    "newest": "Newest",
+    "oldest": "Oldest",
+    "rating": "Rating",
+    "students": "Students",
+    "title": "Title",
+    "records": "records",
+
+    "course": "Course",
+    "instructor": "Instructor",
+    "status": "Status",
+    "price": "Price",
+    "created": "Created",
+    "actions": "Actions",
+
+    "eolPlatform": "EOL Platform",
+    "free": "Free",
+
+    "builder": "Course Builder",
+    "edit": "Edit",
+    "reviewRequest": "Review Publish Request",
+    "publish": "Publish",
+    "unpublish": "Unpublish",
+    "delete": "Delete",
+    "deleting": "Deleting…",
+
+    "noCourses": "No courses found",
+    "of": "of",
+
+    "requestedOn": "Requested on",
+    "teacherNotes": "Teacher Notes",
+    "lectures": "lectures",
+    "promoVideo": "Promo Video",
+    "adminFeedback": "Admin Feedback",
+    "adminFeedbackOptional": "Admin Feedback (optional)",
+    "enterFeedback": "Enter feedback for the teacher…",
+    "feedbackRequired": "Feedback is required when rejecting",
+    "cancel": "Cancel",
+    "back": "Back",
+    "approve": "Approve",
+    "approveAndPublish": "Approve & Publish",
+    "reject": "Reject",
+    "confirmReject": "Confirm Reject",
+
+    "unpublishCourse": "Unpublish Course",
+    "unpublishWarning": "This will hide the course from public listings.",
+
+    "deleteCourse": "Delete Course",
+    "deleteWarning": "This action cannot be undone.",
+
+    "publishSuccess": "Course published successfully",
+    "publishError": "Failed to publish course",
+    "approveSuccess": "Approved & Published",
+    "rejectSuccess": "Request rejected",
+    "unpublishSuccess": "Course unpublished",
+    "deleteSuccess": "Course deleted successfully",
+    "deleteError": "Failed to delete course",
+    "actionFailed": "Action failed. Please try again."
+}

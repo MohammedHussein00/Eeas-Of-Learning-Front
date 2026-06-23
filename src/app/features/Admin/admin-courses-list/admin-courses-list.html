@@ -1,0 +1,559 @@
+<ng-container *transloco="let t; scope: 'coursesList'">
+
+  <!-- ══════════════════════════════════════════════════════════
+       LOADING GUARD
+  ══════════════════════════════════════════════════════════ -->
+  @if (loading()) {
+    <div class="acl-center">
+      <nz-spin nzSize="large"></nz-spin>
+      <p style="color:#4f46e5; font-weight:500; margin-top:16px; font-size:13px">
+        {{ t('coursesList.loading') }}
+      </p>
+    </div>
+  }
+
+  @else {
+
+  <!-- ════════════════════════════════════════════════════════
+       MAIN LAYOUT
+  ════════════════════════════════════════════════════════ -->
+  <div class="acl-root" [attr.dir]="isRTL() ? 'rtl' : 'ltr'">
+    <div class="acl-bg"></div>
+
+    <!-- ══ Header ══ -->
+    <div class="acl-header">
+      <div style="display:flex; align-items:center; gap:11px">
+        <div class="acl-logo">
+          <lucide-icon [img]="BookOpenIcon" [size]="18" style="color:#fff"></lucide-icon>
+        </div>
+        <div>
+          <div class="acl-brand-name">{{ t('coursesList.pageTitle') }}</div>
+          <div class="acl-brand-sub">{{ t('coursesList.pageSubtitle') }}</div>
+        </div>
+      </div>
+      <div class="acl-hbtns">
+        <button
+          class="acl-btn-ghost"
+          [class.spin]="refreshing()"
+          (click)="handleRefresh()"
+          nz-tooltip
+          [nzTooltipTitle]="t('coursesList.refresh')"
+        >
+          <lucide-icon [img]="RefreshCwIcon" [size]="14"></lucide-icon>
+        </button>
+        <button class="acl-btn-primary" (click)="navigate('/dash/courses/create')">
+          <lucide-icon [img]="PlusIcon" [size]="14"></lucide-icon>
+          {{ t('coursesList.newCourse') }}
+        </button>
+      </div>
+    </div>
+
+    <!-- ══ Body ══ -->
+    <div class="acl-rel">
+      <div class="acl-body">
+
+        <!-- ══ Stat Cards ══ -->
+        <div class="acl-stats">
+          <div class="acl-sc blue">
+            <div class="acl-si"><lucide-icon [img]="BookOpenIcon" [size]="16"></lucide-icon></div>
+            <div class="acl-sv">{{ courses().length }}</div>
+            <div class="acl-sl">{{ t('coursesList.totalCourses') }}</div>
+          </div>
+          <div class="acl-sc green">
+            <div class="acl-si"><lucide-icon [img]="CheckCircleIcon" [size]="16"></lucide-icon></div>
+            <div class="acl-sv">{{ publishedCount() }}</div>
+            <div class="acl-sl">{{ t('coursesList.published') }}</div>
+          </div>
+          <div class="acl-sc amber">
+            <div class="acl-si"><lucide-icon [img]="ClockIcon" [size]="16"></lucide-icon></div>
+            <div class="acl-sv">{{ pendingReqs().length }}</div>
+            <div class="acl-sl">{{ t('coursesList.pendingReview') }}</div>
+          </div>
+          <div class="acl-sc violet">
+            <div class="acl-si"><lucide-icon [img]="CrownIcon" [size]="16"></lucide-icon></div>
+            <div class="acl-sv">{{ platformCount() }}</div>
+            <div class="acl-sl">{{ t('coursesList.platformEOL') }}</div>
+          </div>
+          <div class="acl-sc rose">
+            <div class="acl-si"><lucide-icon [img]="UsersIcon" [size]="16"></lucide-icon></div>
+            <div class="acl-sv">{{ teacherCount() }}</div>
+            <div class="acl-sl">{{ t('coursesList.teacherCourses') }}</div>
+          </div>
+        </div>
+
+        <!-- ══ Pending Banner ══ -->
+        @if (pendingReqs().length > 0) {
+          <div class="acl-pending-banner" (click)="setStatusFilter('pending')">
+            <div class="acl-pb-ico">
+              <lucide-icon [img]="ClockIcon" [size]="18"></lucide-icon>
+            </div>
+            <div style="flex:1">
+              <div style="font-size:13px; font-weight:700; color:#92400e">
+                {{ t('coursesList.pendingBannerTitle') }}
+              </div>
+              <div style="font-size:11px; color:#b45309">
+                {{ pendingReqs().length }} {{ t('coursesList.pendingBannerSub') }}
+              </div>
+            </div>
+            <div class="acl-pb-badge">{{ pendingReqs().length }}</div>
+            <lucide-icon [img]="ChevronRightIcon" [size]="16" style="color:#d97706"></lucide-icon>
+          </div>
+        }
+
+        <!-- ══ Toolbar ══ -->
+        <div class="acl-toolbar">
+          <div class="acl-search">
+            <lucide-icon [img]="SearchIcon" [size]="14"></lucide-icon>
+            <input
+              [value]="search()"
+              (input)="onSearch($event)"
+              [placeholder]="t('coursesList.searchPlaceholder')"
+            />
+            @if (search()) {
+              <button style="background:none; border:none; cursor:pointer; color:#94a3b8; display:flex"
+                (click)="clearSearch()">
+                <lucide-icon [img]="XIcon" [size]="12"></lucide-icon>
+              </button>
+            }
+          </div>
+
+          <div class="acl-sel-wrap">
+            <select class="acl-sel" [value]="statusFilter()" (change)="onStatusFilter($event)">
+              <option value="all">{{ t('coursesList.allStatus') }}</option>
+              <option value="published">{{ t('coursesList.published') }}</option>
+              <option value="pending">{{ t('coursesList.pending') }}</option>
+              <option value="draft">{{ t('coursesList.draft') }}</option>
+              <option value="rejected">{{ t('coursesList.rejected') }}</option>
+            </select>
+            <lucide-icon [img]="ChevronDownIcon" [size]="12"></lucide-icon>
+          </div>
+
+          <div class="acl-sel-wrap">
+            <select class="acl-sel" [value]="typeFilter()" (change)="onTypeFilter($event)">
+              <option value="all">{{ t('coursesList.allTypes') }}</option>
+              <option value="platform">{{ t('coursesList.platform') }}</option>
+              <option value="teacher">{{ t('coursesList.teacher') }}</option>
+            </select>
+            <lucide-icon [img]="ChevronDownIcon" [size]="12"></lucide-icon>
+          </div>
+
+          <div class="acl-sel-wrap">
+            <select class="acl-sel" [value]="sortBy()" (change)="onSortBy($event)">
+              <option value="newest">{{ t('coursesList.newest') }}</option>
+              <option value="oldest">{{ t('coursesList.oldest') }}</option>
+              <option value="rating">{{ t('coursesList.rating') }}</option>
+              <option value="students">{{ t('coursesList.students') }}</option>
+              <option value="title">{{ t('coursesList.title') }}</option>
+            </select>
+            <lucide-icon [img]="ChevronDownIcon" [size]="12"></lucide-icon>
+          </div>
+
+          <span style="font-size:11px; color:#94a3b8; white-space:nowrap">
+            {{ filteredCourses().length }} {{ t('coursesList.records') }}
+          </span>
+        </div>
+
+        <!-- ══ Table Card ══ -->
+        <div class="acl-card">
+          @if (tableLoading()) {
+            <div>
+              @for (item of skeletonRows; track $index) {
+                <div class="acl-skel-row acl-skel">
+                  <div class="acl-skel-box" style="width:48px; height:34px; border-radius:7px"></div>
+                  <div style="flex:1">
+                    <div class="acl-skel-box" style="width:55%; height:12px; margin-bottom:5px"></div>
+                    <div class="acl-skel-box" style="width:35%; height:10px"></div>
+                  </div>
+                  <div class="acl-skel-box" style="width:65px; height:22px; border-radius:6px"></div>
+                  <div class="acl-skel-box" style="width:65px; height:22px; border-radius:6px"></div>
+                  <div style="display:flex; gap:4px">
+                    @for (b of [0,1,2]; track b) {
+                      <div class="acl-skel-box" style="width:28px; height:28px; border-radius:7px"></div>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
+          @else if (pagedCourses().length === 0) {
+            <div class="acl-empty">
+              <lucide-icon [img]="BookOpenIcon" [size]="36" style="opacity:.2; display:block; margin:0 auto 10px"></lucide-icon>
+              <p>{{ t('coursesList.noCourses') }}</p>
+            </div>
+          }
+
+          @else {
+            <div style="overflow-x:auto">
+              <table class="acl-table">
+                <thead>
+                  <tr>
+                    <th>{{ t('coursesList.course') }}</th>
+                    <th>{{ t('coursesList.instructor') }}</th>
+                    <th>{{ t('coursesList.status') }}</th>
+                    <th>{{ t('coursesList.students') }}</th>
+                    <th>{{ t('coursesList.rating') }}</th>
+                    <th>{{ t('coursesList.price') }}</th>
+                    <th>{{ t('coursesList.created') }}</th>
+                    <th>{{ t('coursesList.actions') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (course of pagedCourses(); track course.id) {
+                    <tr>
+                      <!-- Course -->
+                      <td>
+                        <div class="acl-cc">
+                          <div class="acl-thumb">
+                            @if (course.thumbnailUrl || course.imageUrl) {
+                              <img [src]="baseUrl + (course.thumbnailUrl || course.imageUrl)" [alt]="course.title" />
+                            } @else {
+                              <lucide-icon [img]="BookOpenIcon" [size]="16"></lucide-icon>
+                            }
+                          </div>
+                          <div>
+                            <div class="acl-cn">{{ course.title }}</div>
+                            <div class="acl-cs">
+                              {{ course.categoryName }}{{ course.level ? ' · ' + course.level : '' }}
+                            </div>
+                            @if (course.isPlatformCourse) {
+                              <div class="acl-platform-badge">
+                                <lucide-icon [img]="CrownIcon" [size]="9"></lucide-icon>
+                                {{ t('coursesList.eolPlatform') }}
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      </td>
+
+                      <!-- Instructor -->
+                      <td style="font-size:11px; color:#475569">
+                        @if (course.isPlatformCourse) {
+                          <span style="display:flex; align-items:center; gap:4px">
+                            <lucide-icon [img]="CrownIcon" [size]="11" style="color:#7c3aed"></lucide-icon>
+                            {{ course.platformCreatorName || 'EOL' }}
+                          </span>
+                        } @else {
+                          {{ course.instructorName || '—' }}
+                        }
+                      </td>
+
+                      <!-- Status -->
+                      <td>
+                        @switch (resolvePublishStatus(course)) {
+                          @case ('published') {
+                            <span class="acl-tag green">
+                              <lucide-icon [img]="CheckCircleIcon" [size]="9"></lucide-icon>
+                              {{ t('coursesList.published') }}
+                            </span>
+                          }
+                          @case ('pending') {
+                            <span class="acl-tag amber">
+                              <lucide-icon [img]="ClockIcon" [size]="9"></lucide-icon>
+                              {{ t('coursesList.pending') }}
+                            </span>
+                          }
+                          @case ('rejected') {
+                            <span class="acl-tag rose">
+                              <lucide-icon [img]="XCircleIcon" [size]="9"></lucide-icon>
+                              {{ t('coursesList.rejected') }}
+                            </span>
+                          }
+                          @default {
+                            <span class="acl-tag gray">
+                              <lucide-icon [img]="FileTextIcon" [size]="9"></lucide-icon>
+                              {{ t('coursesList.draft') }}
+                            </span>
+                          }
+                        }
+                      </td>
+
+                      <!-- Students -->
+                      <td>
+                        <span style="display:flex; align-items:center; gap:4px; font-size:11px">
+                          <lucide-icon [img]="UsersIcon" [size]="11" style="color:#4f46e5"></lucide-icon>
+                          {{ course.studentCount || 0 }}
+                        </span>
+                      </td>
+
+                      <!-- Rating -->
+                      <td>
+                        @if (course.rating > 0) {
+                          <span style="display:flex; align-items:center; gap:3px; font-size:11px">
+                            <lucide-icon [img]="StarIcon" [size]="11" style="color:#f59e0b; fill:#f59e0b"></lucide-icon>
+                            <strong>{{ course.rating.toFixed(1) }}</strong>
+                          </span>
+                        }
+                      </td>
+
+                      <!-- Price -->
+                      <td>
+                        @if (course.isFree) {
+                          <span class="acl-tag teal">{{ t('coursesList.free') }}</span>
+                        } @else {
+                          <span style="font-size:12px; font-weight:700">{{ course.price }}</span>
+                        }
+                      </td>
+
+                      <!-- Created -->
+                      <td style="font-size:10px; color:#64748b; white-space:nowrap">
+                        {{ course.createdAt ? (course.createdAt | date:'mediumDate') : '—' }}
+                      </td>
+
+                      <!-- Actions -->
+                      <td>
+                        <div class="acl-acts">
+                          <!-- Builder -->
+                          <button class="acl-act builder"
+                            [title]="t('coursesList.builder')"
+                            (click)="navigate('/dash/courses/' + course.id + '/builder')">
+                            <lucide-icon [img]="LayersIcon" [size]="13"></lucide-icon>
+                          </button>
+
+                          <!-- Edit -->
+                          <button class="acl-act edit"
+                            [title]="t('coursesList.edit')"
+                            (click)="navigate('/dash/courses/edit/' + course.id)">
+                            <lucide-icon [img]="PencilIcon" [size]="13"></lucide-icon>
+                          </button>
+
+                          <!-- Review pending request -->
+                          @if (getPendingReq(course.id)) {
+                            <button class="acl-act approve"
+                              [title]="t('coursesList.reviewRequest')"
+                              (click)="openReviewModal(getPendingReq(course.id)!)">
+                              <lucide-icon [img]="ShieldIcon" [size]="13"></lucide-icon>
+                            </button>
+                          }
+
+                          <!-- Quick publish (no pending, not published) -->
+                          @if (!getPendingReq(course.id) && resolvePublishStatus(course) !== 'published') {
+                            <button class="acl-act approve"
+                              [title]="t('coursesList.publish')"
+                              (click)="handlePublish(course)">
+                              <lucide-icon [img]="SendIcon" [size]="13"></lucide-icon>
+                            </button>
+                          }
+
+                          <!-- Unpublish -->
+                          @if (resolvePublishStatus(course) === 'published') {
+                            <button class="acl-act unpublish"
+                              [title]="t('coursesList.unpublish')"
+                              (click)="openUnpubModal(course)">
+                              <lucide-icon [img]="ToggleRightIcon" [size]="13"></lucide-icon>
+                            </button>
+                          }
+
+                          <!-- Delete -->
+                          <button class="acl-act del"
+                            [title]="t('coursesList.delete')"
+                            (click)="openDelModal(course)">
+                            <lucide-icon [img]="Trash2Icon" [size]="13"></lucide-icon>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+
+          <!-- Pagination -->
+          @if (!tableLoading() && filteredCourses().length > PAGE_SIZE) {
+            <div class="acl-pagination">
+              <span class="acl-page-info">
+                {{ (currentPage() - 1) * PAGE_SIZE + 1 }}–{{ pageEnd() }}
+                {{ t('coursesList.of') }} {{ filteredCourses().length }}
+              </span>
+              <div style="display:flex; gap:4px">
+                <button class="acl-pbn" [disabled]="currentPage() === 1" (click)="setPage(currentPage() - 1)">
+                  <lucide-icon [img]="ChevronLeftIcon" [size]="11"></lucide-icon>
+                </button>
+                @for (n of pageNumbers(); track n) {
+                  <button class="acl-pbn" [class.active]="currentPage() === n" (click)="setPage(n)">{{ n }}</button>
+                }
+                <button class="acl-pbn" [disabled]="currentPage() === totalPages()" (click)="setPage(currentPage() + 1)">
+                  <lucide-icon [img]="ChevronRightIcon" [size]="11"></lucide-icon>
+                </button>
+              </div>
+            </div>
+          }
+
+        </div><!-- /acl-card -->
+      </div><!-- /acl-body -->
+    </div><!-- /acl-rel -->
+  </div><!-- /acl-root -->
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       REVIEW MODAL
+  ══════════════════════════════════════════════════════════ -->
+  @if (reviewModal().open && reviewModal().req) {
+    <div class="acl-modal-backdrop" (click)="$event.target === $event.currentTarget && closeReviewModal()">
+      <div class="acl-modal" [attr.dir]="isRTL() ? 'rtl' : 'ltr'" (click)="$event.stopPropagation()">
+        <button class="acl-modal-close" (click)="closeReviewModal()">
+          <lucide-icon [img]="XIcon" [size]="13"></lucide-icon>
+        </button>
+        <div class="acl-modal-title">{{ t('coursesList.reviewRequest') }}</div>
+        <div class="acl-modal-sub">
+          {{ t('coursesList.requestedOn') }}
+          {{ reviewModal().req!.requestedAt ? (reviewModal().req!.requestedAt! | date:'mediumDate') : '' }}
+        </div>
+
+        <div class="acl-info-row">
+          <div class="acl-info-label">{{ t('coursesList.course') }}</div>
+          <div class="acl-info-val" style="font-weight:700">{{ reviewModal().req!.courseTitle }}</div>
+        </div>
+        <div class="acl-info-row">
+          <div class="acl-info-label">{{ t('coursesList.instructor') }}</div>
+          <div class="acl-info-val">{{ reviewModal().req!.teacherName || '—' }}</div>
+        </div>
+        @if (reviewModal().req!.teacherNotes) {
+          <div class="acl-info-row">
+            <div class="acl-info-label">{{ t('coursesList.teacherNotes') }}</div>
+            <div class="acl-info-val">{{ reviewModal().req!.teacherNotes }}</div>
+          </div>
+        }
+
+        <div style="display:flex; gap:8px; margin-bottom:16px">
+          <span class="acl-tag blue">{{ reviewModal().req!.lectureCount || 0 }} {{ t('coursesList.lectures') }}</span>
+          @if (reviewModal().req!.hasPromoVideo) {
+            <span class="acl-tag violet">{{ t('coursesList.promoVideo') }}</span>
+          }
+        </div>
+
+        @if (reviewModal().mode !== 'view') {
+          <div>
+            <label class="acl-feedback-label">
+              {{ reviewModal().mode === 'reject'
+                ? t('coursesList.adminFeedback') + ' *'
+                : t('coursesList.adminFeedbackOptional') }}
+            </label>
+            <textarea
+              class="acl-ta"
+              [value]="reviewFeedback()"
+              (input)="onFeedbackInput($event)"
+              [placeholder]="t('coursesList.enterFeedback')"
+            ></textarea>
+            @if (feedbackErr()) {
+              <div class="acl-ta-error">{{ feedbackErr() }}</div>
+            }
+          </div>
+        }
+
+        <div class="acl-modal-actions">
+          @if (reviewModal().mode === 'view') {
+            <button class="acl-btn-cancel" (click)="closeReviewModal()">
+              {{ t('coursesList.cancel') }}
+            </button>
+            <button class="acl-btn-reject" (click)="setReviewMode('reject')">
+              <lucide-icon [img]="XCircleIcon" [size]="14"></lucide-icon>
+              {{ t('coursesList.reject') }}
+            </button>
+            <button class="acl-btn-approve" (click)="setReviewMode('approve')">
+              <lucide-icon [img]="CheckCircleIcon" [size]="14"></lucide-icon>
+              {{ t('coursesList.approve') }}
+            </button>
+          } @else {
+            <button class="acl-btn-cancel" (click)="setReviewMode('view')">
+              {{ t('coursesList.back') }}
+            </button>
+            <button
+              [disabled]="submitting()"
+              [class]="reviewModal().mode === 'approve' ? 'acl-btn-approve' : 'acl-btn-reject'"
+              (click)="handleReviewSubmit()"
+            >
+              @if (reviewModal().mode === 'approve') {
+                <lucide-icon [img]="CheckCircleIcon" [size]="14"></lucide-icon>
+                {{ t('coursesList.approveAndPublish') }}
+              } @else {
+                <lucide-icon [img]="XCircleIcon" [size]="14"></lucide-icon>
+                {{ t('coursesList.confirmReject') }}
+              }
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       UNPUBLISH MODAL
+  ══════════════════════════════════════════════════════════ -->
+  @if (unpubModal().open) {
+    <div class="acl-modal-backdrop" (click)="$event.target === $event.currentTarget && closeUnpubModal()">
+      <div class="acl-modal" style="max-width:420px" [attr.dir]="isRTL() ? 'rtl' : 'ltr'" (click)="$event.stopPropagation()">
+        <button class="acl-modal-close" (click)="closeUnpubModal()">
+          <lucide-icon [img]="XIcon" [size]="13"></lucide-icon>
+        </button>
+        <div class="acl-modal-title">{{ t('coursesList.unpublishCourse') }}</div>
+        <div class="acl-modal-sub">{{ t('coursesList.unpublishWarning') }}</div>
+        <div class="acl-info-row">
+          <div class="acl-info-val" style="font-weight:700">{{ unpubModal().course?.title }}</div>
+        </div>
+        <div class="acl-modal-actions">
+          <button class="acl-btn-cancel" (click)="closeUnpubModal()">
+            {{ t('coursesList.cancel') }}
+          </button>
+          <button class="acl-btn-warn" (click)="handleUnpublish()">
+            <lucide-icon [img]="ToggleLeftIcon" [size]="14"></lucide-icon>
+            {{ t('coursesList.unpublish') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       DELETE MODAL
+  ══════════════════════════════════════════════════════════ -->
+  @if (delModal().open) {
+    <div class="acl-modal-backdrop" (click)="$event.target === $event.currentTarget && closeDelModal()">
+      <div class="acl-modal" style="max-width:400px" [attr.dir]="isRTL() ? 'rtl' : 'ltr'" (click)="$event.stopPropagation()">
+        <button class="acl-modal-close" (click)="closeDelModal()">
+          <lucide-icon [img]="XIcon" [size]="13"></lucide-icon>
+        </button>
+        <div class="acl-modal-title">{{ t('coursesList.deleteCourse') }}</div>
+        <div class="acl-modal-sub">{{ t('coursesList.deleteWarning') }}</div>
+        <div class="acl-info-row" style="background:#fff7ed; border:1px solid #fed7aa">
+          <div class="acl-info-val" style="font-weight:700; color:#92400e">{{ delModal().course?.title }}</div>
+        </div>
+        <div class="acl-modal-actions">
+          <button class="acl-btn-cancel" (click)="closeDelModal()">
+            {{ t('coursesList.cancel') }}
+          </button>
+          <button class="acl-btn-reject" [disabled]="deleting()" (click)="handleDelete()">
+            @if (deleting()) {
+              <lucide-icon [img]="RefreshCwIcon" [size]="14" class="spin-icon"></lucide-icon>
+              {{ t('coursesList.deleting') }}
+            } @else {
+              <lucide-icon [img]="Trash2Icon" [size]="14"></lucide-icon>
+              {{ t('coursesList.delete') }}
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       TOAST
+  ══════════════════════════════════════════════════════════ -->
+  @if (toast()) {
+    <div class="acl-toast" [class.success]="toast()!.type === 'success'" [class.error]="toast()!.type === 'error'">
+      @if (toast()!.type === 'success') {
+        <lucide-icon [img]="CheckCircleIcon" [size]="15"></lucide-icon>
+      } @else {
+        <lucide-icon [img]="AlertTriangleIcon" [size]="15"></lucide-icon>
+      }
+      {{ toast()!.msg }}
+    </div>
+  }
+
+  }<!-- /else main -->
+
+</ng-container>

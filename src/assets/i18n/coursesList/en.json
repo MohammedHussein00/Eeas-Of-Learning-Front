@@ -1,0 +1,85 @@
+{
+    "loading": "جارٍ تحميل الدورات…",
+
+    "pageTitle": "إدارة الدورات",
+    "pageSubtitle": "إدارة جميع الدورات التدريبية",
+
+    "refresh": "تحديث",
+    "newCourse": "دورة جديدة",
+
+    "totalCourses": "إجمالي الدورات",
+    "published": "منشور",
+    "pendingReview": "قيد المراجعة",
+    "platformEOL": "منصة (منتهية)",
+    "teacherCourses": "دورات المعلمين",
+
+    "pendingBannerTitle": "طلبات نشر معلّقة",
+    "pendingBannerSub": "دورة تنتظر المراجعة",
+
+    "searchPlaceholder": "ابحث بالعنوان أو المدرّب…",
+    "allStatus": "جميع الحالات",
+    "published": "منشور",
+    "pending": "قيد الانتظار",
+    "draft": "مسودة",
+    "rejected": "مرفوض",
+    "allTypes": "جميع الأنواع",
+    "platform": "منصة (منتهية)",
+    "teacher": "دورات المعلمين",
+    "newest": "الأحدث",
+    "oldest": "الأقدم",
+    "rating": "التقييم",
+    "students": "الطلاب",
+    "title": "العنوان",
+    "records": "سجل",
+
+    "course": "الدورة",
+    "instructor": "المدرّب",
+    "status": "الحالة",
+    "price": "السعر",
+    "created": "تاريخ الإنشاء",
+    "actions": "الإجراءات",
+
+    "eolPlatform": "منصة منتهية",
+    "free": "مجاني",
+
+    "builder": "منشئ الدورة",
+    "edit": "تعديل",
+    "reviewRequest": "مراجعة طلب النشر",
+    "publish": "نشر",
+    "unpublish": "إلغاء النشر",
+    "delete": "حذف",
+    "deleting": "جارٍ الحذف…",
+
+    "noCourses": "لا توجد دورات",
+    "of": "من",
+
+    "requestedOn": "تاريخ الطلب",
+    "teacherNotes": "ملاحظات المعلم",
+    "lectures": "محاضرة",
+    "promoVideo": "فيديو ترويجي",
+    "adminFeedback": "ملاحظات المشرف",
+    "adminFeedbackOptional": "ملاحظات المشرف (اختياري)",
+    "enterFeedback": "أدخل ملاحظاتك للمعلم…",
+    "feedbackRequired": "الملاحظات مطلوبة عند الرفض",
+    "cancel": "إلغاء",
+    "back": "رجوع",
+    "approve": "موافقة",
+    "approveAndPublish": "موافقة ونشر",
+    "reject": "رفض",
+    "confirmReject": "تأكيد الرفض",
+
+    "unpublishCourse": "إلغاء نشر الدورة",
+    "unpublishWarning": "سيؤدي هذا إلى إخفاء الدورة من القوائم العامة.",
+
+    "deleteCourse": "حذف الدورة",
+    "deleteWarning": "لا يمكن التراجع عن هذا الإجراء.",
+
+    "publishSuccess": "تم نشر الدورة بنجاح",
+    "publishError": "فشل نشر الدورة",
+    "approveSuccess": "تمت الموافقة والنشر",
+    "rejectSuccess": "تم رفض الطلب",
+    "unpublishSuccess": "تم إلغاء نشر الدورة",
+    "deleteSuccess": "تم حذف الدورة بنجاح",
+    "deleteError": "فشل حذف الدورة",
+    "actionFailed": "فشل الإجراء. يرجى المحاولة مرة أخرى."
+}

@@ -686,18 +686,294 @@
   }
 }
 
-// ── ng-zorro overrides ────────────────────────────────
+// ── ng-zorro overrides (scoped — progress, switch) ────
 :host ::ng-deep {
-  .ant-progress-bg  { border-radius: 8px !important; }
+  .ant-progress-bg    { border-radius: 8px !important; }
   .ant-switch-checked { background: var(--brand) !important; }
-  .ant-modal-content  { border-radius: 14px !important; }
-  .ant-modal-header   { background: #fff8f8 !important; padding: 16px 20px !important; }
-  .ant-modal-body     { padding: 18px 20px !important; }
-  .ant-modal-footer   {
-    padding: 12px 20px !important;
-    background: var(--bg-page) !important;
+}
+// ══════════════════════════════════════════════════════
+//  UPGRADE REQUESTS SECTION
+// ══════════════════════════════════════════════════════
+.mp-upgrade-requests-section {
+  border-color: #fde68a;
+  background: linear-gradient(135deg, #fffbeb 0%, var(--bg-card) 100%);
+}
+
+.mp-upgrade-requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mp-upgrade-request-card {
+  background: var(--bg-card);
+  border-radius: var(--r-sm);
+  border: 1.5px solid var(--border);
+  padding: 14px 16px;
+  transition: var(--trans);
+
+  &:hover { box-shadow: var(--sh-sm); }
+
+  &.status-amber {
+    border-color: #fde68a;
+    background: linear-gradient(135deg, #fffdf5, var(--bg-card));
+  }
+  &.status-blue {
+    border-color: #bfdbfe;
+    background: linear-gradient(135deg, #eff6ff, var(--bg-card));
+  }
+  &.status-green {
+    border-color: #bbf7d0;
+    background: linear-gradient(135deg, #f0fdf4, var(--bg-card));
+  }
+  &.status-purple {
+    border-color: #ddd6fe;
+    background: linear-gradient(135deg, #f5f3ff, var(--bg-card));
+  }
+  &.status-red {
+    border-color: #fecaca;
+    background: linear-gradient(135deg, #fff8f8, var(--bg-card));
+  }
+  &.status-grey {
+    border-color: var(--border);
+    background: var(--bg-page);
+  }
+}
+
+// ── Card header ───────────────────────────────────────
+.mp-ur-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.mp-ur-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mp-ur-type-badge {
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--brand-bg);
+  color: var(--brand);
+  border-radius: 20px;
+  padding: 2px 10px;
+  border: 1px solid #c7d2fe;
+}
+
+.mp-ur-arrow {
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.mp-ur-plan-name {
+  font-family: 'Sora', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-1);
+}
+
+// ── Status tag ────────────────────────────────────────
+.mp-ur-status-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 20px;
+  padding: 3px 12px;
+  border: 1px solid transparent;
+  flex-shrink: 0;
+
+  &.amber  { background: var(--amber-bg);  color: var(--amber);  border-color: #fde68a; }
+  &.blue   { background: #eff6ff;          color: #1d4ed8;       border-color: #bfdbfe; }
+  &.green  { background: var(--green-bg);  color: var(--green);  border-color: #bbf7d0; }
+  &.purple { background: var(--purple-bg); color: var(--purple); border-color: #ddd6fe; }
+  &.red    { background: var(--red-bg);    color: var(--red);    border-color: #fecaca; }
+  &.grey   { background: #f1f5f9;          color: var(--text-3); border-color: var(--border); }
+}
+
+// ── Detail grid ───────────────────────────────────────
+.mp-ur-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-bottom: 10px;
+}
+
+.mp-ur-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.mp-ur-detail-label {
+  font-size: 10px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mp-ur-detail-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+
+  &.mp-ur-amount {
+    font-family: 'Sora', sans-serif;
+    color: var(--brand);
+  }
+}
+
+// ── Payment notice ────────────────────────────────────
+.mp-ur-payment-notice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--amber);
+  background: var(--amber-bg);
+  border: 1px solid #fde68a;
+  border-radius: var(--r-xs);
+  padding: 6px 10px;
+  margin-bottom: 10px;
+}
+
+// ── Actions ───────────────────────────────────────────
+.mp-ur-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mp-ur-pay-btn {
+  font-size: 12px !important;
+  height: 34px !important;
+  padding: 0 14px !important;
+}
+
+// ── RTL ───────────────────────────────────────────────
+[dir='rtl'] {
+  .mp-ur-header,
+  .mp-ur-header-left,
+  .mp-ur-actions { flex-direction: row-reverse; }
+}
+
+// ── Responsive ────────────────────────────────────────
+@media (max-width: 480px) {
+  .mp-ur-actions {
+    .mp-btn-primary,
+    .mp-btn-ghost { flex: 1; justify-content: center; }
+  }
+}
+// ══════════════════════════════════════════════════════
+//  MODAL — GLOBAL STYLES
+//  ng-zorro renders modals in a CDK portal OUTSIDE :host.
+//  We use [nzWrapClassName]="'mp-modal-rtl'" to tag the
+//  wrap div so these unscoped rules can reach it.
+//  Add this file to angular.json "styles" array, OR keep
+//  encapsulation: ViewEncapsulation.None on the component.
+// ══════════════════════════════════════════════════════
+
+// ── Base modal look ───────────────────────────────────
+.ant-modal-content {
+  border-radius: 14px !important;
+  overflow: hidden;
+  padding: 0 !important;
+}
+.ant-modal-header {
+  background: #fff8f8 !important;
+  padding: 16px 20px !important;
+  margin: 0 !important;
+  border-bottom: 1.5px solid #e4e8f4 !important;
+}
+.ant-modal-body   { padding: 18px 20px !important; }
+.ant-modal-footer {
+  padding: 12px 20px !important;
+  background: #f0f2f8 !important;
+  margin: 0 !important;
+  border-top: 1.5px solid #e4e8f4 !important;
+  border-radius: 0 0 14px 14px !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+}
+
+// ── Modal width — never overflow viewport ─────────────
+.ant-modal { max-width: calc(100vw - 32px) !important; }
+
+// ── Modal footer button wrapper ───────────────────────
+.mp-modal-footer-wrap {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  justify-content: flex-end;   // LTR: danger on right, ghost on left
+
+  &[dir='rtl'] {
+    justify-content: flex-start; // RTL: items flow right-to-left
+    // Swap visual order: ghost (first in DOM) → right end, danger → left end
+    button:first-child { order: 2; }
+    button:last-child  { order: 1; }
+    .ant-modal-close{
+      left: 0 !important;
+    }
+  }
+}
+
+// ── RTL: triggered by nzWrapClassName="mp-modal-rtl" ─
+// The wrap div sits in the body overlay; nzWrapClassName
+// lands directly on it, so this selector always matches.
+.mp-modal-rtl {
+  direction: rtl;
+
+  .ant-modal-content,
+  .ant-modal-header,
+  .ant-modal-body { direction: rtl; text-align: right; }
+
+  // Close (×) button: flip from right → left
+  // Use all four properties to override ng-zorro's inline positioning
+  .ant-modal-close {
+    position: absolute !important;
+    top:   16px  !important;
+    right: auto  !important;
+    left:  16px  !important;
+  }
+
+  // Footer: use row-reverse so DOM order stays the same but
+  // visually "تأكيد الإلغاء" (last in DOM) appears on the RIGHT
+  .ant-modal-footer {
+    direction: rtl !important;
     display: flex !important;
-    justify-content: flex-end !important;
+    flex-direction: row !important;      // keep natural row
+    justify-content: flex-end !important; // push buttons to right (= start in RTL visual)
     gap: 8px !important;
   }
+
+  // Flip footer button DOM order visually with order property
+  // "keep plan" ghost button → pushed to the left (visual end in RTL)
+  // "confirm cancel" danger button → stays on the right (visual start in RTL)
+  .ant-modal-footer button:first-child  { order: 2; }  // ghost → left
+  .ant-modal-footer button:last-child   { order: 1; }  // danger → right
+
+  // Alert component inside modal
+  .ant-alert {
+    flex-direction: row-reverse !important;
+    text-align: right !important;
+    padding: 8px 12px 8px 16px !important;
+
+    .ant-alert-icon { margin-right: 0 !important; margin-left: 8px !important; }
+    .ant-alert-message { text-align: right !important; }
+  }
+
+  // Textarea
+  textarea { direction: rtl !important; text-align: right !important; }
+}
+.ant-modal{
+      max-width: 50vw;
 }

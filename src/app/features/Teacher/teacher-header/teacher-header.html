@@ -1,23 +1,32 @@
 <!-- features/teacher/components/teacher-header/teacher-header.html -->
 <div class="th-root" [class.rtl]="isRtl()">
+
   <!-- Language Toggle -->
   <button class="th-lang-btn" (click)="toggleLanguage()">
     <lucide-icon [img]="GlobeIcon" [size]="14" class="lang-icon"></lucide-icon>
     <span>{{ isRtl() ? 'English' : 'العربية' }}</span>
   </button>
 
-  <!-- Notifications with Ant Design Badge -->
-  <div class="th-bell-btn" (click)="toggleNotifications()">
+  <!-- Notifications Bell with Ant Design Dropdown -->
+  <div
+    nz-dropdown
+    [nzDropdownMenu]="notifMenu"
+    nzTrigger="click"
+    [nzPlacement]="isRtl() ? 'bottomRight' : 'bottomLeft'"
+    (nzVisibleChange)="onNotifDropdownChange($event)"
+    class="th-bell-btn">
     <div class="bell-wrapper">
-      <nz-badge [nzCount]="unreadCount()" [nzOverflowCount]="99">
+      <nz-badge [nzCount]="unreadCountDisplay()" [nzOverflowCount]="99">
         <lucide-icon [img]="BellIcon" [size]="18"></lucide-icon>
       </nz-badge>
     </div>
   </div>
 
-  <!-- Notifications Panel -->
-  @if (notifOpen()) {
-    <div class="th-notif-panel" clickOutside (clickOutside)="closeNotifications()">
+  <!-- Notifications Dropdown Menu -->
+  <nz-dropdown-menu #notifMenu="nzDropdownMenu">
+    <div class="th-notif-panel">
+
+      <!-- Header -->
       <div class="th-notif-header">
         <div class="th-notif-title">
           <lucide-icon [img]="BellIcon" [size]="16" style="color: #3d5af1"></lucide-icon>
@@ -26,13 +35,17 @@
             <nz-badge [nzCount]="totalCount()" [nzShowZero]="false"></nz-badge>
           }
         </div>
-        @if (unreadCount() > 0) {
-          <button class="th-mark-all-btn" (click)="markAllAsRead()" [disabled]="notificationsLoading()">
+        @if (unreadCountDisplay() > 0) {
+          <button
+            class="th-mark-all-btn"
+            (click)="markAllAsRead()"
+            [disabled]="notificationsLoading()">
             {{ 'mark_all_read' | transloco }}
           </button>
         }
       </div>
 
+      <!-- List -->
       <div class="th-notif-list">
         @if (notificationsLoading()) {
           <div class="th-notif-loading">
@@ -53,7 +66,10 @@
               class="th-notif-item"
               [class.unread]="!notification.isRead"
               (click)="onNotificationClick(notification)">
-              <div class="th-notif-avatar" [class.read]="notification.isRead" [class.unread]="!notification.isRead">
+              <div
+                class="th-notif-avatar"
+                [class.read]="notification.isRead"
+                [class.unread]="!notification.isRead">
                 <lucide-icon [img]="BellIcon" [size]="14"></lucide-icon>
                 @if (!notification.isRead) {
                   <span class="th-unread-dot"></span>
@@ -81,18 +97,23 @@
         }
       </div>
 
-      @if (totalCount() > 5 && notifications().length > 0) {
-        <div class="th-notif-footer">
-          <button class="th-view-all-btn" (click)="viewAllNotifications()">
-            {{ 'view_all_notifications' | transloco }}
-          </button>
-        </div>
-      }
+      <!-- Footer — always shown so user can navigate to full list -->
+      <div class="th-notif-footer">
+        <button class="th-view-all-btn" (click)="viewAllNotifications()">
+          {{ 'view_all_notifications' | transloco }}
+        </button>
+      </div>
+
     </div>
-  }
+  </nz-dropdown-menu>
 
   <!-- Desktop Profile with Ant Design Dropdown -->
-  <div class="th-profile-btn" nz-dropdown [nzDropdownMenu]="profileMenu" nzTrigger="click" [nzPlacement]="isRtl() ? 'bottomRight' : 'bottomLeft'">
+  <div
+    class="th-profile-btn"
+    nz-dropdown
+    [nzDropdownMenu]="profileMenu"
+    nzTrigger="click"
+    [nzPlacement]="isRtl() ? 'bottomRight' : 'bottomLeft'">
     <div class="th-profile-avatar">
       <nz-avatar [nzSrc]="avatarSrc()" nzSize="default"></nz-avatar>
       @if (isVerified()) {
@@ -102,12 +123,14 @@
       }
     </div>
     <div class="th-profile-text">
-      <span class="th-profile-role">{{ (profile()?.fullName) || ('teacher' | transloco) }}</span>
+      <span class="th-profile-role">
+        {{ (profile()?.fullName) || ('teacher' | transloco) }}
+      </span>
     </div>
     <lucide-icon [img]="ChevronDownIcon" [size]="14" class="th-chevron"></lucide-icon>
   </div>
 
-  <!-- Ant Design Profile Dropdown Menu -->
+  <!-- Profile Dropdown Menu -->
   <nz-dropdown-menu #profileMenu="nzDropdownMenu">
     <div class="th-profile-dropdown">
       <div class="th-profile-header-wrap">
@@ -116,7 +139,9 @@
         </div>
         <div>
           <div class="th-profile-header-name">{{ userName() }}</div>
-          <div class="th-profile-header-role">{{ (profile()?.headline) || ('teacher' | transloco) }}</div>
+          <div class="th-profile-header-role">
+            {{ (profile()?.headline) || ('teacher' | transloco) }}
+          </div>
           @if (isVerified()) {
             <span class="th-profile-header-verified">
               <lucide-icon [img]="BadgeCheckIcon" [size]="12"></lucide-icon>
@@ -126,7 +151,7 @@
         </div>
       </div>
       <nz-divider></nz-divider>
-      
+
       @for (item of profileMenuItems; track item.key) {
         @if (item.key === 'logout') {
           <nz-divider></nz-divider>
@@ -167,7 +192,9 @@
         </div>
         <div class="th-mobile-user-details">
           <div class="th-mobile-user-name">{{ userName() }}</div>
-          <div class="th-mobile-user-role">{{ (profile()?.headline) || ('teacher' | transloco) }}</div>
+          <div class="th-mobile-user-role">
+            {{ (profile()?.headline) || ('teacher' | transloco) }}
+          </div>
         </div>
       </div>
 
@@ -186,4 +213,5 @@
       </div>
     </div>
   }
+
 </div>

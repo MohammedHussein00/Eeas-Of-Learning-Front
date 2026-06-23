@@ -16,7 +16,6 @@ import { Language } from '../../../core/services/language';
 import { Notification, NotificationItem } from '../../../core/services/notification';
 import { TeacherProfile } from '../../../core/services/teacher-profile';
 import { Cookie } from '../../../core/services/cookie';
-import { ClickOutsideDirective } from '../../../core/directives/click-outside.directive';
 import {
   LucideAngularModule,
   Bell,
@@ -42,11 +41,10 @@ import {
   selector: 'app-teacher-header',
   standalone: true,
   imports: [
-    CommonModule, 
-    RouterLink, 
-    TranslocoModule, 
-    LucideAngularModule, 
-    ClickOutsideDirective,
+    CommonModule,
+    RouterLink,
+    TranslocoModule,
+    LucideAngularModule,
     NzDropDownModule,
     NzIconModule,
     NzBadgeModule,
@@ -54,7 +52,7 @@ import {
     NzDividerModule,
     NzSpinModule,
     NzEmptyModule,
-    NzButtonModule
+    NzButtonModule,
   ],
   templateUrl: './teacher-header.html',
   styleUrls: ['./teacher-header.scss'],
@@ -87,19 +85,21 @@ export class TeacherHeader implements OnInit, OnDestroy {
   readonly CheckCircleIcon     = CheckCircle;
 
   // Signals from services
-  notifications      = this.notificationService.notifications;
-  unreadCount        = this.notificationService.unreadCount;
-  totalCount         = this.notificationService.totalCount;
+  notifications        = this.notificationService.notifications;
+  totalCount           = this.notificationService.totalCount;
   notificationsLoading = this.notificationService.loading;
-  profile            = this.teacherProfile.profile;
-  isVerified         = this.teacherProfile.isVerified;
-  currentLang        = this.language.currentLang;
-  isRtl              = this.language.isRtl;
+  profile              = this.teacherProfile.profile;
+  isVerified           = this.teacherProfile.isVerified;
+  currentLang          = this.language.currentLang;
+  isRtl                = this.language.isRtl;
+
+  // Computed unread count derived from the notifications list
+  unreadCountDisplay = computed(() =>
+    this.notifications().filter(n => !n.isRead).length
+  );
 
   // Local signals
-  mobileMenuOpen  = signal(false);
-  notifOpen       = signal(false);
-  profileMenuOpen = signal(false);
+  mobileMenuOpen = signal(false);
 
   // Mobile menu items
   mobileMenuItems = [
@@ -113,19 +113,19 @@ export class TeacherHeader implements OnInit, OnDestroy {
 
   // Profile dropdown items
   profileMenuItems = [
-    { key: 'dashboard', icon: LayoutDashboard, label: 'dashboard', path: '/teacher/dashboard' },
-    { key: 'profile', icon: User, label: 'my_profile', path: '/teacher/profile' },
-    { key: 'courses', icon: BookOpen, label: 'my_courses', path: '/teacher/courses' },
-    { key: 'students', icon: Users, label: 'my_students', path: '/teacher/students' },
-    { key: 'reviews', icon: Star, label: 'reviews', path: '/teacher/reviews' },
-    { key: 'earnings', icon: DollarSign, label: 'earnings', path: '/teacher/earnings' },
-    { key: 'logout', icon: LogOut, label: 'logout', path: '/logout' },
+    { key: 'dashboard', icon: LayoutDashboard, label: 'dashboard',   path: '/teacher/dashboard' },
+    { key: 'profile',   icon: User,            label: 'my_profile',  path: '/teacher/profile' },
+    { key: 'courses',   icon: BookOpen,        label: 'my_courses',  path: '/teacher/courses' },
+    { key: 'students',  icon: Users,           label: 'my_students', path: '/teacher/students' },
+    { key: 'reviews',   icon: Star,            label: 'reviews',     path: '/teacher/reviews' },
+    { key: 'earnings',  icon: DollarSign,      label: 'earnings',    path: '/teacher/earnings' },
+    { key: 'logout',    icon: LogOut,          label: 'logout',      path: '/logout' },
   ];
 
   // Computed values
   avatarSrc = computed(() => {
     const img      = this.cookie.retrieveCookie('n9u0oCnjyyntd06AU5wrg');
-    const userName = this.cookie.retrieveCookie('userName') || 'Teacher';
+    const userName = this.cookie.retrieveCookie('vLumDgQ0vJHJLCherb2w') || 'Teacher';
     if (!img) {
       return `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=3d5af1&color=fff&bold=true`;
     }
@@ -133,20 +133,15 @@ export class TeacherHeader implements OnInit, OnDestroy {
     return `https://localhost:7091${img}`;
   });
 
-  userName = computed(() => this.cookie.retrieveCookie('userName') || 'Teacher');
+  userName = computed(() => this.cookie.retrieveCookie('vLumDgQ0vJHJLCherb2w') || 'Teacher');
 
   ngOnInit(): void {
     this.teacherProfile.fetchProfile();
     this.notificationService.fetchSummary();
 
-    // Re-fetch data whenever the user switches language so API responses
-    // come back in the correct language.
     this.language.onLanguageChange(() => {
       this.teacherProfile.fetchProfile();
       this.notificationService.fetchSummary();
-      if (this.notifOpen()) {
-        this.notificationService.fetchUnreadNotifications();
-      }
     });
   }
 
@@ -156,43 +151,26 @@ export class TeacherHeader implements OnInit, OnDestroy {
     this.language.toggleLanguage();
   }
 
-  toggleNotifications(): void {
-    this.notifOpen.update(open => !open);
-    this.profileMenuOpen.set(false);
-    if (this.notifOpen()) {
+  // Called by nzVisibleChange on the notification dropdown
+  onNotifDropdownChange(visible: boolean): void {
+    if (visible) {
       this.notificationService.fetchUnreadNotifications();
     }
   }
 
-  toggleProfileMenu(): void {
-    this.profileMenuOpen.update(open => !open);
-    this.notifOpen.set(false);
-  }
-
-  closeProfileMenu(): void {
-    this.profileMenuOpen.set(false);
-  }
-
-  closeNotifications(): void {
-    this.notifOpen.set(false);
-  }
-
   async markAllAsRead(): Promise<void> {
     await this.notificationService.markAllAsRead();
-    this.notifOpen.set(false);
   }
 
   async onNotificationClick(notification: NotificationItem): Promise<void> {
     if (!notification.isRead) {
       await this.notificationService.markAsRead(notification.id);
     }
-    this.notifOpen.set(false);
-    this.navigateTo('/teacher/notifications');
+    this.router.navigate(['/teacher/notifications']);
   }
 
   viewAllNotifications(): void {
-    this.notifOpen.set(false);
-    this.navigateTo('/teacher/notifications');
+    this.router.navigate(['/teacher/notifications']);
   }
 
   navigateTo(path: string): void {
@@ -202,8 +180,6 @@ export class TeacherHeader implements OnInit, OnDestroy {
     }
     this.router.navigate([path]);
     this.mobileMenuOpen.set(false);
-    this.profileMenuOpen.set(false);
-    this.notifOpen.set(false);
   }
 
   logout(): void {

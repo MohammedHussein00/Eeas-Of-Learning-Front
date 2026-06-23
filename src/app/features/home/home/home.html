@@ -1,1 +1,650 @@
-<p>home works!</p>
+<div class="eol-home" [dir]="isRTL ? 'rtl' : 'ltr'" *transloco="let t; scope: 'home'">
+
+  <!-- ══════════════════════════════════════════════════════
+       ① HERO
+  ══════════════════════════════════════════════════════ -->
+  <section class="eol-hero" [class.eol-hero--in]="heroAnimated()">
+    <div class="eol-hero__canvas">
+      <div class="orb orb--a"></div>
+      <div class="orb orb--b"></div>
+      <div class="orb orb--c"></div>
+      <div class="eol-hero__grid"></div>
+    </div>
+    <div class="eol-hero__overlay"></div>
+
+    <div class="eol-hero__inner">
+      <div class="eol-hero__copy">
+        <div class="hero-badge">
+          <lucide-icon [img]="SparklesIcon" [size]="13"></lucide-icon>
+          {{ t('home.hero.badge') }}
+        </div>
+        <h1 class="hero-h1">
+          {{ t('home.hero.title1') }}
+          <span class="hero-h1__accent">{{ t('home.hero.titleAccent') }}</span>
+          {{ t('home.hero.title2') }}
+        </h1>
+        <p class="hero-sub">{{ t('home.hero.subtitle') }}</p>
+        <div class="hero-actions">
+          <button class="eol-btn eol-btn--primary" (click)="go('/register')">
+            <lucide-icon [img]="ZapIcon" [size]="16"></lucide-icon>
+            {{ t('home.hero.ctaStart') }}
+          </button>
+          <button class="eol-btn eol-btn--ghost" (click)="go('/courses')">
+            <lucide-icon [img]="PlayIcon" [size]="16"></lucide-icon>
+            {{ t('home.hero.ctaBrowse') }}
+          </button>
+        </div>
+        <div class="hero-kpis">
+          <div class="hero-kpi"><span class="hero-kpi__val">50K+</span><span class="hero-kpi__lbl">{{ t('home.stats.students') }}</span></div>
+          <span class="hero-kpi__sep"></span>
+          <div class="hero-kpi"><span class="hero-kpi__val">1,200+</span><span class="hero-kpi__lbl">{{ t('home.stats.courses') }}</span></div>
+          <span class="hero-kpi__sep"></span>
+          <div class="hero-kpi"><span class="hero-kpi__val">98%</span><span class="hero-kpi__lbl">{{ t('home.stats.success') }}</span></div>
+        </div>
+      </div>
+
+      <div class="eol-hero__visual" aria-hidden="true">
+        <div class="hv-ring hv-ring--outer"></div>
+        <div class="hv-ring hv-ring--inner"></div>
+        <div class="hv-card">
+          <div class="hv-card__img">
+            <img src="https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=360&h=200&fit=crop" alt="" loading="lazy"/>
+          </div>
+          <div class="hv-card__body">
+            <p class="hv-card__title">{{ t('home.hero.cardTitle') }}</p>
+            <div class="hv-card__stars">
+              <lucide-icon [img]="StarIcon" [size]="11" *ngFor="let s of stars(5)"></lucide-icon>
+              <span>4.9</span>
+            </div>
+            <div class="hv-card__bar"><div class="hv-card__bar-fill" style="width:72%"></div></div>
+            <span class="hv-card__pct">72% {{ t('home.hero.complete') }}</span>
+          </div>
+        </div>
+        <div class="hv-pill hv-pill--students">
+          <lucide-icon [img]="UsersIcon" [size]="13"></lucide-icon> 12,450 {{ t('home.stats.students') }}
+        </div>
+        <div class="hv-pill hv-pill--award">
+          <lucide-icon [img]="AwardIcon" [size]="13"></lucide-icon> {{ t('home.hero.certified') }}
+        </div>
+      </div>
+    </div>
+
+    <div class="eol-hero__scroll-hint">
+      <lucide-icon [img]="ChevronDownIcon" [size]="20"></lucide-icon>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════
+       ② ADVERTISEMENT BANNER  — /api/AdvertisementDisplay/display
+  ══════════════════════════════════════════════════════ -->
+
+  <!-- Skeleton -->
+  <section class="eol-ads eol-ads--skeleton" *ngIf="loadingPublic()">
+    <div class="sk-ad sk-shimmer"></div>
+  </section>
+
+  <!-- Real ads -->
+  <section class="eol-ads" *ngIf="!loadingPublic() && bannerAds().length > 0">
+    <div class="eol-ads__wrap">
+      <div class="eol-ads__track">
+        <div
+          class="eol-ad"
+          *ngFor="let ad of bannerAds(); let i = index"
+          [class.eol-ad--active]="i === currentAdIndex()"
+        >
+          <img [src]="adImg(ad)" [alt]="ad.title" class="eol-ad__bg" loading="lazy"/>
+          <div class="eol-ad__overlay"></div>
+          <div class="eol-ad__content">
+            <span class="eol-ad__badge">
+              <lucide-icon [img]="SparklesIcon" [size]="10"></lucide-icon>
+              {{ t('home.ads.sponsored') }}
+            </span>
+            <h3 class="eol-ad__title">{{ ad.title }}</h3>
+            <p class="eol-ad__desc" *ngIf="ad.description">{{ ad.description }}</p>
+            <button class="eol-btn eol-btn--white eol-btn--sm" (click)="trackAdClick(ad)">
+              {{ t('home.ads.learnMore') }}
+              <lucide-icon [img]="ExternalLinkIcon" [size]="13"></lucide-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+      <button class="eol-ads__nav eol-ads__nav--prev" (click)="prevAd()">
+        <lucide-icon [img]="ChevronLeftIcon" [size]="18"></lucide-icon>
+      </button>
+      <button class="eol-ads__nav eol-ads__nav--next" (click)="nextAd()">
+        <lucide-icon [img]="ChevronRightIcon" [size]="18"></lucide-icon>
+      </button>
+      <div class="eol-ads__dots">
+        <button
+          class="eol-ads__dot"
+          *ngFor="let ad of bannerAds(); let i = index"
+          [class.eol-ads__dot--on]="i === currentAdIndex()"
+          (click)="goToAd(i)">
+        </button>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════
+       ③ STATS BAND
+  ══════════════════════════════════════════════════════ -->
+  <section class="eol-band">
+    <div class="eol-container">
+      <div class="eol-band__grid">
+        <div class="band-stat">
+          <div class="band-stat__icon" style="background:rgba(79,70,229,.1);color:#4f46e5">
+            <lucide-icon [img]="UsersIcon" [size]="22"></lucide-icon>
+          </div>
+          <span class="band-stat__val">50K+</span>
+          <span class="band-stat__lbl">{{ t('home.stats.students') }}</span>
+        </div>
+        <div class="band-stat">
+          <div class="band-stat__icon" style="background:rgba(5,150,105,.1);color:#059669">
+            <lucide-icon [img]="BookOpenIcon" [size]="22"></lucide-icon>
+          </div>
+          <span class="band-stat__val">1,200+</span>
+          <span class="band-stat__lbl">{{ t('home.stats.courses') }}</span>
+        </div>
+        <div class="band-stat">
+          <div class="band-stat__icon" style="background:rgba(124,58,237,.1);color:#7c3aed">
+            <lucide-icon [img]="AwardIcon" [size]="22"></lucide-icon>
+          </div>
+          <span class="band-stat__val">300+</span>
+          <span class="band-stat__lbl">{{ t('home.stats.instructors') }}</span>
+        </div>
+        <div class="band-stat">
+          <div class="band-stat__icon" style="background:rgba(217,119,6,.1);color:#d97706">
+            <lucide-icon [img]="TrophyIcon" [size]="22"></lucide-icon>
+          </div>
+          <span class="band-stat__val">98%</span>
+          <span class="band-stat__lbl">{{ t('home.stats.success') }}</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════
+       ④ XP + SUBSCRIPTION STRIP  (logged-in users only)
+  ══════════════════════════════════════════════════════ -->
+  <div class="eol-xp-strip" *ngIf="isLoggedIn() && xpSummary()">
+    <div class="eol-container">
+      <div class="xp-strip">
+        <div class="xp-strip__flame">
+          <lucide-icon [img]="FlameIcon" [size]="18"></lucide-icon>
+        </div>
+        <div class="xp-strip__info">
+          <span class="xp-strip__level">{{ t('home.xp.level') }} {{ xpSummary()!.level }}</span>
+          <span class="xp-strip__total">{{ xpSummary()!.totalXp | number }} XP</span>
+          <span class="xp-strip__rank" *ngIf="xpSummary()!.allTimeRank">
+            #{{ xpSummary()!.allTimeRank }}
+          </span>
+        </div>
+        <div class="xp-strip__track">
+          <div class="xp-strip__fill" [style.width.%]="xpPercent"></div>
+        </div>
+        <span class="xp-strip__pct">{{ xpPercent }}%</span>
+        <span class="xp-strip__plan" *ngIf="activeSub()">
+          <lucide-icon [img]="BadgeCheckIcon" [size]="13"></lucide-icon>
+          {{ isRTL ? (activeSub()!.planNameAr || activeSub()!.planName) : activeSub()!.planName }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════════════
+       ⑤ SUBJECTS  —  /api/Subjects
+  ══════════════════════════════════════════════════════ -->
+  <section class="eol-section eol-section--alt">
+    <div class="eol-container">
+      <div class="section-hdr">
+        <span class="section-tag">
+          <lucide-icon [img]="LayersIcon" [size]="12"></lucide-icon>
+          {{ t('home.subjects.tag') }}
+        </span>
+        <h2 class="section-h2">{{ t('home.subjects.title') }}</h2>
+        <p class="section-p">{{ t('home.subjects.subtitle') }}</p>
+      </div>
+
+      <!-- Skeleton -->
+      <div class="subjects-grid" *ngIf="loadingPublic()">
+        <div class="subject-card subject-card--sk sk-shimmer" *ngFor="let x of skeletonSubjects"></div>
+      </div>
+
+      <!-- Real data -->
+      <div class="subjects-grid" *ngIf="!loadingPublic()">
+        <div
+          class="subject-card"
+          *ngFor="let sub of subjects(); trackBy: trackById"
+          (click)="goToSubject(sub.id)"
+          role="button" tabindex="0" (keyup.enter)="goToSubject(sub.id)"
+        >
+          <div class="subject-card__icon"
+               [style.background]="subjectBg(sub)"
+               [style.color]="subjectColor(sub)">
+            <lucide-icon [img]="BookOpenIcon" [size]="24"></lucide-icon>
+          </div>
+          <h3 class="subject-card__name">{{ isRTL ? (sub.nameInAr || sub.name) : sub.name }}</h3>
+          <p class="subject-card__meta">{{ sub.questionCount | number }} {{ t('home.subjects.questions') }}</p>
+          <p class="subject-card__stage" *ngIf="sub.academicStageName">
+            {{ sub.academicStageName }}<ng-container *ngIf="sub.academicYearName"> · {{ sub.academicYearName }}</ng-container>
+          </p>
+          <div class="subject-card__arrow">
+            <lucide-icon [img]="ArrowRightIcon" [size]="14"></lucide-icon>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-footer">
+        <button class="eol-btn eol-btn--outline" (click)="go('/subjects')">
+          {{ t('home.subjects.viewAll') }}<lucide-icon [img]="ArrowRightIcon" [size]="15"></lucide-icon>
+        </button>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════
+       ⑥ FEATURED COURSES  —  /api/Courses
+  ══════════════════════════════════════════════════════ -->
+  <section class="eol-section">
+    <div class="eol-container">
+      <div class="section-hdr">
+        <span class="section-tag">
+          <lucide-icon [img]="SparklesIcon" [size]="12"></lucide-icon>
+          {{ t('home.courses.tag') }}
+        </span>
+        <h2 class="section-h2">{{ t('home.courses.title') }}</h2>
+        <p class="section-p">{{ t('home.courses.subtitle') }}</p>
+      </div>
+
+      <!-- Category pills derived from real API data -->
+      <div class="cat-bar" *ngIf="!loadingPublic()">
+        <button class="cat-btn" [class.cat-btn--on]="activeCategory()==='all'" (click)="setCategory('all')">
+          <lucide-icon [img]="BookOpenIcon" [size]="13"></lucide-icon> {{ t('home.categories.all') }}
+        </button>
+        <button
+          class="cat-btn"
+          *ngFor="let cat of uniqueCategories"
+          [class.cat-btn--on]="activeCategory()===cat"
+          (click)="setCategory(cat)">
+          {{ cat }}
+        </button>
+      </div>
+
+      <!-- Skeleton -->
+      <div class="courses-grid" *ngIf="loadingPublic()">
+        <div class="course-card course-card--sk" *ngFor="let x of skeletonArray">
+          <div class="sk-img sk-shimmer"></div>
+          <div class="course-card__body">
+            <div class="sk-line sk-line--title sk-shimmer"></div>
+            <div class="sk-line sk-line--sub sk-shimmer"></div>
+            <div class="sk-line sk-line--short sk-shimmer"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real data -->
+      <div class="courses-grid" *ngIf="!loadingPublic()">
+        <article
+          class="course-card"
+          *ngFor="let c of filteredCourses; trackBy: trackById"
+          (click)="goToCourse(c.id)" role="button" tabindex="0" (keyup.enter)="goToCourse(c.id)"
+        >
+          <div class="course-card__thumb">
+            <img [src]="courseImg(c)" [alt]="c.title" loading="lazy"/>
+            <div class="course-card__play"><lucide-icon [img]="PlayIcon" [size]="20"></lucide-icon></div>
+            <span class="course-card__badge--new" *ngIf="c.isNew">
+              <lucide-icon [img]="SparklesIcon" [size]="10"></lucide-icon> {{ t('home.courses.new') }}
+            </span>
+            <span class="course-card__discount" *ngIf="c.hasDiscount">-{{ c.discountPercentage }}%</span>
+            <span class="course-card__free-badge" *ngIf="c.isFree">{{ t('home.courses.free') }}</span>
+          </div>
+          <div class="course-card__body">
+            <span class="course-card__cat">{{ c.categoryName }}</span>
+            <h3 class="course-card__title">{{ c.title }}</h3>
+            <p class="course-card__inst">
+              <lucide-icon [img]="GraduationCapIcon" [size]="12"></lucide-icon> {{ c.instructorName }}
+            </p>
+            <div class="course-card__meta">
+              <span><lucide-icon [img]="ClockIcon" [size]="11"></lucide-icon> {{ c.totalHours }}h</span>
+              <span><lucide-icon [img]="BookOpenIcon" [size]="11"></lucide-icon> {{ c.totalLectures }} {{ t('home.courses.lectures') }}</span>
+              <span><lucide-icon [img]="UsersIcon" [size]="11"></lucide-icon> {{ c.studentCount | number }}</span>
+            </div>
+            <div class="course-card__footer">
+              <div class="course-card__price">
+                <ng-container *ngIf="!c.isFree">
+                  <span class="price--now">{{ c.currentPrice }}</span>
+                  <span class="price--was" *ngIf="c.hasDiscount">{{ c.price }}</span>
+                </ng-container>
+                <span class="price--free" *ngIf="c.isFree">{{ t('home.courses.free') }}</span>
+              </div>
+              <div class="course-card__rating">
+                <lucide-icon [img]="StarIcon" [size]="12"></lucide-icon>
+                <span>{{ c.rating | number:'1.1-1' }}</span>
+                <span class="course-card__rc">({{ c.ratingCount | number }})</span>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div class="section-footer">
+        <button class="eol-btn eol-btn--outline" (click)="go('/courses')">
+          {{ t('home.courses.viewAll') }}<lucide-icon [img]="ArrowRightIcon" [size]="15"></lucide-icon>
+        </button>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════
+       ⑦ TEACHERS  —  /api/Teacher/public
+  ══════════════════════════════════════════════════════ -->
+  <section class="eol-section eol-section--alt">
+    <div class="eol-container">
+      <div class="section-hdr">
+        <span class="section-tag">
+          <lucide-icon [img]="GraduationCapIcon" [size]="12"></lucide-icon>
+          {{ t('home.teachers.tag') }}
+        </span>
+        <h2 class="section-h2">{{ t('home.teachers.title') }}</h2>
+        <p class="section-p">{{ t('home.teachers.subtitle') }}</p>
+      </div>
+
+      <!-- Skeleton -->
+      <div class="teachers-grid" *ngIf="loadingPublic()">
+        <div class="teacher-card teacher-card--sk" *ngFor="let x of skeletonArray">
+          <div class="sk-avatar sk-shimmer"></div>
+          <div class="sk-line sk-line--title sk-shimmer" style="width:55%;margin:14px auto 6px"></div>
+          <div class="sk-line sk-line--sub sk-shimmer" style="width:40%;margin:0 auto 12px"></div>
+        </div>
+      </div>
+
+      <!-- Real data -->
+      <div class="teachers-grid" *ngIf="!loadingPublic()">
+        <article
+          class="teacher-card"
+          *ngFor="let teacher of teachers(); trackBy: trackById"
+          (click)="goToTeacher(teacher.userId)" role="button" tabindex="0" (keyup.enter)="goToTeacher(teacher.userId)"
+        >
+          <div class="teacher-card__avatar">
+            <img [src]="teacherImg(teacher)" [alt]="teacher.name" loading="lazy"/>
+            <div class="teacher-card__verified" *ngIf="teacher.isVerified">
+              <lucide-icon [img]="BadgeCheckIcon" [size]="13"></lucide-icon>
+            </div>
+          </div>
+          <h3 class="teacher-card__name">{{ teacher.name }}</h3>
+          <p class="teacher-card__spec">{{ teacher.specialization }}</p>
+          <div class="teacher-card__stats">
+            <span><lucide-icon [img]="StarIcon" [size]="12"></lucide-icon> {{ teacher.rating | number:'1.1-1' }}</span>
+            <span><lucide-icon [img]="UsersIcon" [size]="12"></lucide-icon> {{ teacher.totalStudents | number }}</span>
+            <span><lucide-icon [img]="BookOpenIcon" [size]="12"></lucide-icon> {{ teacher.totalCourses }}</span>
+          </div>
+          <button class="teacher-card__btn">
+            {{ t('home.teachers.viewProfile') }}<lucide-icon [img]="ArrowRightIcon" [size]="13"></lucide-icon>
+          </button>
+        </article>
+      </div>
+
+      <div class="section-footer">
+        <button class="eol-btn eol-btn--outline" (click)="go('/teachers')">
+          {{ t('home.teachers.viewAll') }}<lucide-icon [img]="ArrowRightIcon" [size]="15"></lucide-icon>
+        </button>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════
+       ⑧ SUBSCRIPTION PLANS  —  /api/SubscriptionPlans/student
+  ══════════════════════════════════════════════════════ -->
+  <section class="eol-section eol-pricing">
+    <div class="eol-container">
+      <div class="section-hdr">
+        <span class="section-tag">
+          <lucide-icon [img]="BoltIcon" [size]="12"></lucide-icon>
+          {{ t('home.pricing.tag') }}
+        </span>
+        <h2 class="section-h2">{{ t('home.pricing.title') }}</h2>
+        <p class="section-p">{{ t('home.pricing.subtitle') }}</p>
+      </div>
+
+      <!-- Billing toggle -->
+      <div class="billing-toggle">
+        <span [class.billing-toggle__lbl--on]="!billingYearly()">{{ t('home.pricing.monthly') }}</span>
+        <button
+          class="billing-toggle__switch"
+          [class.billing-toggle__switch--on]="billingYearly()"
+          (click)="toggleBilling()"
+          role="switch"
+          [attr.aria-checked]="billingYearly()"
+        >
+          <span class="billing-toggle__knob"></span>
+        </button>
+        <span [class.billing-toggle__lbl--on]="billingYearly()">
+          {{ t('home.pricing.yearly') }}
+          <span class="billing-toggle__save">{{ t('home.pricing.saveUp') }}</span>
+        </span>
+      </div>
+
+      <!-- Plan skeletons -->
+      <div class="plans-grid" *ngIf="loadingPublic()">
+        <div class="plan-card plan-card--sk" *ngFor="let x of skeletonPlans">
+          <div class="sk-line sk-line--title sk-shimmer" style="width:50%;margin-bottom:10px"></div>
+          <div class="sk-line sk-line--sub sk-shimmer" style="width:35%;margin-bottom:28px"></div>
+          <div class="sk-price sk-shimmer"></div>
+          <div class="sk-line sk-line--sub sk-shimmer" style="margin-top:24px"></div>
+          <div class="sk-line sk-line--sub sk-shimmer"></div>
+          <div class="sk-line sk-line--sub sk-shimmer"></div>
+          <div class="sk-line sk-line--short sk-shimmer"></div>
+          <div class="sk-btn sk-shimmer" style="margin-top:24px"></div>
+        </div>
+      </div>
+
+      <!-- Real plans from /api/SubscriptionPlans/student -->
+      <div class="plans-grid" *ngIf="!loadingPublic()">
+        <div
+          class="plan-card"
+          *ngFor="let plan of sortedPlans; trackBy: trackById"
+          [class.plan-card--featured]="plan.badge || plan.displayOrder === 1"
+          [class.plan-card--current]="isCurrentPlan(plan)"
+          [style.--plan-accent]="planAccent(plan)"
+          [style.--plan-accent-bg]="planAccentBg(plan)"
+        >
+          <!-- Popular / badge label -->
+          <div class="plan-card__badge" *ngIf="plan.badge || plan.badgeInAr">
+            <lucide-icon [img]="SparklesIcon" [size]="10"></lucide-icon>
+            {{ isRTL ? (plan.badgeInAr || plan.badge) : plan.badge }}
+          </div>
+
+          <!-- Header -->
+          <div class="plan-card__head">
+            <h3 class="plan-card__name">
+              {{ isRTL ? (plan.nameInAr || plan.name) : plan.name }}
+            </h3>
+            <p class="plan-card__desc" *ngIf="plan.description || plan.descriptionInAr">
+              {{ isRTL ? (plan.descriptionInAr || plan.description) : plan.description }}
+            </p>
+          </div>
+
+          <!-- Price -->
+          <div class="plan-card__price-block">
+            <ng-container *ngIf="plan.monthlyPrice === 0; else paidPrice">
+              <span class="plan-price__amount">{{ t('home.pricing.free') }}</span>
+              <span class="plan-price__period">{{ t('home.pricing.forever') }}</span>
+            </ng-container>
+            <ng-template #paidPrice>
+              <span class="plan-price__amount">{{ planPrice(plan) }}</span>
+              <span class="plan-price__period">{{ planPeriodLabel() }}</span>
+            </ng-template>
+
+            <!-- Yearly saving badge -->
+            <div class="plan-price__saving"
+                 *ngIf="billingYearly() && plan.monthlyPrice > 0 && yearSaving(plan) > 0">
+              {{ t('home.pricing.save') }} {{ yearSaving(plan) }}%
+            </div>
+
+            <!-- Trial indicator -->
+            <div class="plan-price__trial" *ngIf="plan.trialDays && plan.trialDays > 0">
+              <lucide-icon [img]="BoltIcon" [size]="11"></lucide-icon>
+              {{ plan.trialDays }} {{ t('home.pricing.trialDays') }}
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div class="plan-card__divider"></div>
+
+          <!-- Course limit / unlimited indicator -->
+          <div class="plan-card__limit" *ngIf="plan.maxCourses || plan.isUnlimited">
+            <lucide-icon [img]="InfinityIcon" [size]="14" *ngIf="plan.isUnlimited"></lucide-icon>
+            <lucide-icon [img]="BookOpenIcon" [size]="14" *ngIf="!plan.isUnlimited"></lucide-icon>
+            <span *ngIf="plan.isUnlimited">{{ t('home.pricing.unlimitedCourses') }}</span>
+            <span *ngIf="!plan.isUnlimited && plan.maxCourses">
+              {{ t('home.pricing.upTo') }} {{ plan.maxCourses }} {{ t('home.pricing.courses') }}
+            </span>
+          </div>
+
+          <!-- Features list from API -->
+          <ul class="plan-card__features">
+            <li
+              *ngFor="let f of visibleFeatures(plan)"
+              [class.plan-card__feature--yes]="f.isAvailable && f.isPositive"
+              [class.plan-card__feature--no]="!f.isAvailable || !f.isPositive"
+            >
+              <span class="plan-card__feature-icon">
+                <lucide-icon [img]="CheckIcon" [size]="12" *ngIf="f.isAvailable && f.isPositive"></lucide-icon>
+                <lucide-icon [img]="XIcon" [size]="12" *ngIf="!f.isAvailable || !f.isPositive"></lucide-icon>
+              </span>
+              <span>{{ isRTL ? (f.descriptionInAr || f.description) : f.description }}</span>
+            </li>
+          </ul>
+
+          <!-- CTA button -->
+          <button
+            class="plan-card__cta"
+            [class.plan-card__cta--current]="isCurrentPlan(plan)"
+            [class.plan-card__cta--loading]="processingPlan() === plan.id"
+            [disabled]="isCurrentPlan(plan) || processingPlan() !== null"
+            (click)="subscribeToPlan(plan)"
+          >
+            <ng-container *ngIf="processingPlan() === plan.id">
+              <span class="spinner"></span> {{ t('home.pricing.processing') }}
+            </ng-container>
+            <ng-container *ngIf="processingPlan() !== plan.id">
+              <ng-container *ngIf="isCurrentPlan(plan)">
+                <lucide-icon [img]="BadgeCheckIcon" [size]="15"></lucide-icon>
+                {{ t('home.pricing.currentPlan') }}
+              </ng-container>
+              <ng-container *ngIf="!isCurrentPlan(plan)">
+                <lucide-icon
+                  [img]="plan.monthlyPrice === 0 ? ZapIcon : CreditCardIcon"
+                  [size]="15">
+                </lucide-icon>
+                {{ plan.monthlyPrice === 0 ? t('home.pricing.getStarted') : t('home.pricing.subscribe') }}
+              </ng-container>
+            </ng-container>
+          </button>
+
+          <!-- Current plan remaining days -->
+          <div class="plan-card__expires"
+               *ngIf="isCurrentPlan(plan) && activeSub()?.remainingDays != null">
+            <lucide-icon [img]="ClockIcon" [size]="12"></lucide-icon>
+            {{ activeSub()!.remainingDays }} {{ t('home.pricing.daysLeft') }}
+          </div>
+        </div>
+      </div>
+
+      <!-- No plans fallback -->
+      <div class="plans-empty" *ngIf="!loadingPublic() && sortedPlans.length === 0">
+        <lucide-icon [img]="BoltIcon" [size]="32"></lucide-icon>
+        <p>{{ t('home.pricing.noPlans') }}</p>
+        <button class="eol-btn eol-btn--primary" (click)="go('/subscription')">
+          {{ t('home.pricing.viewAll') }}
+        </button>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════
+       ⑨ WHY CHOOSE US — Features (static copy, no API)
+  ══════════════════════════════════════════════════════ -->
+  <section class="eol-section eol-section--alt">
+    <div class="eol-container">
+      <div class="section-hdr">
+        <span class="section-tag">
+          <lucide-icon [img]="AwardIcon" [size]="12"></lucide-icon>
+          {{ t('home.features.tag') }}
+        </span>
+        <h2 class="section-h2">{{ t('home.features.title') }}</h2>
+        <p class="section-p">{{ t('home.features.subtitle') }}</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card" style="--fc:#4f46e5;--fb:rgba(79,70,229,.08)">
+          <div class="feature-card__icon"><lucide-icon [img]="MonitorIcon" [size]="22"></lucide-icon></div>
+          <h3>{{ t('home.features.interactive.title') }}</h3><p>{{ t('home.features.interactive.desc') }}</p>
+        </div>
+        <div class="feature-card" style="--fc:#059669;--fb:rgba(5,150,105,.08)">
+          <div class="feature-card__icon"><lucide-icon [img]="UsersIcon" [size]="22"></lucide-icon></div>
+          <h3>{{ t('home.features.experts.title') }}</h3><p>{{ t('home.features.experts.desc') }}</p>
+        </div>
+        <div class="feature-card" style="--fc:#7c3aed;--fb:rgba(124,58,237,.08)">
+          <div class="feature-card__icon"><lucide-icon [img]="ClockIcon" [size]="22"></lucide-icon></div>
+          <h3>{{ t('home.features.pace.title') }}</h3><p>{{ t('home.features.pace.desc') }}</p>
+        </div>
+        <div class="feature-card" style="--fc:#d97706;--fb:rgba(217,119,6,.08)">
+          <div class="feature-card__icon"><lucide-icon [img]="AwardIcon" [size]="22"></lucide-icon></div>
+          <h3>{{ t('home.features.certs.title') }}</h3><p>{{ t('home.features.certs.desc') }}</p>
+        </div>
+        <div class="feature-card" style="--fc:#db2777;--fb:rgba(219,39,119,.08)">
+          <div class="feature-card__icon"><lucide-icon [img]="MessageSquareIcon" [size]="22"></lucide-icon></div>
+          <h3>{{ t('home.features.community.title') }}</h3><p>{{ t('home.features.community.desc') }}</p>
+        </div>
+        <div class="feature-card" style="--fc:#0d9488;--fb:rgba(13,148,136,.08)">
+          <div class="feature-card__icon"><lucide-icon [img]="GlobeIcon" [size]="22"></lucide-icon></div>
+          <h3>{{ t('home.features.multilang.title') }}</h3><p>{{ t('home.features.multilang.desc') }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════════════════
+       ⑩ CTA
+  ══════════════════════════════════════════════════════ -->
+  <section class="eol-cta">
+    <div class="eol-cta__bg">
+      <div class="cta-orb cta-orb--l"></div>
+      <div class="cta-orb cta-orb--r"></div>
+    </div>
+    <div class="eol-container">
+      <div class="eol-cta__body">
+        <span class="section-tag section-tag--light">
+          <lucide-icon [img]="ZapIcon" [size]="12"></lucide-icon>
+          {{ t('home.cta.tag') }}
+        </span>
+        <h2 class="cta-h2">{{ t('home.cta.title') }}</h2>
+        <p class="cta-p">{{ t('home.cta.subtitle') }}</p>
+        <div class="cta-actions">
+          <button class="eol-btn eol-btn--white" (click)="go('/register')">
+            {{ t('home.cta.start') }}<lucide-icon [img]="ArrowRightIcon" [size]="16"></lucide-icon>
+          </button>
+          <button class="eol-btn eol-btn--ghost-white" (click)="go('/courses')">
+            {{ t('home.cta.browse') }}
+          </button>
+        </div>
+        <div class="cta-proof">
+          <span><lucide-icon [img]="BadgeCheckIcon" [size]="13"></lucide-icon> {{ t('home.cta.noCc') }}</span>
+          <span><lucide-icon [img]="ShieldIcon" [size]="13"></lucide-icon> {{ t('home.cta.cancel') }}</span>
+          <span><lucide-icon [img]="TrophyIcon" [size]="13"></lucide-icon> {{ t('home.cta.trial') }}</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
